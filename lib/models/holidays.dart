@@ -27,7 +27,7 @@ class Holiday implements Comparable<Holiday> {
       year: int.parse(doc.id.substring(0, 4)),
       month: int.parse(doc.id.substring(4, 6)),
       day: int.parse(doc.id.substring(6, 8)),
-      name: data['name'] as String,
+      name: "${data['name'] ?? ''}",
     );
   }
 
@@ -44,17 +44,6 @@ class Holiday implements Comparable<Holiday> {
     }
 
     return day.compareTo(other.day);
-  }
-}
-
-class User {
-  final String name;
-
-  User({required this.name});
-
-  factory User.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!;
-    return User(name: data['name'] as String);
   }
 }
 

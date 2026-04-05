@@ -35,7 +35,11 @@ function makeContext(overrides?: Partial<Context>): Context {
     update: vi.fn().mockResolvedValue(undefined),
   } as unknown as DocumentReference;
   const versionDocRef = {id: "version"} as unknown as DocumentReference;
-  const userDocRef = {id: "test-uid"} as unknown as DocumentReference;
+  const userDocRef = {
+    id: "test-uid",
+    get: vi.fn().mockResolvedValue({exists: false}),
+    set: vi.fn().mockResolvedValue(undefined),
+  } as unknown as DocumentReference;
   const serviceCollection = {
     doc: vi.fn((id: string) => {
       if (id === "conf") {
@@ -66,6 +70,7 @@ function makeContext(overrides?: Partial<Context>): Context {
 
   const auth = {
     createUser: vi.fn().mockResolvedValue({uid: "test-uid"}),
+    getUserByEmail: vi.fn().mockResolvedValue({uid: "test-uid"}),
   };
 
   const logger = {

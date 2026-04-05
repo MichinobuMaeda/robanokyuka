@@ -22,3 +22,8 @@ final snackBarMessageProvider =
     NotifierProvider<SnackBarMessageNotifier, String?>(
       SnackBarMessageNotifier.new,
     );
+
+const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+
+String dateToWeekday(int year, int month, int day) =>
+    weekDays[DateTime(year, month, day).weekday % 7];

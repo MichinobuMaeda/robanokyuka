@@ -10,6 +10,8 @@ const panelPadding = EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0);
 const bottomSheetPadding = EdgeInsets.all(16.0);
 const panelSpacing = 16.0;
 const defaultInputWidth = 512.0;
+TextStyle? panelTitleStyle(BuildContext context) =>
+    Theme.of(context).textTheme.headlineSmall;
 
 ThemeData generateThemeData(Brightness brightness) {
   final colorScheme = ColorScheme.fromSeed(

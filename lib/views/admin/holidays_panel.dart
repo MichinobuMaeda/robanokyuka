@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../config/theme.dart';
 import '../../services/helpers.dart';
 import '../../models/holidays.dart';
+import '../../widgets/bordered_list_item.dart';
 
 class HolidaysPanel extends HookConsumerWidget {
   const HolidaysPanel({super.key});
@@ -28,9 +29,9 @@ class HolidaysPanel extends HookConsumerWidget {
       delegate: SliverChildBuilderDelegate((context, index) {
         switch (index) {
           case 0:
-            return _ListItem(child: _Header());
+            return BorderedListItem(child: _Header());
           case 1:
-            return _ListItem(
+            return BorderedListItem(
               child: _Years(
                 years: years,
                 selectedYear: selectedYear.value,
@@ -38,14 +39,14 @@ class HolidaysPanel extends HookConsumerWidget {
               ),
             );
           default:
-            final holidayIndex = index - 2;
-            if (holidayIndex < filtered.length) {
-              return _ListItem(
+            final itemIndex = index - 2;
+            if (itemIndex < filtered.length) {
+              return BorderedListItem(
                 border: index % 2 == 0,
-                child: _HolidayItem(holiday: filtered[holidayIndex]),
+                child: _Item(holiday: filtered[itemIndex]),
               );
             } else {
-              return _ListItem(child: const Divider());
+              return BorderedListItem(child: const Divider());
             }
         }
       }, childCount: filtered.length + 3),
@@ -53,40 +54,8 @@ class HolidaysPanel extends HookConsumerWidget {
   }
 }
 
-class _ListItem extends StatelessWidget {
-  const _ListItem({this.border = false, required this.child});
-
-  final bool border;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: border
-          ? Theme.of(context).colorScheme.surfaceContainerLow
-          : Theme.of(context).colorScheme.surfaceContainerLowest,
-      child: SizedBox(
-        height: 48,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
+class _Header extends HookConsumerWidget {
   const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _HeaderBody();
-  }
-}
-
-class _HeaderBody extends HookConsumerWidget {
-  const _HeaderBody();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -119,9 +88,7 @@ class _HeaderBody extends HookConsumerWidget {
 
     return Row(
       children: [
-        Expanded(
-          child: Text('祝日', style: Theme.of(context).textTheme.headlineSmall),
-        ),
+        Expanded(child: Text('祝日', style: panelTitleStyle(context))),
         IconButton.filledTonal(
           onPressed: showAddSheet,
           icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
@@ -162,8 +129,8 @@ class _Years extends StatelessWidget {
   }
 }
 
-class _HolidayItem extends HookConsumerWidget {
-  const _HolidayItem({required this.holiday});
+class _Item extends HookConsumerWidget {
+  const _Item({required this.holiday});
 
   final Holiday holiday;
 
@@ -220,6 +187,7 @@ class _HolidayItem extends HookConsumerWidget {
 
     return Flex(
       direction: Axis.horizontal,
+      spacing: 8,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         IconButton(
@@ -227,11 +195,14 @@ class _HolidayItem extends HookConsumerWidget {
           icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
         ),
         SizedBox(
-          width: 80,
-          child: Text(
-            '${holiday.month}月${holiday.day}日',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          width: 96,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '${holiday.month}月${holiday.day}日(${dateToWeekday(holiday.year, holiday.month, holiday.day)})',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
         Expanded(

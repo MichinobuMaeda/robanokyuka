@@ -21,7 +21,7 @@ class DeleteUserPanel extends HookConsumerWidget {
 
     Future<void> handleSubmit() async {
       {
-        final uid = ref.read(uidProvider);
+        final uid = ref.watch(authUserProvider.select(selectUid));
         if (uid == null) {
           message.show("認証されたユーザーが見つかりません。");
           return;

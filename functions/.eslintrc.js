@@ -33,4 +33,12 @@ module.exports = {
     "indent": ["error", 2],
     "max-len": ["error", {"code": 80, "ignoreComments": true}],
   },
+  overrides: [
+    {
+      files: ["src/*.test.ts"],
+      rules: {
+        "max-len": "off",
+      },
+    },
+  ],
 };

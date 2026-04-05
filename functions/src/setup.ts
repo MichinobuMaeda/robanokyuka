@@ -1,6 +1,7 @@
 import {DocumentSnapshot} from "firebase-admin/firestore";
 
 import {Context} from "./common";
+import {addUserWithEmailAndName} from "./users";
 
 /**
  * Performs initial setup for version 1 of the service configuration.
@@ -32,9 +33,7 @@ async function setupV1(
         createdAt: new Date(),
       }
     );
-    batch.set(db.collection("users").doc(user.uid), {
-      createdAt: new Date(),
-    });
+    await addUserWithEmailAndName({logger, auth, db}, {email});
     await batch.commit();
 
     return 1;

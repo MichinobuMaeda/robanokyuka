@@ -11,6 +11,8 @@ final authUserProvider = StreamProvider<User?>(
   (_) => FirebaseAuth.instance.authStateChanges(),
 );
 
+String? selectUid(AsyncValue<User?> authUser) => authUser.asData?.value?.uid;
+
 String getBaseUrl(String url) {
   final uri = Uri.parse(url);
   final normalized = Uri(

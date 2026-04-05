@@ -7,6 +7,8 @@ const emailFrom = "noreply@yukyuchecker.firebaseapp.com";
 
 const _flutterEnv = String.fromEnvironment('FLUTTER_ENV');
 
+const String functionsRegion = 'asia-northeast2';
+
 FirebaseOptions firebaseConfig = FirebaseOptions(
   apiKey: "FIREBASE_API_KEY",
   authDomain: "yukyuchecker.firebaseapp.com",
@@ -24,6 +26,8 @@ Future<void> initializeFirebase() async {
   if (_flutterEnv == 'development') {
     await FirebaseAuth.instance.useAuthEmulator("localhost", 9099);
     FirebaseFirestore.instance.useFirestoreEmulator("localhost", 8080);
-    FirebaseFunctions.instance.useFunctionsEmulator("localhost", 5001);
+    FirebaseFunctions.instanceFor(
+      region: functionsRegion,
+    ).useFunctionsEmulator("localhost", 5001);
   }
 }

@@ -6,6 +6,7 @@ import '../config/version.dart';
 import '../config/theme.dart';
 import '../services/authorization.dart';
 import '../services/helpers.dart';
+import '../models/conf.dart';
 
 enum MediaSize { narrow, middle, wide }
 
@@ -18,6 +19,8 @@ class Layout extends HookConsumerWidget {
     final pages = ref.watch(pagesProvider);
     final selectedIndex = useState(0);
     final selectedPage = useState(pages.first);
+
+    confStateListener(ref);
 
     ref.listen<String?>(snackBarMessageProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);

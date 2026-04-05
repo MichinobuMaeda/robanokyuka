@@ -12,6 +12,7 @@ import '../views/auth/password_reauthenticate_panel.dart';
 import '../views/auth/change_email_panel.dart';
 import '../views/auth/google_auth_panel.dart';
 import '../views/auth/delete_user_panel.dart';
+import '../views/admin/users_panel.dart';
 import '../views/admin/holidays_panel.dart';
 import '../widgets/markdown_panel.dart';
 
@@ -55,7 +56,7 @@ enum PageItem {
     icon: Icons.admin_panel_settings,
     label: '管理',
     privileges: [Privilege.admin],
-    contents: [HolidaysPanel()],
+    contents: [UsersPanel(), HolidaysPanel()],
   ),
   info(
     icon: Icons.info,
@@ -96,7 +97,7 @@ class NavItem {
 final privilegeProvider = Provider<Privilege>((ref) {
   final authUser = ref.watch(authUserProvider);
   final conf = ref.watch(confProvider);
-  final admins = ref.watch(adminsProvider);
+  final admins = ref.watch(confProvider.select(selectAdmins));
 
   return authUser.isLoading || conf.isLoading
       ? Privilege.loading

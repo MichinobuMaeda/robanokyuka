@@ -2,22 +2,28 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isUser() {
+      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('disabledAt', null) == null;
+    }
+    function isValidUser(userId) {
+      return isUser() && request.auth.uid == userId;
+    }
     function isAdmin() {
-      return request.auth != null && request.auth.uid in get(/databases/$(database)/documents/service/conf).data.admins;
+      return isUser() && request.auth.uid in get(/databases/$(database)/documents/service/conf).data.admins;
     }
     match /service/conf {
       allow read, write: if isAdmin();
-      allow read: if request.auth != null;
+      allow read: if isUser();
     }
     match /holidays/{holidayId} {
       allow read, write: if isAdmin();
-      allow read: if request.auth != null;
+      allow read: if isUser();
     }
     match /users/{userId} {
-      allow read, write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+      allow read, write: if isValidUser(userId) || isAdmin();
     }
     match /users/{userId}/records/{document=**} {
-      allow read, write: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+      allow read, write: if isValidUser(userId) || isAdmin();
     }
     match /{document=**} {
       allow read, write: if false;
