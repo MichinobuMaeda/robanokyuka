@@ -267,8 +267,22 @@ class _EditSheet extends HookWidget {
                 record.id.isEmpty ? '期間を追加' : '期間を更新',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              dateRow(fromYearC, fromMonthC, fromDayC, null),
-              dateRow(toYearC, toMonthC, toDayC, '〜'),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final rows = [
+                    dateRow(fromYearC, fromMonthC, fromDayC, null),
+                    dateRow(toYearC, toMonthC, toDayC, '〜'),
+                  ];
+                  if (constraints.maxWidth >= 520) {
+                    return Row(spacing: 16, children: rows);
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 16,
+                    children: rows,
+                  );
+                },
+              ),
               Row(
                 spacing: 16,
                 children: [
@@ -302,19 +316,25 @@ class _EditSheet extends HookWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 8,
                 children: [
-                  Text('休日', style: Theme.of(context).textTheme.labelLarge),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: List.generate(
-                      _publicHolidaysLabels.length,
-                      (i) => FilterChip(
-                        label: Text(_publicHolidaysLabels[i]),
-                        selected: holidays.value[i],
-                        onSelected: (v) {
-                          holidays.value = [...holidays.value]..[i] = v;
-                        },
-                      ),
+                      _publicHolidaysLabels.length + 1,
+                      (i) => i == 0
+                          ? Text(
+                              '休日',
+                              style: Theme.of(context).textTheme.labelLarge,
+                            )
+                          : FilterChip(
+                              label: Text(_publicHolidaysLabels[i - 1]),
+                              selected: holidays.value[i - 1],
+                              onSelected: (v) {
+                                holidays.value = [...holidays.value]
+                                  ..[i - 1] = v;
+                              },
+                            ),
                     ),
                   ),
                 ],

@@ -269,7 +269,7 @@ class _DayCellSheet extends ConsumerWidget {
             '${date.year}年${date.month}月${date.day}日${holidayName != null ? ' $holidayName' : ''}',
           ),
           SwitchListTile(
-            title: const Text('その他の休日'),
+            title: const Text('土日祝日等以外の非営業日'),
             value: isCompanyHoliday,
             onChanged: (_) => toggle('companyHolidays', isCompanyHoliday),
           ),
