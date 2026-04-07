@@ -7,6 +7,10 @@ import '../models/conf.dart';
 import '../views/auth/email_link_panel.dart';
 import '../views/auth/email_password_panel.dart';
 import '../views/auth/reset_password_panel.dart';
+import '../views/user/record_panel.dart';
+import '../views/user/summary_panel.dart';
+import '../views/user/calendar_panel.dart';
+import '../views/user/edit_profile_panel.dart';
 import '../views/auth/sign_out_panel.dart';
 import '../views/auth/password_reauthenticate_panel.dart';
 import '../views/auth/change_email_panel.dart';
@@ -32,16 +36,17 @@ enum PageItem {
     ],
   ),
   home(
-    icon: Icons.home,
-    label: '概要',
+    icon: Icons.calendar_month,
+    label: '記録',
     privileges: [Privilege.user, Privilege.admin],
-    contents: [SliverToBoxAdapter(child: Text('Home'))],
+    contents: [RecordPanel(), SummaryPanel(), CalendarPanel()],
   ),
   settings(
     icon: Icons.account_circle,
     label: '設定',
     privileges: [Privilege.user, Privilege.admin],
     contents: [
+      EditProfilePanel(),
       ResetPasswordPanel(),
       SignOutPanel(),
       MarkdownPanel(asset: assetReauthenticateMd),

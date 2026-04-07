@@ -4,9 +4,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../config/theme.dart';
 
 class BoxPanel extends HookConsumerWidget {
-  const BoxPanel({super.key, required this.children});
+  const BoxPanel({super.key, required this.children, this.showDivider = true});
 
   final List<Widget> children;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,7 +18,7 @@ class BoxPanel extends HookConsumerWidget {
           direction: Axis.vertical,
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: panelSpacing,
-          children: [...children, Divider()],
+          children: [...children, if (showDivider) Divider()],
         ),
       ),
     );
