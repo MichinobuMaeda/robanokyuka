@@ -95,9 +95,9 @@ describe("setup", () => {
     );
   });
 
-  it("does nothing when version >= 2", async () => {
+  it("does nothing when version >= 1", async () => {
     const ctx = makeContext();
-    const data = makeDocSnapshot({version: 2});
+    const data = makeDocSnapshot({version: 1});
     await setup(ctx, {data});
     expect(ctx.auth.createUser).not.toHaveBeenCalled();
     expect(ctx.logger.info).toHaveBeenCalledWith(
@@ -106,20 +106,44 @@ describe("setup", () => {
     );
   });
 
-  it("runs setupV2 when version is 1", async () => {
+  it("runs setupV1 including holidays and gengos", async () => {
     const ctx = makeContext();
-    const data = makeDocSnapshot({version: 1});
+    const data = makeDocSnapshot({version: 0, email: "admin@example.com"});
 
     await setup(ctx, {data});
 
-    expect(ctx.auth.createUser).not.toHaveBeenCalled();
     expect(ctx.logger.info).toHaveBeenCalledWith(
-      "Performing setup for version 2"
+      "Performing setup for version 1"
     );
     expect(ctx.db.batch).toHaveBeenCalled();
+    const batch = ctx.db.batch();
+    expect(batch.set).toHaveBeenCalledWith(
+      expect.objectContaining({id: "y2024"}),
+      expect.objectContaining({"0101": "元日"})
+    );
+    expect(batch.set).toHaveBeenCalledWith(
+      expect.objectContaining({id: "y2025"}),
+      expect.objectContaining({"0101": "元日"})
+    );
+    expect(batch.set).toHaveBeenCalledWith(
+      expect.objectContaining({id: "y2026"}),
+      expect.objectContaining({"0101": "元日"})
+    );
+    expect(batch.set).toHaveBeenCalledWith(
+      expect.objectContaining({id: "y2027"}),
+      expect.objectContaining({"0101": "元日"})
+    );
+    expect(batch.set).toHaveBeenCalledWith(
+      expect.objectContaining({id: "conf"}),
+      expect.objectContaining({
+        gengos: expect.arrayContaining([
+          expect.objectContaining({name: "令和", short: "R"}),
+        ]),
+      })
+    );
     expect(data.ref.set).toHaveBeenCalledWith({
-      version: 2,
-      createdAt: expect.any(Date),
+      version: 1,
+      createdAt: expect.objectContaining({}),
     });
   });
 
@@ -221,7 +245,7 @@ describe("setup", () => {
       } as unknown as Context["db"],
     });
 
-    await setup(ctx, {data: makeDocSnapshot({version: 1})});
+    await setup(ctx, {data: makeDocSnapshot({version: 2})});
 
     expect(ctx.logger.info).toHaveBeenCalledWith(
       "Updating UI version to:",
@@ -258,56 +282,56 @@ describe("setup", () => {
     );
   });
 
-  it("logs error and aborts when setupV2 throws", async () => {
-    const batchV2 = {
+  it("logs error and aborts when setupV1 batch throws", async () => {
+    const batchV1 = {
       set: vi.fn(),
       update: vi.fn(),
       commit: vi.fn().mockRejectedValue(new Error("holiday write failed")),
     } as unknown as WriteBatch;
     const ctx = makeContext({
       db: {
-        batch: vi.fn().mockReturnValue(batchV2),
+        batch: vi.fn().mockReturnValue(batchV1),
         collection: makeContext().db.collection,
       } as unknown as Context["db"],
     });
-    const data = makeDocSnapshot({version: 1});
+    const data = makeDocSnapshot({version: 0, email: "admin@example.com"});
 
     await setup(ctx, {data});
 
     expect(ctx.logger.error).toHaveBeenCalledWith(
-      "Error during setupV2:",
+      "Error during setupV1:",
       expect.any(Error),
       expect.stringContaining("holiday write failed")
     );
     expect(ctx.logger.error).toHaveBeenCalledWith(
-      "Setup for version 2 failed, aborting further setup"
+      "Setup for version 1 failed, aborting further setup"
     );
     expect(data.ref.set).not.toHaveBeenCalled();
   });
 
-  it("logs error without stack when setupV2 throws non-Error", async () => {
-    const batchV2 = {
+  it("logs error without stack when setupV1 batch throws non-Error", async () => {
+    const batchV1 = {
       set: vi.fn(),
       update: vi.fn(),
       commit: vi.fn().mockRejectedValue("holiday write failed"),
     } as unknown as WriteBatch;
     const ctx = makeContext({
       db: {
-        batch: vi.fn().mockReturnValue(batchV2),
+        batch: vi.fn().mockReturnValue(batchV1),
         collection: makeContext().db.collection,
       } as unknown as Context["db"],
     });
-    const data = makeDocSnapshot({version: 1});
+    const data = makeDocSnapshot({version: 0, email: "admin@example.com"});
 
     await setup(ctx, {data});
 
     expect(ctx.logger.error).toHaveBeenCalledWith(
-      "Error during setupV2:",
+      "Error during setupV1:",
       "holiday write failed",
       undefined
     );
     expect(ctx.logger.error).toHaveBeenCalledWith(
-      "Setup for version 2 failed, aborting further setup"
+      "Setup for version 1 failed, aborting further setup"
     );
     expect(data.ref.set).not.toHaveBeenCalled();
   });

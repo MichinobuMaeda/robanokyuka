@@ -3,8 +3,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fpdart/fpdart.dart';
 
+import '../config/firebase.dart';
 import '../services/authentication.dart';
-import '../models/holidays.dart';
+import '../services/helpers.dart';
+import '../models/service.dart';
 
 const defaultPublicHolidays = [
   true, // Sunday
@@ -17,93 +19,90 @@ const defaultPublicHolidays = [
   true, // Holiday
 ];
 
-class CalendarDate {
-  final int year;
-  final int month;
-  final int day;
+const defaultGivenLeaves = 10;
+const defaultMinLeaves = 5;
+const defaultWorkingHours = '08:00';
 
-  CalendarDate({required this.year, required this.month, required this.day});
+class DateRecord {
+  final String date;
+  final bool companyHoliday;
+  final String? plan;
+  final String? used;
+  final String? sick;
+  final String? other;
+  final String? note;
+
+  DateRecord({
+    required this.date,
+    this.companyHoliday = false,
+    this.plan,
+    this.used,
+    this.sick,
+    this.other,
+    this.note,
+  });
 }
 
 class Record {
   final String id;
-  final CalendarDate from;
-  final CalendarDate to;
+  final String from;
+  final String to;
   final List<bool> publicHolidays;
-  final List<CalendarDate> companyHolidays;
-  final List<CalendarDate> plannedLeaves;
-  final List<CalendarDate> usedLeaves;
   final int givenLeaves;
   final int minLeaves;
+  final bool useLeavesHourly;
+  final String workingHours;
+  final List<DateRecord> dates;
 
   Record({
     required this.id,
     required this.from,
     required this.to,
     this.publicHolidays = defaultPublicHolidays,
-    this.companyHolidays = const [],
-    this.plannedLeaves = const [],
-    this.usedLeaves = const [],
-    this.givenLeaves = 10,
-    this.minLeaves = 5,
+    this.givenLeaves = defaultGivenLeaves,
+    this.minLeaves = defaultMinLeaves,
+    this.useLeavesHourly = false,
+    this.workingHours = defaultWorkingHours,
+    this.dates = const [],
   });
 
   factory Record.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return Record(
       id: doc.id,
-      from: CalendarDate(
-        year: data['from']['year'],
-        month: data['from']['month'],
-        day: data['from']['day'],
-      ),
-      to: CalendarDate(
-        year: data['to']['year'],
-        month: data['to']['month'],
-        day: data['to']['day'],
-      ),
+      from: data['from'] as String,
+      to: data['to'] as String,
       publicHolidays: List<bool>.from(
         data['holidays'] ?? defaultPublicHolidays,
       ),
-      companyHolidays: List<CalendarDate>.from(
-        data['companyHolidays']?.map(
-              (holiday) => CalendarDate(
-                year: holiday['year'],
-                month: holiday['month'],
-                day: holiday['day'],
-              ),
-            ) ??
-            [],
-      ),
-      plannedLeaves: List<CalendarDate>.from(
-        data['plannedLeaves']?.map(
-              (d) => CalendarDate(
-                year: d['year'],
-                month: d['month'],
-                day: d['day'],
-              ),
-            ) ??
-            [],
-      ),
-      usedLeaves: List<CalendarDate>.from(
-        data['usedLeaves']?.map(
-              (d) => CalendarDate(
-                year: d['year'],
-                month: d['month'],
-                day: d['day'],
-              ),
-            ) ??
-            [],
-      ),
-      givenLeaves: data['givenLeaves'] ?? 10,
-      minLeaves: data['minLeaves'] ?? 5,
+      givenLeaves: data['givenLeaves'] ?? defaultGivenLeaves,
+      minLeaves: data['minLeaves'] ?? defaultMinLeaves,
+      useLeavesHourly: data['useLeavesHourly'] ?? false,
+      workingHours: (data['workingHours'] as String?) ?? defaultWorkingHours,
+      dates:
+          (data['dates'] as Map<String, dynamic>?)?.entries
+              .map(
+                (entry) => DateRecord(
+                  date: entry.key,
+                  companyHoliday: entry.value['c'] ?? false,
+                  plan: entry.value['p'],
+                  used: entry.value['u'],
+                  sick: entry.value['s'],
+                  other: entry.value['o'],
+                  note: entry.value['n'],
+                ),
+              )
+              .toList() ??
+          [],
     );
   }
 }
 
-final recordsProvider = StreamProvider<List<Record>?>((ref) {
-  final uid = ref.watch(authUserProvider.select(selectUid));
-  final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+Stream<List<Record>?> recordsStream(Ref ref) {
+  final uid = ref.watch(
+    authUserProvider.select((authUser) => authUser.asData?.value?.uid),
+  );
+  final userRef = ref.watch(firestoreProvider).collection('users').doc(uid);
   return (uid == null)
       ? Stream.value(null)
       : userRef
@@ -114,15 +113,11 @@ final recordsProvider = StreamProvider<List<Record>?>((ref) {
                   snapshot.docs
                       .map((doc) => Record.fromDocument(doc))
                       .toList(growable: true)
-                    ..sort((a, b) {
-                      final ya = a.from.year.compareTo(b.from.year);
-                      if (ya != 0) return ya;
-                      final ma = a.from.month.compareTo(b.from.month);
-                      if (ma != 0) return ma;
-                      return a.from.day.compareTo(b.from.day);
-                    }),
+                    ..sort((a, b) => a.from.compareTo(b.from)),
             );
-});
+}
+
+final recordsProvider = StreamProvider<List<Record>?>(recordsStream);
 
 final selectedRecordIndexProvider =
     NotifierProvider<SelectedRecordIndexNotifier, int?>(
@@ -133,33 +128,17 @@ class SelectedRecordIndexNotifier extends Notifier<int?> {
   @override
   int? build() {
     ref.listen(recordsProvider, (previous, next) {
-      final records = next.asData?.value;
-      if (records == null || records.isEmpty) {
-        state = null;
-        return;
-      }
-      final current = state;
-      if (current == null || current < 0 || current >= records.length) {
-        state = records.length - 1;
-      }
+      applyRecordsChange(next.asData?.value);
     });
 
     final records = ref.watch(recordsProvider).asData?.value;
     if (records == null || records.isEmpty) return null;
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final todayStr = formatYmd(now.year, now.month, now.day);
     int index = 0;
     for (int i = 0; i < records.length; i++) {
       final record = records[i];
-      if (record.from.year > today.year) break;
-      if (record.from.year == today.year && record.from.month > today.month) {
-        break;
-      }
-      if (record.from.year == today.year &&
-          record.from.month == today.month &&
-          record.from.day > today.day) {
-        break;
-      }
+      if (record.from.compareTo(todayStr) > 0) break;
       index = i;
     }
     return index;
@@ -168,32 +147,42 @@ class SelectedRecordIndexNotifier extends Notifier<int?> {
   void set(int? index) {
     state = index;
   }
+
+  @visibleForTesting
+  void applyRecordsChange(List<Record>? records) {
+    if (records == null || records.isEmpty) {
+      state = null;
+      return;
+    }
+    final current = state;
+    if (current == null || current < 0 || current >= records.length) {
+      state = records.length - 1;
+    }
+  }
 }
 
 Record getDefaultRecord(List<Record> records) {
-  final CalendarDate from;
-  final CalendarDate to;
+  final String from;
+  final String to;
 
   if (records.isEmpty) {
     final now = DateTime.now();
-    from = CalendarDate(year: now.year, month: 4, day: 1);
-    to = CalendarDate(year: now.year + 1, month: 3, day: 31);
+    from = '${now.year}0401';
+    to = '${now.year + 1}0331';
   } else {
     // find the record with the latest `to` date
-    final maxTo = records.map((r) => r.to).reduce((a, b) {
-      final da = DateTime(a.year, a.month, a.day);
-      final db = DateTime(b.year, b.month, b.day);
-      return da.isAfter(db) ? a : b;
-    });
-    final maxToDate = DateTime(maxTo.year, maxTo.month, maxTo.day);
+    final maxTo = records
+        .map((r) => r.to)
+        .reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
+    final maxToDate = parseYmd(maxTo);
     final next = maxToDate.add(const Duration(days: 1));
-    final oneYearLater = DateTime(maxTo.year + 1, maxTo.month, maxTo.day);
-    from = CalendarDate(year: next.year, month: next.month, day: next.day);
-    to = CalendarDate(
-      year: oneYearLater.year,
-      month: oneYearLater.month,
-      day: oneYearLater.day,
+    final oneYearLater = DateTime(
+      maxToDate.year + 1,
+      maxToDate.month,
+      maxToDate.day,
     );
+    from = formatYmd(next.year, next.month, next.day);
+    to = formatYmd(oneYearLater.year, oneYearLater.month, oneYearLater.day);
   }
 
   return Record(
@@ -201,37 +190,28 @@ Record getDefaultRecord(List<Record> records) {
     from: from,
     to: to,
     publicHolidays: List<bool>.from(defaultPublicHolidays),
-    givenLeaves: 10,
-    minLeaves: 5,
+    givenLeaves: defaultGivenLeaves,
+    minLeaves: defaultMinLeaves,
+    useLeavesHourly: false,
+    workingHours: defaultWorkingHours,
   );
 }
 
-Future<Either<String, Unit>> saveRecord(String uid, Record record) async {
+Future<Either<String, Unit>> saveRecord(
+  FirebaseFirestore db,
+  String uid,
+  Record record,
+) async {
   try {
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final userRef = db.collection('users').doc(uid);
     final data = {
-      'from': {
-        'year': record.from.year,
-        'month': record.from.month,
-        'day': record.from.day,
-      },
-      'to': {
-        'year': record.to.year,
-        'month': record.to.month,
-        'day': record.to.day,
-      },
+      'from': record.from,
+      'to': record.to,
       'holidays': record.publicHolidays,
-      'companyHolidays': record.companyHolidays
-          .map((d) => {'year': d.year, 'month': d.month, 'day': d.day})
-          .toList(),
-      'plannedLeaves': record.plannedLeaves
-          .map((d) => {'year': d.year, 'month': d.month, 'day': d.day})
-          .toList(),
-      'usedLeaves': record.usedLeaves
-          .map((d) => {'year': d.year, 'month': d.month, 'day': d.day})
-          .toList(),
       'givenLeaves': record.givenLeaves,
       'minLeaves': record.minLeaves,
+      'useLeavesHourly': record.useLeavesHourly,
+      'workingHours': padHhmm(record.workingHours),
     };
     final recordsRef = userRef.collection('records');
     if (record.id.isEmpty) {
@@ -247,55 +227,45 @@ Future<Either<String, Unit>> saveRecord(String uid, Record record) async {
     }
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error adding record: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error adding record: $error\n$stackTrace');
     return left('$error');
   }
 }
 
-bool isHolyday(Record record, List<Holiday> holidays, CalendarDate date) {
-  DateTime dt = DateTime(date.year, date.month, date.day);
-  return record.publicHolidays[dt.weekday % 7] ||
-      (record.publicHolidays[7] &&
-          holidays.any(
-            (holiday) =>
-                holiday.year == date.year &&
-                holiday.month == date.month &&
-                holiday.day == date.day,
-          )) ||
-      record.companyHolidays.any(
-        (d) =>
-            d.year == date.year && d.month == date.month && d.day == date.day,
-      );
-}
-
-Future<Either<String, Unit>> toggleDayInList(
+Future<Either<String, Unit>> saveDateRecord(
+  FirebaseFirestore db,
   String uid,
   String recordId,
-  String field,
-  CalendarDate day,
-  bool currentValue,
+  DateRecord dateRecord,
 ) async {
   try {
-    final dayMap = {'year': day.year, 'month': day.month, 'day': day.day};
-    await FirebaseFirestore.instance
+    final key = dateRecord.date;
+    await db
         .collection('users')
         .doc(uid)
         .collection('records')
         .doc(recordId)
         .update({
-          field: currentValue
-              ? FieldValue.arrayRemove([dayMap])
-              : FieldValue.arrayUnion([dayMap]),
+          'dates.$key': {
+            'c': dateRecord.companyHoliday,
+            'p': dateRecord.plan,
+            'u': dateRecord.used,
+            's': dateRecord.sick,
+            'o': dateRecord.other,
+            'n': dateRecord.note,
+          },
+          'updatedAt': FieldValue.serverTimestamp(),
         });
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error toggling day: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error saving date record: $error\n$stackTrace');
     return left('$error');
   }
+}
+
+bool isHolyday(Record record, List<Holiday> holidays, String date) {
+  return record.publicHolidays[parseYmd(date).weekday % 7] ||
+      (record.publicHolidays[7] &&
+          holidays.any((holiday) => holiday.date == date)) ||
+      record.dates.any((item) => item.date == date && item.companyHoliday);
 }

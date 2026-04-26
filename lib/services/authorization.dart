@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'helpers.dart';
 import 'authentication.dart';
-import '../models/conf.dart';
+import '../models/service.dart';
 import '../views/auth/email_link_panel.dart';
 import '../views/auth/email_password_panel.dart';
 import '../views/auth/reset_password_panel.dart';
@@ -83,28 +83,12 @@ enum PageItem {
   final List<Widget> contents;
 }
 
-class NavItem {
-  final PageItem page;
-  final IconData icon;
-  final String label;
-  final List<Privilege> privileges;
-  final List<Widget> contents;
-
-  NavItem({
-    required this.page,
-    required this.icon,
-    required this.label,
-    required this.privileges,
-    required this.contents,
-  });
-}
-
 final privilegeProvider = Provider<Privilege>((ref) {
   final authUser = ref.watch(authUserProvider);
-  final conf = ref.watch(confProvider);
-  final admins = ref.watch(confProvider.select(selectAdmins));
+  final service = ref.watch(serviceProvider);
+  final admins = ref.watch(adminsProvider);
 
-  return authUser.isLoading || conf.isLoading
+  return authUser.isLoading || service.isLoading
       ? Privilege.loading
       : ((authUser.asData?.value == null)
             ? Privilege.guest

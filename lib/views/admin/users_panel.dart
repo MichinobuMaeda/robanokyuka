@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../config/firebase.dart';
 import '../../config/theme.dart';
 import '../../services/helpers.dart';
-import '../../models/conf.dart';
+import '../../services/validators.dart';
+import '../../models/service.dart';
 import '../../models/users.dart';
 import '../../widgets/bordered_list_item.dart';
 
@@ -15,12 +17,11 @@ class UsersPanel extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final usersAsync = ref.watch(usersProvider);
     usersAsync.whenOrNull(
-      error: (e, st) =>
-          debugPrintStack(label: 'usersProvider error: $e', stackTrace: st),
+      error: (e, st) => debugPrint('usersProvider error: $e\n$st'),
     );
     final users = usersAsync.asData?.value ?? [];
     debugPrint('users: ${users.length}');
-    final admins = ref.watch(confProvider.select(selectAdmins));
+    final admins = ref.watch(adminsProvider);
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
@@ -52,16 +53,13 @@ class _Header extends HookConsumerWidget {
 
     Future<void> handleAdd(String email, String name, bool isDisabled) async {
       final result = await addUserByAdmin(
+        callFunction,
         email,
         name: name.isEmpty ? null : name,
       );
       await result.match(
         (error) async => message.show('利用者の追加に失敗しました: $error'),
         (_) async {
-          if (isDisabled) {
-            // best-effort: disable after creation; uid not yet known so
-            // the stream will update and the admin can edit if needed
-          }
           message.show('利用者を追加しました');
         },
       );
@@ -100,7 +98,7 @@ class _Item extends HookConsumerWidget {
     final message = ref.read(snackBarMessageProvider.notifier);
 
     Future<void> handleUpdate(String name, bool isDisabled) async {
-      final result = await updateUserByAdmin(user.id, name, isDisabled);
+      final result = await updateUserByAdmin(db(), user.id, name, isDisabled);
       result.match(
         (error) => message.show('利用者の更新に失敗しました: $error'),
         (_) => message.show('利用者を更新しました'),
@@ -108,7 +106,7 @@ class _Item extends HookConsumerWidget {
     }
 
     Future<void> handleDelete() async {
-      final result = await deleteUserByAdmin(user.id);
+      final result = await deleteUserByAdmin(callFunction, user.id);
       result.match(
         (error) => message.show('利用者の削除に失敗しました: $error'),
         (_) => message.show('利用者を削除しました'),
@@ -167,6 +165,9 @@ class _AddSheet extends HookWidget {
     final disabled = useState(false);
     final formKey = useMemoized(GlobalKey<FormState>.new);
 
+    useListenable(emailController);
+    final isValid = validateRequiredEmail(emailController.text.trim()) == null;
+
     void handleSubmit() {
       if (!(formKey.currentState?.validate() ?? false)) return;
       Navigator.pop(context);
@@ -204,12 +205,7 @@ class _AddSheet extends HookWidget {
                   helperText: '必須',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  final v = (value ?? '').trim();
-                  if (v.isEmpty) return 'メールアドレスを入力してください';
-                  if (!v.contains('@')) return '有効なメールアドレスを入力してください';
-                  return null;
-                },
+                validator: (value) => validateRequiredEmail(value?.trim()),
               ),
               TextFormField(
                 controller: nameController,
@@ -234,7 +230,7 @@ class _AddSheet extends HookWidget {
                     child: const Text('キャンセル'),
                   ),
                   FilledButton(
-                    onPressed: handleSubmit,
+                    onPressed: isValid ? handleSubmit : null,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

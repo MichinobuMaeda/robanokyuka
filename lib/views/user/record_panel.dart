@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:yukyuchecker/services/authentication.dart';
 
+import '../../config/firebase.dart';
 import '../../config/theme.dart';
-import '../../models/conf.dart';
+import '../../models/gengo.dart';
+import '../../models/service.dart';
+import '../../models/users.dart';
 import '../../models/record.dart';
 import '../../services/helpers.dart';
+import '../../services/validators.dart';
 import '../../widgets/box_panel.dart';
+import '../../widgets/date_row.dart';
 
 const _publicHolidaysLabels = ['日', '月', '火', '水', '木', '金', '土', '祝日'];
 
@@ -16,19 +22,25 @@ class RecordPanel extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message = ref.read(snackBarMessageProvider.notifier);
-    final uid = ref.read(uidProvider);
+    final uid = ref.read(
+      authUserProvider.select((authUser) => authUser.asData?.value?.uid),
+    );
     final selectedIndex = ref.watch(selectedRecordIndexProvider);
     final records = ref.watch(recordsProvider).asData?.value ?? [];
     final record = selectedIndex == null ? null : records[selectedIndex];
+    final gengos = ref.watch(gengosProvider);
+    final showNengo = ref.watch(
+      userProvider.select((user) => user?.showNengo == true),
+    );
 
     final label = record != null
-        ? '${record.from.year}年${record.from.month}月${record.from.day}日〜'
+        ? '${formatDate(record.from, gengos, showNengo)}〜'
         : '期間を追加してください';
     final currentIndex = selectedIndex ?? -1;
 
     Future<void> handleSave(Record newRecord) async {
       if (uid == null) return;
-      final result = await saveRecord(uid, newRecord);
+      final result = await saveRecord(db(), uid, newRecord);
       result.match(
         (error) => message.show('期間の保存に失敗しました: $error'),
         (_) => message.show('期間を保存しました'),
@@ -40,8 +52,12 @@ class RecordPanel extends HookConsumerWidget {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        builder: (sheetContext) =>
-            _EditSheet(onConfirm: handleSave, record: record),
+        builder: (sheetContext) => _EditSheet(
+          onConfirm: handleSave,
+          record: record,
+          showNengo: showNengo,
+          gengos: gengos,
+        ),
       );
     }
 
@@ -52,6 +68,8 @@ class RecordPanel extends HookConsumerWidget {
         builder: (sheetContext) => _EditSheet(
           onConfirm: handleSave,
           record: getDefaultRecord(records),
+          showNengo: showNengo,
+          gengos: gengos,
         ),
       );
     }
@@ -113,133 +131,70 @@ class RecordPanel extends HookConsumerWidget {
 }
 
 class _EditSheet extends HookWidget {
-  const _EditSheet({required this.onConfirm, required this.record});
+  const _EditSheet({
+    required this.onConfirm,
+    required this.record,
+    required this.showNengo,
+    required this.gengos,
+  });
 
   final Record record;
   final void Function(Record record) onConfirm;
+  final bool showNengo;
+  final List<Gengo> gengos;
 
   @override
   Widget build(BuildContext context) {
-    final fromYearC = useTextEditingController(text: '${record.from.year}');
-    final fromMonthC = useTextEditingController(text: '${record.from.month}');
-    final fromDayC = useTextEditingController(text: '${record.from.day}');
-    final toYearC = useTextEditingController(text: '${record.to.year}');
-    final toMonthC = useTextEditingController(text: '${record.to.month}');
-    final toDayC = useTextEditingController(text: '${record.to.day}');
+    final fromYearC = useTextEditingController(
+      text: showNengo
+          ? formatNengo(gengos, record.from).replaceAll('年', '')
+          : record.from.substring(0, 4),
+    );
+    final fromMonthC = useTextEditingController(
+      text: int.parse(record.from.substring(4, 6)).toString(),
+    );
+    final fromDayC = useTextEditingController(
+      text: int.parse(record.from.substring(6, 8)).toString(),
+    );
+    final toYearC = useTextEditingController(
+      text: showNengo
+          ? formatNengo(gengos, record.to).replaceAll('年', '')
+          : record.to.substring(0, 4),
+    );
+    final toMonthC = useTextEditingController(
+      text: int.parse(record.to.substring(4, 6)).toString(),
+    );
+    final toDayC = useTextEditingController(
+      text: int.parse(record.to.substring(6, 8)).toString(),
+    );
     final givenLeavesC = useTextEditingController(
       text: '${record.givenLeaves}',
     );
     final minLeavesC = useTextEditingController(text: '${record.minLeaves}');
-    final holidays = useState(List<bool>.from(record.publicHolidays));
+    final publicHolidays = useState(List<bool>.from(record.publicHolidays));
+    final useLeavesHourly = useState(!!record.useLeavesHourly);
+    final workingHours = useTextEditingController(text: record.workingHours);
     final formKey = useMemoized(GlobalKey<FormState>.new);
-
-    String? validateYear(String? value) {
-      final year = int.tryParse(value ?? '');
-      if (year == null) return '年を数値で入力してください';
-      if (year < 1900) return '1900 以上で入力してください';
-      return null;
-    }
-
-    String? validateMonth(String? value) {
-      final month = int.tryParse(value ?? '');
-      if (month == null) return '月を数値で入力してください';
-      if (month < 1 || month > 12) return '1〜12 で入力してください';
-      return null;
-    }
-
-    String? validateDay(
-      TextEditingController yearC,
-      TextEditingController monthC,
-      String? value,
-    ) {
-      final day = int.tryParse(value ?? '');
-      if (day == null) return '日を数値で入力してください';
-      if (day < 1 || day > 31) return '1〜31 で入力してください';
-      final year = int.tryParse(yearC.text);
-      final month = int.tryParse(monthC.text);
-      if (year != null && month != null) {
-        final date = DateTime(year, month, day);
-        if (date.year != year || date.month != month || date.day != day) {
-          return '存在しない日付です';
-        }
-      }
-      return null;
-    }
-
-    String? validateNonNegInt(String? value) {
-      final n = int.tryParse(value ?? '');
-      if (n == null) return '整数で入力してください';
-      if (n < 0) return '0 以上で入力してください';
-      return null;
-    }
-
-    Widget dateRow(
-      TextEditingController yearC,
-      TextEditingController monthC,
-      TextEditingController dayC,
-      String? prefix,
-    ) {
-      return Row(
-        spacing: 8,
-        children: [
-          if (prefix != null) Text(prefix),
-          SizedBox(
-            width: 84,
-            child: TextFormField(
-              controller: yearC,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '年',
-                border: OutlineInputBorder(),
-              ),
-              validator: validateYear,
-            ),
-          ),
-          SizedBox(
-            width: 64,
-            child: TextFormField(
-              controller: monthC,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '月',
-                border: OutlineInputBorder(),
-              ),
-              validator: validateMonth,
-            ),
-          ),
-          SizedBox(
-            width: 64,
-            child: TextFormField(
-              controller: dayC,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '日',
-                border: OutlineInputBorder(),
-              ),
-              validator: (v) => validateDay(yearC, monthC, v),
-            ),
-          ),
-        ],
-      );
-    }
 
     void handleSubmit() {
       if (!(formKey.currentState?.validate() ?? false)) return;
       final updated = Record(
         id: record.id,
-        from: CalendarDate(
-          year: int.parse(fromYearC.text),
-          month: int.parse(fromMonthC.text),
-          day: int.parse(fromDayC.text),
+        from: formatYmd(
+          int.parse(parseNengo(gengos, fromYearC.text)),
+          int.parse(fromMonthC.text),
+          int.parse(fromDayC.text),
         ),
-        to: CalendarDate(
-          year: int.parse(toYearC.text),
-          month: int.parse(toMonthC.text),
-          day: int.parse(toDayC.text),
+        to: formatYmd(
+          int.parse(parseNengo(gengos, toYearC.text)),
+          int.parse(toMonthC.text),
+          int.parse(toDayC.text),
         ),
-        publicHolidays: List<bool>.from(holidays.value),
+        publicHolidays: List<bool>.from(publicHolidays.value),
         givenLeaves: int.parse(givenLeavesC.text),
         minLeaves: int.parse(minLeavesC.text),
+        useLeavesHourly: useLeavesHourly.value,
+        workingHours: workingHours.text,
       );
       Navigator.pop(context);
       onConfirm(updated);
@@ -270,11 +225,27 @@ class _EditSheet extends HookWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final rows = [
-                    dateRow(fromYearC, fromMonthC, fromDayC, null),
-                    dateRow(toYearC, toMonthC, toDayC, '〜'),
+                    DateRow(
+                      yearController: fromYearC,
+                      monthController: fromMonthC,
+                      dayController: fromDayC,
+                      gengos: gengos,
+                    ),
+                    Row(
+                      spacing: 8,
+                      children: [
+                        Text('〜'),
+                        DateRow(
+                          yearController: toYearC,
+                          monthController: toMonthC,
+                          dayController: toDayC,
+                          gengos: gengos,
+                        ),
+                      ],
+                    ),
                   ];
                   if (constraints.maxWidth >= 520) {
-                    return Row(spacing: 16, children: rows);
+                    return Row(spacing: 8, children: rows);
                   }
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,32 +254,71 @@ class _EditSheet extends HookWidget {
                   );
                 },
               ),
-              Row(
+              Wrap(
                 spacing: 16,
+                runSpacing: 16,
                 children: [
-                  SizedBox(
-                    width: 136,
-                    child: TextFormField(
-                      controller: givenLeavesC,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: '有給休暇付与日数',
-                        border: OutlineInputBorder(),
+                  Row(
+                    spacing: 16,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 112,
+                        child: TextFormField(
+                          controller: givenLeavesC,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: '有休付与日数',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: validateNonNegInt,
+                        ),
                       ),
-                      validator: validateNonNegInt,
-                    ),
+                      SizedBox(
+                        width: 112,
+                        child: TextFormField(
+                          controller: minLeavesC,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: '最小取得日数',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: validateNonNegInt,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(
-                    width: 112,
-                    child: TextFormField(
-                      controller: minLeavesC,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: '最小取得日数',
-                        border: OutlineInputBorder(),
+                  Row(
+                    spacing: 16,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 112,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Checkbox(
+                              value: useLeavesHourly.value,
+                              onChanged: (v) =>
+                                  useLeavesHourly.value = v == true,
+                            ),
+                            const Text('時間有休'),
+                          ],
+                        ),
                       ),
-                      validator: validateNonNegInt,
-                    ),
+                      SizedBox(
+                        width: 112,
+                        child: TextFormField(
+                          controller: workingHours,
+                          decoration: const InputDecoration(
+                            labelText: '所定労働時間',
+                            hintText: '08:00',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: validateHhmmOptional,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -329,9 +339,9 @@ class _EditSheet extends HookWidget {
                             )
                           : FilterChip(
                               label: Text(_publicHolidaysLabels[i - 1]),
-                              selected: holidays.value[i - 1],
+                              selected: publicHolidays.value[i - 1],
                               onSelected: (v) {
-                                holidays.value = [...holidays.value]
+                                publicHolidays.value = [...publicHolidays.value]
                                   ..[i - 1] = v;
                               },
                             ),

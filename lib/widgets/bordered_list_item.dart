@@ -16,12 +16,12 @@ class BorderedListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: ColoredBox(
-          color: border
-              ? Theme.of(context).colorScheme.surfaceContainerLow
-              : Theme.of(context).colorScheme.surfaceContainerLowest,
+      child: ColoredBox(
+        color: border
+            ? Theme.of(context).colorScheme.surfaceContainerLow.withAlpha(168)
+            : Theme.of(context).colorScheme.surfaceContainerLowest,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: child,
         ),
       ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../config/theme.dart';
-import '../../models/conf.dart';
-import '../../models/holidays.dart';
+// import '../../config/theme.dart';
+import '../../models/gengo.dart';
+import '../../models/service.dart';
+import '../../models/users.dart';
 import '../../models/record.dart';
 import '../../services/helpers.dart';
 
@@ -18,19 +19,24 @@ class CalendarPanel extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final holidays = ref.watch(holidaysProvider).asData?.value ?? [];
+    final holidays = ref.watch(holidaysProvider);
     final selectedIndex = ref.watch(selectedRecordIndexProvider);
     final records = ref.watch(recordsProvider).asData?.value ?? [];
     final record = selectedIndex != null && selectedIndex < records.length
         ? records[selectedIndex]
         : null;
+    final gengos = ref.watch(gengosProvider);
+    final showNengo = ref.watch(
+      userProvider.select((user) => user?.showNengo == true),
+    );
 
     final months = <(int, int)>[];
     if (record != null) {
-      var year = record.from.year;
-      var month = record.from.month;
-      while (year < record.to.year ||
-          (year == record.to.year && month <= record.to.month)) {
+      var year = int.parse(record.from.substring(0, 4));
+      var month = int.parse(record.from.substring(4, 6));
+      final toYear = int.parse(record.to.substring(0, 4));
+      final toMonth = int.parse(record.to.substring(4, 6));
+      while (year < toYear || (year == toYear && month <= toMonth)) {
         months.add((year, month));
         month++;
         if (month > 12) {
@@ -55,6 +61,8 @@ class CalendarPanel extends HookConsumerWidget {
           holidays: holidays,
           year: year,
           month: month,
+          showNengo: showNengo,
+          gengos: gengos,
         );
       },
     );
@@ -67,12 +75,16 @@ class _MonthCard extends StatelessWidget {
     required this.holidays,
     required this.year,
     required this.month,
+    required this.showNengo,
+    required this.gengos,
   });
 
   final Record record;
   final List<Holiday> holidays;
   final int year;
   final int month;
+  final bool showNengo;
+  final List<Gengo> gengos;
 
   @override
   Widget build(BuildContext context) {
@@ -81,14 +93,23 @@ class _MonthCard extends StatelessWidget {
     final daysInMonth = DateUtils.getDaysInMonth(year, month);
 
     return ColoredBox(
-      color: month % 2 == 0
-          ? Theme.of(context).colorScheme.surfaceContainerLow
-          : Theme.of(context).colorScheme.surfaceContainerLowest,
+      color: switch (month % 4) {
+        0 => Theme.of(context).colorScheme.surfaceContainerLowest,
+        1 => Theme.of(context).colorScheme.surfaceContainerLow.withAlpha(168),
+        2 => Theme.of(context).colorScheme.surfaceContainerLow.withAlpha(64),
+        _ => Theme.of(context).colorScheme.surfaceContainerLow.withAlpha(252),
+      },
       child: Column(
         children: [
           SizedBox(
             height: headerHeight,
-            child: Center(child: Text('$year年$month月')),
+            child: Center(
+              child: Text(
+                showNengo
+                    ? '${formatNengo(gengos, formatYmd(year, month, 1))}$month月'
+                    : '$year年$month月',
+              ),
+            ),
           ),
           SizedBox(
             height: headerHeight,
@@ -129,11 +150,11 @@ class _MonthCard extends StatelessWidget {
                         bool isHoliday = isHolyday(
                           record,
                           holidays,
-                          CalendarDate(year: year, month: month, day: day),
+                          formatYmd(year, month, day),
                         );
                         return _DayCell(
                           record: record,
-                          day: CalendarDate(year: year, month: month, day: day),
+                          day: formatYmd(year, month, day),
                           isHoliday: isHoliday,
                         );
                       },
@@ -155,23 +176,23 @@ class _DayCell extends StatelessWidget {
   });
 
   final Record record;
-  final CalendarDate day;
+  final String day;
   final bool isHoliday;
 
   @override
   Widget build(BuildContext context) {
-    final isPlannedLeave = record.plannedLeaves.any(
-      (d) => d.year == day.year && d.month == day.month && d.day == day.day,
-    );
-    final isUsedLeave = record.usedLeaves.any(
-      (d) => d.year == day.year && d.month == day.month && d.day == day.day,
-    );
+    // final isPlannedLeave = record.plannedLeaves.any(
+    //   (d) => d == day,
+    // );
+    // final isUsedLeave = record.usedLeaves.any(
+    //   (d) => d == day,
+    // );
 
     return InkWell(
       onTap: () => showModalBottomSheet<void>(
         context: context,
-        builder: (sheetContext) =>
-            _DayCellSheet(recordId: record.id, date: day),
+        builder: (sheetContext) => Text(''),
+        // _DayCellSheet(recordId: record.id, date: day),
       ),
       child: Container(
         height: cellHeight,
@@ -181,7 +202,7 @@ class _DayCell extends StatelessWidget {
           children: [
             Center(
               child: Text(
-                '${day.day}',
+                '${int.parse(day.substring(6, 8))}',
                 style: TextStyle(
                   color: isHoliday
                       ? Theme.of(context).colorScheme.onErrorContainer
@@ -189,14 +210,14 @@ class _DayCell extends StatelessWidget {
                 ),
               ),
             ),
-
-            if (isPlannedLeave && isUsedLeave)
-              Icon(Icons.check_box_outlined, size: iconSize)
-            else if (isPlannedLeave)
-              Icon(Icons.check_box_outline_blank, size: iconSize)
-            else if (isUsedLeave)
-              Icon(Icons.check, size: iconSize)
-            else if (isHoliday)
+            // if (isPlannedLeave && isUsedLeave)
+            //   Icon(Icons.check_box_outlined, size: iconSize)
+            // else if (isPlannedLeave)
+            //   Icon(Icons.check_box_outline_blank, size: iconSize)
+            // else if (isUsedLeave)
+            //   Icon(Icons.check, size: iconSize)
+            // else
+            if (isHoliday)
               Icon(
                 Icons.cottage_outlined,
                 size: iconSize,
@@ -209,82 +230,73 @@ class _DayCell extends StatelessWidget {
   }
 }
 
-class _DayCellSheet extends ConsumerWidget {
-  const _DayCellSheet({required this.recordId, required this.date});
+// class _DayCellSheet extends ConsumerWidget {
+//   const _DayCellSheet({required this.recordId, required this.date});
 
-  final String recordId;
-  final CalendarDate date;
+//   final String recordId;
+//   final CalendarDate date;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final uid = ref.read(uidProvider);
-    final message = ref.read(snackBarMessageProvider.notifier);
-    final holidays = ref.watch(holidaysProvider).asData?.value ?? [];
-    final selectedIndex = ref.watch(selectedRecordIndexProvider);
-    final records = ref.watch(recordsProvider).asData?.value ?? [];
-    final record = selectedIndex != null && selectedIndex < records.length
-        ? records[selectedIndex]
-        : null;
+//   @override
+//   Widget build(BuildContext context, WidgetRef ref) {
+//     final uid = ref.read(uidProvider);
+//     final message = ref.read(snackBarMessageProvider.notifier);
+//     final holidays = ref.watch(holidaysProvider);
+//     final selectedIndex = ref.watch(selectedRecordIndexProvider);
+//     final records = ref.watch(recordsProvider).asData?.value ?? [];
+//     final record = selectedIndex != null && selectedIndex < records.length
+//         ? records[selectedIndex]
+//         : null;
 
-    if (record == null || record.id != recordId) {
-      return const SizedBox.shrink();
-    }
+//     if (record == null || record.id != recordId) {
+//       return const SizedBox.shrink();
+//     }
 
-    final holidayName = holidays
-        .where(
-          (h) =>
-              h.year == date.year && h.month == date.month && h.day == date.day,
-        )
-        .map((h) => h.name)
-        .firstOrNull;
+//     final holidayName = holidays
+//         .where((h) => h.date == date)
+//         .map((h) => h.name)
+//         .firstOrNull;
 
-    final isCompanyHoliday = record.companyHolidays.any(
-      (d) => d.year == date.year && d.month == date.month && d.day == date.day,
-    );
-    final isPlannedLeave = record.plannedLeaves.any(
-      (d) => d.year == date.year && d.month == date.month && d.day == date.day,
-    );
-    final isUsedLeave = record.usedLeaves.any(
-      (d) => d.year == date.year && d.month == date.month && d.day == date.day,
-    );
+//     final isCompanyHoliday = record.companyHolidays.any((d) => d == date);
+//     final isPlannedLeave = record.plannedLeaves.any((d) => d == date);
+//     final isUsedLeave = record.usedLeaves.any((d) => d == date);
 
-    Future<void> toggle(String field, bool current) async {
-      if (uid == null) return;
-      final result = await toggleDayInList(
-        uid,
-        record.id,
-        field,
-        date,
-        current,
-      );
-      result.match((error) => message.show('保存に失敗しました: $error'), (_) {});
-    }
+//     Future<void> toggle(String field, bool current) async {
+//       if (uid == null) return;
+//       final result = await toggleDayInList(
+//         uid,
+//         record.id,
+//         field,
+//         date,
+//         current,
+//       );
+//       result.match((error) => message.show('保存に失敗しました: $error'), (_) {});
+//     }
 
-    return Padding(
-      padding: bottomSheetPadding,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '${date.year}年${date.month}月${date.day}日${holidayName != null ? ' $holidayName' : ''}',
-          ),
-          SwitchListTile(
-            title: const Text('土日祝日等以外の非営業日'),
-            value: isCompanyHoliday,
-            onChanged: (_) => toggle('companyHolidays', isCompanyHoliday),
-          ),
-          SwitchListTile(
-            title: const Text('有給休暇取得予定'),
-            value: isPlannedLeave,
-            onChanged: (_) => toggle('plannedLeaves', isPlannedLeave),
-          ),
-          SwitchListTile(
-            title: const Text('休暇取得実績'),
-            value: isUsedLeave,
-            onChanged: (_) => toggle('usedLeaves', isUsedLeave),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//     return Padding(
+//       padding: bottomSheetPadding,
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Text(
+//             '${date.year}年${date.month}月${date.day}日${holidayName != null ? ' $holidayName' : ''}',
+//           ),
+//           SwitchListTile(
+//             title: const Text('土日祝日等以外の非営業日'),
+//             value: isCompanyHoliday,
+//             onChanged: (_) => toggle('companyHolidays', isCompanyHoliday),
+//           ),
+//           SwitchListTile(
+//             title: const Text('有給休暇取得予定'),
+//             value: isPlannedLeave,
+//             onChanged: (_) => toggle('plannedLeaves', isPlannedLeave),
+//           ),
+//           SwitchListTile(
+//             title: const Text('休暇取得実績'),
+//             value: isUsedLeave,
+//             onChanged: (_) => toggle('usedLeaves', isUsedLeave),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }

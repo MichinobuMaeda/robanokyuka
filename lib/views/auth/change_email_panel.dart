@@ -21,7 +21,7 @@ class ChangeEmailPanel extends HookConsumerWidget {
     final isFormValid = useState(false);
 
     Future<void> handleSubmit() async {
-      final result = await changeEmail(email.text.trim());
+      final result = await changeEmail(auth(), email.text.trim());
       result.match(
         (error) => message.show("メールアドレスの変更に失敗しました。"),
         (_) => message.show("メールアドレスの変更に成功しました。確認メールを送信しました。"),

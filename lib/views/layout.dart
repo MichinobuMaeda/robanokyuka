@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:web/web.dart' as web;
 
-import '../config/version.dart';
+import '../config/firebase.dart';
 import '../config/theme.dart';
+import '../config/version.dart';
+import '../services/authentication.dart';
 import '../services/authorization.dart';
 import '../services/helpers.dart';
-import '../models/conf.dart';
+import '../models/service.dart';
 
 enum MediaSize { narrow, middle, wide }
 
@@ -17,10 +20,14 @@ class Layout extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final privilege = ref.watch(privilegeProvider);
     final pages = ref.watch(pagesProvider);
+    final uiVersion = ref.watch(uiVersionProvider);
     final selectedIndex = useState(0);
     final selectedPage = useState(pages.first);
 
-    confStateListener(ref);
+    if (ref.watch(serviceProvider).hasError) {
+      debugPrint('Error loading service: ${ref.watch(serviceProvider).error}');
+      signOut(auth());
+    }
 
     ref.listen<String?>(snackBarMessageProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
@@ -80,6 +87,8 @@ class Layout extends HookConsumerWidget {
                   child: CustomScrollView(
                     slivers: [
                       if (media() != MediaSize.wide) const _Header(),
+                      if (uiVersion != null && uiVersion != packageVersion)
+                        const _UpdateAvailable(),
                       ...selectedPage.value.contents,
                       const _Footer(),
                     ],
@@ -110,6 +119,42 @@ class _Header extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.all(8.0),
         child: Image.asset(assetAppLogo, height: 48.0),
+      ),
+    );
+  }
+}
+
+class _UpdateAvailable extends StatelessWidget {
+  const _UpdateAvailable();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.all(4.0),
+        child: FilledButton(
+          onPressed: () => web.window.location.reload(),
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            spacing: 4.0,
+            children: [
+              Icon(
+                Icons.sync,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+              Text(
+                'アプリをアップデートしてください',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,17 +1,30 @@
 import 'package:flutter/widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:fpdart/fpdart.dart';
+import '../platform/platforms.dart';
 
 const keyEmailForSignIn = 'yukyuchecker_email_for_sign_in';
 
-final authUserProvider = StreamProvider<User?>(
-  (_) => FirebaseAuth.instance.authStateChanges(),
-);
+class FirebaseAuthNotifier extends Notifier<FirebaseAuth?> {
+  @override
+  FirebaseAuth? build() => null;
 
-String? selectUid(AsyncValue<User?> authUser) => authUser.asData?.value?.uid;
+  void setAuth(FirebaseAuth? auth) {
+    state = auth;
+  }
+}
+
+final firebaseAuthProvider =
+    NotifierProvider<FirebaseAuthNotifier, FirebaseAuth?>(
+      FirebaseAuthNotifier.new,
+    );
+
+final authUserProvider = StreamProvider<User?>(
+  (ref) =>
+      ref.watch(firebaseAuthProvider)?.authStateChanges() ??
+      const Stream.empty(),
+);
 
 String getBaseUrl(String url) {
   final uri = Uri.parse(url);
@@ -24,63 +37,62 @@ String getBaseUrl(String url) {
   return normalized.toString();
 }
 
-Future<void> handleEmailLink() async {
-  final url = Uri.base.toString();
+/// Returns true if the URL was a sign-in link and was handled, false otherwise.
+Future<bool> handleEmailLink(
+  FirebaseAuth auth,
+  LocalStorage storage,
+  String url,
+) async {
   debugPrint(url);
+  bool isEmailLink = auth.isSignInWithEmailLink(url);
 
-  if (FirebaseAuth.instance.isSignInWithEmailLink(url)) {
+  if (isEmailLink) {
     try {
-      final prefs = SharedPreferencesAsync();
-      final email = await prefs.getString(keyEmailForSignIn);
-      await prefs.remove(keyEmailForSignIn);
+      final email = await storage.getString(keyEmailForSignIn);
+      await storage.remove(keyEmailForSignIn);
 
       if (email == null) {
         debugPrint('No email found in shared preferences for sign-in.');
       } else {
         debugPrint('Attempting to sign in with email: $email and link: $url');
-        await FirebaseAuth.instance.signInWithEmailLink(
-          email: email,
-          emailLink: url,
-        );
+        await auth.signInWithEmailLink(email: email, emailLink: url);
       }
     } catch (error, stackTrace) {
-      debugPrintStack(
-        label: 'Error signing in with email link: $error',
-        stackTrace: stackTrace,
-      );
-    } finally {
-      final redirectUrl = getBaseUrl(url);
-      debugPrint('Launching URL without query string: $redirectUrl');
-      await launchUrl(Uri.parse(redirectUrl), webOnlyWindowName: '_self');
+      debugPrint('Error signing in with email link: $error\n$stackTrace');
     }
   }
+
+  return isEmailLink;
 }
 
-Future<Either<String, Unit>> sendSignInLinkToEmail(String email) async {
+Future<Either<String, Unit>> sendSignInLinkToEmail(
+  FirebaseAuth auth,
+  LocalStorage storage,
+  String email,
+) async {
   try {
-    await FirebaseAuth.instance.sendSignInLinkToEmail(
+    await auth.sendSignInLinkToEmail(
       email: email,
       actionCodeSettings: ActionCodeSettings(
         url: getBaseUrl(Uri.base.toString()),
         handleCodeInApp: true,
       ),
     );
-    final prefs = SharedPreferencesAsync();
-    await prefs.setString(keyEmailForSignIn, email);
+    await storage.setString(keyEmailForSignIn, email);
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error sending sign-in link: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error sending sign-in link: $error\n$stackTrace');
     return left('$error');
   }
 }
 
-Future<Either<String, Unit>> sendPasswordResetEmail(String? email) async {
+Future<Either<String, Unit>> sendPasswordResetEmail(
+  FirebaseAuth auth,
+  String? email,
+) async {
   try {
-    await FirebaseAuth.instance.sendPasswordResetEmail(
-      email: email ?? FirebaseAuth.instance.currentUser?.email ?? '',
+    await auth.sendPasswordResetEmail(
+      email: email ?? auth.currentUser?.email ?? '',
       actionCodeSettings: ActionCodeSettings(
         url: getBaseUrl(Uri.base.toString()),
         handleCodeInApp: false,
@@ -88,67 +100,57 @@ Future<Either<String, Unit>> sendPasswordResetEmail(String? email) async {
     );
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error sending password reset email: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error sending password reset email: $error\n$stackTrace');
     return left('$error');
   }
 }
 
 Future<Either<String, Unit>> signInWithEmailAndPassword(
+  FirebaseAuth auth,
   String email,
   String password,
 ) async {
   try {
-    await FirebaseAuth.instance.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    await auth.signInWithEmailAndPassword(email: email, password: password);
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error signing in with email and password: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error signing in with email and password: $error\n$stackTrace');
     return left('$error');
   }
 }
 
-Future<Either<String, Unit>> signInWithGoogle() async {
+Future<Either<String, Unit>> signInWithGoogle(FirebaseAuth auth) async {
   try {
     final googleProvider = GoogleAuthProvider();
 
     googleProvider.addScope(
       'https://www.googleapis.com/auth/contacts.readonly',
     );
-    await FirebaseAuth.instance.signInWithPopup(googleProvider);
+    await auth.signInWithPopup(googleProvider);
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error signing in with Google: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error signing in with Google: $error\n$stackTrace');
     return left('$error');
   }
 }
 
-Future<Either<String, Unit>> signOut() async {
+Future<Either<String, Unit>> signOut(FirebaseAuth auth) async {
   try {
-    await FirebaseAuth.instance.signOut();
+    await auth.signOut();
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(label: 'Error signing out: $error', stackTrace: stackTrace);
+    debugPrint('Error signing out: $error\n$stackTrace');
     return left('$error');
   }
 }
 
 Future<Either<String, Unit>> reauthenticateWithPassword(
+  FirebaseAuth auth,
   String email,
   String password,
 ) async {
   try {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = auth.currentUser;
     if (user == null) {
       return left('No authenticated user.');
     }
@@ -163,17 +165,14 @@ Future<Either<String, Unit>> reauthenticateWithPassword(
     await user.reauthenticateWithCredential(credential);
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error reauthenticating with password: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error reauthenticating with password: $error\n$stackTrace');
     return left('$error');
   }
 }
 
-Future<Either<String, Unit>> reauthenticateWithGoogle() async {
+Future<Either<String, Unit>> reauthenticateWithGoogle(FirebaseAuth auth) async {
   try {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = auth.currentUser;
     if (user == null) {
       return left('No authenticated user.');
     }
@@ -181,34 +180,31 @@ Future<Either<String, Unit>> reauthenticateWithGoogle() async {
     await user.reauthenticateWithPopup(googleProvider);
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error reauthenticating with Google: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error reauthenticating with Google: $error\n$stackTrace');
     return left('$error');
   }
 }
 
-Future<Either<String, Unit>> changeEmail(String email) async {
+Future<Either<String, Unit>> changeEmail(
+  FirebaseAuth auth,
+  String email,
+) async {
   try {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = auth.currentUser;
     if (user == null) {
       return left('No authenticated user.');
     }
     await user.verifyBeforeUpdateEmail(email);
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error changing email: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error changing email: $error\n$stackTrace');
     return left('$error');
   }
 }
 
-Future<Either<String, Unit>> deleteUser() async {
+Future<Either<String, Unit>> deleteUser(FirebaseAuth auth) async {
   try {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = auth.currentUser;
     if (user == null) {
       return left('No authenticated user.');
     }
@@ -216,10 +212,7 @@ Future<Either<String, Unit>> deleteUser() async {
     await user.delete();
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error deleting user: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error deleting user: $error\n$stackTrace');
     return left('$error');
   }
 }

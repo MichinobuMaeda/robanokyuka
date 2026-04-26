@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../config/firebase.dart';
 import '../../config/theme.dart';
 import '../../services/helpers.dart';
 import '../../services/validators.dart';
@@ -35,7 +36,11 @@ class PasswordReauthenticatePanel extends HookConsumerWidget {
       message.clear();
       final value = password.text;
       password.value = TextEditingValue.empty;
-      final result = await reauthenticateWithPassword(authUser!.email!, value);
+      final result = await reauthenticateWithPassword(
+        auth(),
+        authUser!.email!,
+        value,
+      );
       result.match(
         (error) => message.show("再認証に失敗しました。"),
         (_) => message.show("再認証に成功しました。"),

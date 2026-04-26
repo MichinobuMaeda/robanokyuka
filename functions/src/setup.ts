@@ -1,5 +1,7 @@
-import {DocumentSnapshot} from "firebase-admin/firestore";
+import {DocumentSnapshot, FieldValue} from "firebase-admin/firestore";
 
+import {holidays} from "./holidays.json";
+import {gengos} from "./gengos.json";
 import {Context} from "./common";
 import {addUserWithEmailAndName} from "./users";
 
@@ -30,10 +32,36 @@ async function setupV1(
       db.collection("service").doc("conf"),
       {
         admins: [user.uid],
-        createdAt: new Date(),
+        gengos,
+        createdAt: FieldValue.serverTimestamp(),
       }
     );
+
     await addUserWithEmailAndName({logger, auth, db}, {email});
+
+    const pad2 = (num: number) => String(num).padStart(2, "0");
+    const mmdd = (month: number, day: number) => `${pad2(month)}${pad2(day)}`;
+    const yearId = (year: number) => `y${year}`;
+
+    Object.entries(holidays.reduce(
+      (
+        prev: {[yyyy: string]: { [mmdd: string]: string }},
+        {year, month, day, name}
+      ) => {
+        prev[yearId(year)] = {
+          ...prev[yearId(year)] ?? {},
+          [mmdd(month, day)]: name,
+        };
+        return prev;
+      },
+      {})
+    ).forEach(([id, item]) => {
+      batch.set(
+        db.collection("service").doc(id),
+        {...item, updatedAt: FieldValue.serverTimestamp()},
+      );
+    });
+
     await batch.commit();
 
     return 1;
@@ -47,40 +75,8 @@ async function setupV1(
 }
 
 /**
- * Performs initial setup for version 2 of the service configuration.
- * @param {Context} context - The function context containing logger, db, and auth.
- * @param {DocumentSnapshot | undefined} data - The deleted version document snapshot.
- * @return {Promise<void>}
- */
-async function setupV2(
-  {logger, db}: Context
-): Promise<number | undefined> {
-  try {
-    logger.info("Performing setup for version 2");
-    const batch = db.batch();
-
-    holidays.forEach(({year, month, day, name}) => {
-      // eslint-disable-next-line max-len
-      const id = `${year}${String(month).padStart(2, "0")}${String(day).padStart(2, "0")}`;
-      batch.set(db.collection("holidays").doc(id), {name});
-    });
-
-    await batch.commit();
-
-    return 2;
-  } catch (e) {
-    logger.error(
-      "Error during setupV2:", e,
-      e instanceof Error ? e.stack : undefined
-    );
-    return;
-  }
-}
-
-/**
  * Updates the UI version in the service configuration.
  * @param {Context} context - The function context containing logger and db.
- * @param {DocumentSnapshot} data - The deleted version document snapshot.
  * @return {Promise<void>}
  */
 export async function updateUiVersion(
@@ -90,13 +86,14 @@ export async function updateUiVersion(
   const curUiVersion = (await confRef.get()).data()?.uiVersion as string | "";
 
   const uiVersion = process.env.UI_VERSION;
+  const updatedAt = FieldValue.serverTimestamp();
 
   if (curUiVersion === uiVersion) {
     logger.info("UI version is already up to date:", curUiVersion);
     return;
   } else {
     logger.info("Updating UI version to:", uiVersion);
-    await confRef.update({uiVersion, updatedAt: new Date()});
+    await confRef.update({uiVersion, updatedAt});
   }
 }
 
@@ -131,15 +128,7 @@ export async function setup(
       }
     }
 
-    if (curVersion < 2) {
-      version = await setupV2(context);
-      if (!version) {
-        logger.error("Setup for version 2 failed, aborting further setup");
-        return;
-      }
-    }
-
-    await data.ref.set({version, createdAt: new Date()});
+    await data.ref.set({version, createdAt: FieldValue.serverTimestamp()});
 
     await updateUiVersion(context);
   } catch (e) {
@@ -149,81 +138,3 @@ export async function setup(
     );
   }
 }
-
-const holidays = [
-  {year: 2024, month: 1, day: 1, name: "元日"},
-  {year: 2024, month: 1, day: 8, name: "成人の日"},
-  {year: 2024, month: 2, day: 11, name: "建国記念の日"},
-  {year: 2024, month: 2, day: 12, name: "休日"},
-  {year: 2024, month: 2, day: 23, name: "天皇誕生日"},
-  {year: 2024, month: 3, day: 20, name: "春分の日"},
-  {year: 2024, month: 4, day: 29, name: "昭和の日"},
-  {year: 2024, month: 5, day: 3, name: "憲法記念日"},
-  {year: 2024, month: 5, day: 4, name: "みどりの日"},
-  {year: 2024, month: 5, day: 5, name: "こどもの日"},
-  {year: 2024, month: 5, day: 6, name: "休日"},
-  {year: 2024, month: 7, day: 15, name: "海の日"},
-  {year: 2024, month: 8, day: 11, name: "山の日"},
-  {year: 2024, month: 8, day: 12, name: "休日"},
-  {year: 2024, month: 9, day: 16, name: "敬老の日"},
-  {year: 2024, month: 9, day: 22, name: "秋分の日"},
-  {year: 2024, month: 9, day: 23, name: "休日"},
-  {year: 2024, month: 10, day: 14, name: "スポーツの日"},
-  {year: 2024, month: 11, day: 3, name: "文化の日"},
-  {year: 2024, month: 11, day: 4, name: "休日"},
-  {year: 2024, month: 11, day: 23, name: "勤労感謝の日"},
-  {year: 2025, month: 1, day: 1, name: "元日"},
-  {year: 2025, month: 1, day: 13, name: "成人の日"},
-  {year: 2025, month: 2, day: 11, name: "建国記念の日"},
-  {year: 2025, month: 2, day: 23, name: "天皇誕生日"},
-  {year: 2025, month: 2, day: 24, name: "休日"},
-  {year: 2025, month: 3, day: 20, name: "春分の日"},
-  {year: 2025, month: 4, day: 29, name: "昭和の日"},
-  {year: 2025, month: 5, day: 3, name: "憲法記念日"},
-  {year: 2025, month: 5, day: 4, name: "みどりの日"},
-  {year: 2025, month: 5, day: 5, name: "こどもの日"},
-  {year: 2025, month: 5, day: 6, name: "休日"},
-  {year: 2025, month: 7, day: 21, name: "海の日"},
-  {year: 2025, month: 8, day: 11, name: "山の日"},
-  {year: 2025, month: 9, day: 15, name: "敬老の日"},
-  {year: 2025, month: 9, day: 23, name: "秋分の日"},
-  {year: 2025, month: 10, day: 13, name: "スポーツの日"},
-  {year: 2025, month: 11, day: 3, name: "文化の日"},
-  {year: 2025, month: 11, day: 23, name: "勤労感謝の日"},
-  {year: 2025, month: 11, day: 24, name: "休日"},
-  {year: 2026, month: 1, day: 1, name: "元日"},
-  {year: 2026, month: 1, day: 12, name: "成人の日"},
-  {year: 2026, month: 2, day: 11, name: "建国記念の日"},
-  {year: 2026, month: 2, day: 23, name: "天皇誕生日"},
-  {year: 2026, month: 3, day: 20, name: "春分の日"},
-  {year: 2026, month: 4, day: 29, name: "昭和の日"},
-  {year: 2026, month: 5, day: 3, name: "憲法記念日"},
-  {year: 2026, month: 5, day: 4, name: "みどりの日"},
-  {year: 2026, month: 5, day: 5, name: "こどもの日"},
-  {year: 2026, month: 5, day: 6, name: "休日"},
-  {year: 2026, month: 7, day: 20, name: "海の日"},
-  {year: 2026, month: 8, day: 11, name: "山の日"},
-  {year: 2026, month: 9, day: 21, name: "敬老の日"},
-  {year: 2026, month: 9, day: 22, name: "休日"},
-  {year: 2026, month: 9, day: 23, name: "秋分の日"},
-  {year: 2026, month: 10, day: 12, name: "スポーツの日"},
-  {year: 2026, month: 11, day: 3, name: "文化の日"},
-  {year: 2026, month: 11, day: 23, name: "勤労感謝の日"},
-  {year: 2027, month: 1, day: 1, name: "元日"},
-  {year: 2027, month: 1, day: 11, name: "成人の日"},
-  {year: 2027, month: 2, day: 11, name: "建国記念の日"},
-  {year: 2027, month: 2, day: 23, name: "天皇誕生日"},
-  {year: 2027, month: 3, day: 21, name: "春分の日"},
-  {year: 2027, month: 3, day: 22, name: "休日"},
-  {year: 2027, month: 4, day: 29, name: "昭和の日"},
-  {year: 2027, month: 5, day: 3, name: "憲法記念日"},
-  {year: 2027, month: 5, day: 4, name: "みどりの日"},
-  {year: 2027, month: 5, day: 5, name: "こどもの日"},
-  {year: 2027, month: 7, day: 19, name: "海の日"},
-  {year: 2027, month: 8, day: 11, name: "山の日"},
-  {year: 2027, month: 9, day: 20, name: "敬老の日"},
-  {year: 2027, month: 9, day: 23, name: "秋分の日"},
-  {year: 2027, month: 10, day: 11, name: "スポーツの日"},
-  {year: 2027, month: 11, day: 3, name: "文化の日"},
-  {year: 2027, month: 11, day: 23, name: "勤労感謝の日"},
-];

@@ -11,11 +11,7 @@ service cloud.firestore {
     function isAdmin() {
       return isUser() && request.auth.uid in get(/databases/$(database)/documents/service/conf).data.admins;
     }
-    match /service/conf {
-      allow read, write: if isAdmin();
-      allow read: if isUser();
-    }
-    match /holidays/{holidayId} {
+    match /service/{document=**} {
       allow read, write: if isAdmin();
       allow read: if isUser();
     }

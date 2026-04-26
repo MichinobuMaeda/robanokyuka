@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../config/firebase.dart';
 import '../../config/theme.dart';
 import '../../services/helpers.dart';
 import '../../services/validators.dart';
@@ -23,6 +24,7 @@ class EmailPasswordPanel extends HookConsumerWidget {
     Future<void> handleSubmit() async {
       message.clear();
       final result = await signInWithEmailAndPassword(
+        auth(),
         email.text.trim(),
         password.text,
       );

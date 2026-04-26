@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 import 'dart:async';
@@ -12,15 +11,22 @@ import '../services/authorization.dart';
 class User {
   final String id;
   final String name;
+  final bool showNengo;
   final DateTime? disabledAt;
 
-  User({required this.id, required this.name, this.disabledAt});
+  User({
+    required this.id,
+    required this.name,
+    this.showNengo = false,
+    this.disabledAt,
+  });
 
   factory User.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
     return User(
       id: doc.id,
       name: "${data['name'] ?? ''}",
+      showNengo: data['showNengo'] ?? false,
       disabledAt: data['disabledAt'] != null
           ? (data['disabledAt'] as Timestamp).toDate()
           : null,
@@ -28,11 +34,13 @@ class User {
   }
 }
 
-final usersRef = FirebaseFirestore.instance.collection('users');
-
-final usersProvider = StreamProvider<List<User>>((ref) {
-  final uid = ref.watch(authUserProvider.select(selectUid));
+Stream<List<User>> usersStream(Ref ref) {
+  final uid = ref.watch(
+    authUserProvider.select((authUser) => authUser.asData?.value?.uid),
+  );
   debugPrint('privilege: ${ref.watch(privilegeProvider).toString()}');
+  final usersRef = ref.watch(firestoreProvider).collection('users');
+
   return switch (ref.watch(privilegeProvider)) {
     Privilege.loading => Stream.value([]),
     Privilege.guest => Stream.value([]),
@@ -44,11 +52,25 @@ final usersProvider = StreamProvider<List<User>>((ref) {
           .toList(growable: false),
     ),
   };
+}
+
+final usersProvider = StreamProvider<List<User>>(usersStream);
+
+final userProvider = Provider<User?>((ref) {
+  final uid = ref.watch(
+    authUserProvider.select((authUser) => authUser.asData?.value?.uid),
+  );
+  if (uid == null) return null;
+  final users = ref.watch(usersProvider).asData?.value ?? [];
+  return users.where((u) => u.id == uid).firstOrNull;
 });
 
-Future<Either<String, Unit>> deleteUserData(String uid) async {
+Future<Either<String, Unit>> deleteUserData(
+  FirebaseFirestore db,
+  String uid,
+) async {
   try {
-    final userRef = usersRef.doc(uid);
+    final userRef = db.collection('users').doc(uid);
     await userRef.collection('records').get().then((snapshot) {
       for (final doc in snapshot.docs) {
         doc.reference.delete();
@@ -57,77 +79,75 @@ Future<Either<String, Unit>> deleteUserData(String uid) async {
     await userRef.delete();
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error deleting user data: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error deleting user data: $error\n$stackTrace');
     return left('$error');
   }
 }
 
 Future<Either<String, Unit>> addUserByAdmin(
+  CallFunction callFunction,
   String email, {
   String? name,
 }) async {
   try {
-    await FirebaseFunctions.instanceFor(region: functionsRegion)
-        .httpsCallable('addUser')
-        .call(name == null ? {'email': email} : {'email': email, 'name': name});
-    return right(unit);
-  } catch (error, stackTrace) {
-    debugPrintStack(label: 'Error adding user: $error', stackTrace: stackTrace);
-    return left('$error');
-  }
-}
-
-Future<Either<String, Unit>> deleteUserByAdmin(String uid) async {
-  try {
-    await FirebaseFunctions.instanceFor(
-      region: functionsRegion,
-    ).httpsCallable('deleteUser').call({'uid': uid});
-    return right(unit);
-  } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error deleting user: $error',
-      stackTrace: stackTrace,
+    await callFunction(
+      'addUser',
+      name == null ? {'email': email} : {'email': email, 'name': name},
     );
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error adding user: $error\n$stackTrace');
     return left('$error');
   }
 }
 
-Future<Either<String, Unit>> updateUser(String id, String name) async {
+Future<Either<String, Unit>> deleteUserByAdmin(
+  CallFunction callFunction,
+  String uid,
+) async {
   try {
-    await usersRef.doc(id).update({
+    await callFunction('deleteUser', {'uid': uid});
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error deleting user: $error\n$stackTrace');
+    return left('$error');
+  }
+}
+
+Future<Either<String, Unit>> updateUser(
+  FirebaseFirestore db,
+  String id,
+  String name, {
+  required bool showNengo,
+}) async {
+  try {
+    await db.collection('users').doc(id).update({
       'name': name,
+      'showNengo': showNengo,
       'updatedAt': FieldValue.serverTimestamp(),
     });
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error updating user: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error updating user: $error\n$stackTrace');
     return left('$error');
   }
 }
 
 Future<Either<String, Unit>> updateUserByAdmin(
+  FirebaseFirestore db,
   String id,
   String name,
   bool disabled,
 ) async {
   try {
-    await usersRef.doc(id).update({
+    await db.collection('users').doc(id).update({
       'name': name,
       'disabledAt': disabled ? FieldValue.serverTimestamp() : null,
       'updatedAt': FieldValue.serverTimestamp(),
     });
     return right(unit);
   } catch (error, stackTrace) {
-    debugPrintStack(
-      label: 'Error updating user: $error',
-      stackTrace: stackTrace,
-    );
+    debugPrint('Error updating user by admin: $error\n$stackTrace');
     return left('$error');
   }
 }

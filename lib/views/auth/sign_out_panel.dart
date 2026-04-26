@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../config/firebase.dart';
 import '../../config/theme.dart';
 import '../../services/authentication.dart';
 import '../../services/helpers.dart';
@@ -16,7 +17,7 @@ class SignOutPanel extends HookConsumerWidget {
     final confirm = useState(false);
 
     Future<void> handleSubmit() async {
-      final result = await signOut();
+      final result = await signOut(auth());
       result.match(
         (error) => message.show("ログアウトに失敗しました。"),
         (_) => message.show("ログアウトに成功しました。"),

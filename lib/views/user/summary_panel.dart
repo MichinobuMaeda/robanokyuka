@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/config/theme.dart';
 
-import '../../models/record.dart';
+// import '../../models/record.dart';
 
 class SummaryItem {
   final String label;
@@ -16,31 +16,31 @@ class SummaryPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedIndex = ref.watch(selectedRecordIndexProvider);
-    final records = ref.watch(recordsProvider).asData?.value ?? [];
-    final record = selectedIndex != null && selectedIndex < records.length
-        ? records[selectedIndex]
-        : null;
+    // final selectedIndex = ref.watch(selectedRecordIndexProvider);
+    // final records = ref.watch(recordsProvider).asData?.value ?? [];
+    // final record = selectedIndex != null && selectedIndex < records.length
+    //     ? records[selectedIndex]
+    //     : null;
 
-    final givenLeaves = record?.givenLeaves ?? 0;
-    final plannedCount = record?.plannedLeaves.length ?? 0;
-    final completionCount =
-        record?.usedLeaves
-            .where(
-              (u) => record.plannedLeaves.any(
-                (p) => p.year == u.year && p.month == u.month && p.day == u.day,
-              ),
-            )
-            .length ??
-        0;
+    // final givenLeaves = record?.givenLeaves ?? 0;
+    // final plannedCount = record?.plannedLeaves.length ?? 0;
+    // final completionCount =
+    //     record?.usedLeaves
+    //         .where(
+    //           (u) => record.plannedLeaves.any(
+    //             (p) => p == u,
+    //           ),
+    //         )
+    //         .length ??
+    //     0;
 
     final summaryItems = [
-      SummaryItem(label: '有給休暇取得予定', value: '$plannedCount / $givenLeaves'),
-      SummaryItem(label: '有給休暇取得実績', value: '$completionCount / $givenLeaves'),
-      SummaryItem(
-        label: 'その他の休暇',
-        value: '${(record?.usedLeaves.length ?? 0) - completionCount}',
-      ),
+      //   SummaryItem(label: '有給休暇取得予定', value: '$plannedCount / $givenLeaves'),
+      //   SummaryItem(label: '有給休暇取得実績', value: '$completionCount / $givenLeaves'),
+      //   SummaryItem(
+      //     label: 'その他の休暇',
+      //     value: '${(record?.usedLeaves.length ?? 0) - completionCount}',
+      //   ),
     ];
 
     return SliverGrid.builder(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../config/firebase.dart';
 import '../../config/theme.dart';
 import '../../services/authentication.dart';
 import '../../services/helpers.dart';
@@ -21,19 +22,21 @@ class DeleteUserPanel extends HookConsumerWidget {
 
     Future<void> handleSubmit() async {
       {
-        final uid = ref.watch(authUserProvider.select(selectUid));
+        final uid = ref.watch(
+          authUserProvider.select((authUser) => authUser.asData?.value?.uid),
+        );
         if (uid == null) {
           message.show("認証されたユーザーが見つかりません。");
           return;
         }
-        final result = await deleteUserData(uid);
+        final result = await deleteUserData(db(), uid);
         result.match(
           (error) => message.show("ユーザーデータの削除に失敗しました。"),
           (_) => debugPrint("User data deleted successfully."),
         );
       }
       {
-        final result = await deleteUser();
+        final result = await deleteUser(auth());
         result.match(
           (error) => message.show("アカウントの削除に失敗しました。"),
           (_) => message.show("アカウントを削除しました。"),

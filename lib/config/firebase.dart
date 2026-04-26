@@ -1,3 +1,4 @@
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,4 +31,26 @@ Future<void> initializeFirebase() async {
       region: functionsRegion,
     ).useFunctionsEmulator("localhost", 5001);
   }
+}
+
+FirebaseAuth auth() => FirebaseAuth.instance;
+FirebaseFirestore db() => FirebaseFirestore.instance;
+
+final firestoreProvider = Provider<FirebaseFirestore>(
+  (ref) => FirebaseFirestore.instance,
+);
+
+typedef CallFunction =
+    Future<Map<String, dynamic>> Function(
+      String name,
+      Map<String, dynamic> data,
+    );
+Future<Map<String, dynamic>> callFunction(
+  String name,
+  Map<String, dynamic> data,
+) async {
+  final result = await FirebaseFunctions.instanceFor(
+    region: functionsRegion,
+  ).httpsCallable(name).call(data);
+  return result.data as Map<String, dynamic>;
 }

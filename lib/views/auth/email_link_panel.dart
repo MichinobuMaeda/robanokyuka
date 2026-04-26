@@ -8,6 +8,7 @@ import '../../services/helpers.dart';
 import '../../services/validators.dart';
 import '../../services/authentication.dart';
 import '../../widgets/box_panel.dart';
+import '../../platform/platforms.dart';
 
 class EmailLinkPanel extends HookConsumerWidget {
   const EmailLinkPanel({super.key});
@@ -22,7 +23,11 @@ class EmailLinkPanel extends HookConsumerWidget {
 
     Future<void> handleSubmit() async {
       message.clear();
-      final result = await sendSignInLinkToEmail(email.text.trim());
+      final result = await sendSignInLinkToEmail(
+        auth(),
+        LocalStorage(),
+        email.text.trim(),
+      );
       result.match(
         (error) => message.show("ログイン用のリンクの送信に失敗しました。"),
         (_) => message.show("ログイン用のリンクを送信しました。"),

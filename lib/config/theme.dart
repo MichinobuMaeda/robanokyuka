@@ -36,6 +36,18 @@ ThemeData generateThemeData(Brightness brightness) {
     filledButtonTheme: FilledButtonThemeData(style: commonButtonStyle),
     outlinedButtonTheme: OutlinedButtonThemeData(style: commonButtonStyle),
     elevatedButtonTheme: ElevatedButtonThemeData(style: commonButtonStyle),
+    navigationDrawerTheme: NavigationDrawerThemeData(
+      backgroundColor: colorScheme.surfaceContainerLow,
+    ),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: colorScheme.surfaceContainer,
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: colorScheme.surfaceContainer,
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: colorScheme.surfaceContainer,
+    ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       showCloseIcon: true,

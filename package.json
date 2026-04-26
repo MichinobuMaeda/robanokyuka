@@ -1,6 +1,6 @@
 {
   "name": "yukyuchecker",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "license": "BSD-3-Clause",
   "author": "Michinobu Maeda",
   "repository": {
@@ -10,16 +10,19 @@
   "scripts": {
     "lint:functions": "npm --prefix functions run lint",
     "lint": "npm run lint:functions",
-    "build:ui:splash": "dart run flutter_native_splash:create",
-    "build:functions": "npm --prefix functions run build",
-    "build:ui:version": "dart tools/set_ui_version.dart",
     "build:docs": "dart tools/md2html.dart",
+    "build:ui:splash": "dart run flutter_native_splash:create",
+    "build:ui:version": "dart tools/set_ui_version.dart",
     "build:pre-commit": "npm run build:ui:version && npm run build:docs",
-    "build:ui": "npm run build:pre-commit && flutter build web --wasm",
+    "build:functions": "npm run build:pre-commit && npm --prefix functions run build",
+    "build:ui": "npm run build:pre-commit && flutter build web",
     "build": "npm run lint && npm run build:functions && npm run build:ui",
     "dev:ui": "flutter run --dart-define=FLUTTER_ENV=development --web-port 8000 -d",
+    "test:ui:unit": "flutter test test/ --coverage --coverage-path=coverage/all.info && lcov --extract coverage/all.info 'lib/models/*' 'lib/services/*' -o coverage/lcov.info && lcov --summary coverage/lcov.info",
     "test:emulate": "npx firebase emulators:exec --only auth,functions,firestore --ui --import test/emulators",
     "test:data": "npx firebase firestore:delete -f service/version",
+    "test:ci": "npm run test --prefix functions && npm run test:ui:unit",
+    "test": "npm run test:ci && lcov --summary coverage/lcov.info && genhtml coverage/lcov.info -o coverage/html",
     "dev": "npm run build:functions && npm run test:emulate -- \"npm run test:data && npm run dev:ui -- web-server\"",
     "dev:chrome": "npm run build:functions && npm run test:emulate -- \"npm run test:data && npm run dev:ui -- chrome\"",
     "dev:edge": "npm run build:functions && npm run test:emulate -- \"npm run test:data && npm run dev:ui -- edge\""
