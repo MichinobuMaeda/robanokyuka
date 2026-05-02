@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../config/firebase.dart';
 import '../../config/theme.dart';
@@ -79,7 +80,7 @@ class DeleteUserPanel extends HookConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.delete),
+                        Icon(Symbols.delete),
                         SizedBox(width: 8),
                         Text("アカウント削除"),
                       ],
@@ -99,7 +100,7 @@ class DeleteUserPanel extends HookConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.delete),
+                    Icon(Symbols.delete),
                     SizedBox(width: 8),
                     Text("アカウント削除"),
                   ],
@@ -139,7 +140,7 @@ class _ConfirmationSheet extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.delete),
+                    Icon(Symbols.delete),
                     SizedBox(width: 8),
                     Text('削除する'),
                   ],

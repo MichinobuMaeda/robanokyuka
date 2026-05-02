@@ -38,6 +38,7 @@ module.exports = {
       files: ["src/*.test.ts"],
       rules: {
         "max-len": "off",
+        "require-jsdoc": "off",
       },
     },
   ],

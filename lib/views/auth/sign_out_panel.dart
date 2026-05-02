@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../config/firebase.dart';
 import '../../config/theme.dart';
@@ -46,7 +47,7 @@ class SignOutPanel extends HookConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.logout),
+                        Icon(Symbols.logout),
                         SizedBox(width: 8),
                         Text("ログアウト"),
                       ],
@@ -66,7 +67,7 @@ class SignOutPanel extends HookConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.logout),
+                    Icon(Symbols.logout),
                     SizedBox(width: 8),
                     Text("ログアウト"),
                   ],

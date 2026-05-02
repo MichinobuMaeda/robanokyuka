@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/gengo.dart';
+import '../models/nengo.dart';
 import '../services/validators.dart';
 
 class DateRow extends StatelessWidget {
@@ -9,14 +9,14 @@ class DateRow extends StatelessWidget {
     required this.yearController,
     required this.monthController,
     required this.dayController,
-    required this.gengos,
+    required this.nengo,
     this.extraDayValidator,
   });
 
   final TextEditingController yearController;
   final TextEditingController monthController;
   final TextEditingController dayController;
-  final List<Gengo> gengos;
+  final Nengo nengo;
 
   /// Called after built-in day validation passes. Receives the resolved
   /// (year, month, day) integers and should return an error string or null.
@@ -37,7 +37,7 @@ class DateRow extends StatelessWidget {
               border: OutlineInputBorder(),
               helperText: '4桁',
             ),
-            validator: (value) => validateYear(gengos, value),
+            validator: (value) => validateYear(nengo, value),
           ),
         ),
         SizedBox(
@@ -64,7 +64,7 @@ class DateRow extends StatelessWidget {
               helperText: '1-31',
             ),
             validator: (value) => validateDay(
-              gengos,
+              nengo,
               yearController.text,
               monthController.text,
               value,

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'config/firebase.dart';
 import 'config/theme.dart';
+import 'models/users.dart';
 import 'services/authentication.dart';
 import 'platform/platforms.dart';
 import 'views/layout.dart';
@@ -25,9 +26,13 @@ class MyApp extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     Future(() => ref.read(firebaseAuthProvider.notifier).setAuth(auth()));
+    final themeMode = ref.watch(
+      userProvider.select((user) => user?.themeMode ?? ThemeMode.system),
+    );
+
     return MaterialApp(
       title: appName,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       theme: generateThemeData(Brightness.light),
       darkTheme: generateThemeData(Brightness.dark),
       home: const Layout(),

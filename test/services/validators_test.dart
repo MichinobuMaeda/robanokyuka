@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukyuchecker/models/gengo.dart';
-import 'package:yukyuchecker/models/service.dart';
+import 'package:yukyuchecker/models/nengo.dart';
+import 'package:yukyuchecker/models/holidays.dart';
 import 'package:yukyuchecker/services/validators.dart';
+import '../test_utils.dart';
 
 void main() {
   group('validateRequiredEmail', () {
@@ -81,32 +82,26 @@ void main() {
   });
 
   group('validateYear', () {
-    final gengos = [
-      Gengo(date: '18680125', name: '明治', short: 'M'),
-      Gengo(date: '19120730', name: '大正', short: 'T'),
-      Gengo(date: '19261225', name: '昭和', short: 'S'),
-      Gengo(date: '19890108', name: '平成', short: 'H'),
-      Gengo(date: '20190501', name: '令和', short: 'R'),
-    ];
+    final nengo = Nengo(gengos(), false);
 
     test('returns error for empty string', () {
-      expect(validateYear(gengos, ''), isNotNull);
+      expect(validateYear(nengo, ''), isNotNull);
     });
 
     test('returns error for null', () {
-      expect(validateYear(gengos, null), isNotNull);
+      expect(validateYear(nengo, null), isNotNull);
     });
 
     test('returns error for year before 1900', () {
-      expect(validateYear(gengos, '1899'), isNotNull);
+      expect(validateYear(nengo, '1899'), isNotNull);
     });
 
     test('returns null for valid Gregorian year', () {
-      expect(validateYear(gengos, '2024'), isNull);
+      expect(validateYear(nengo, '2024'), isNull);
     });
 
     test('returns null for valid nengo year (令和6)', () {
-      expect(validateYear(gengos, '令和6'), isNull);
+      expect(validateYear(nengo, '令和6'), isNull);
     });
   });
 
@@ -163,40 +158,34 @@ void main() {
   });
 
   group('validateDay', () {
-    final gengos = [
-      Gengo(date: '18680125', name: '明治', short: 'M'),
-      Gengo(date: '19120730', name: '大正', short: 'T'),
-      Gengo(date: '19261225', name: '昭和', short: 'S'),
-      Gengo(date: '19890108', name: '平成', short: 'H'),
-      Gengo(date: '20190501', name: '令和', short: 'R'),
-    ];
+    final nengo = Nengo(gengos(), false);
 
     test('returns error for null', () {
-      expect(validateDay(gengos, '2024', '1', null), isNotNull);
+      expect(validateDay(nengo, '2024', '1', null), isNotNull);
     });
 
     test('returns error for 0', () {
-      expect(validateDay(gengos, '2024', '1', '0'), isNotNull);
+      expect(validateDay(nengo, '2024', '1', '0'), isNotNull);
     });
 
     test('returns error for day exceeding month max', () {
       expect(
-        validateDay(gengos, '2023', '2', '29'),
+        validateDay(nengo, '2023', '2', '29'),
         isNotNull,
       ); // 2023 is not a leap year
     });
 
     test('returns null for valid day', () {
-      expect(validateDay(gengos, '2024', '1', '31'), isNull);
+      expect(validateDay(nengo, '2024', '1', '31'), isNull);
     });
 
     test('returns null for Feb 29 in leap year', () {
-      expect(validateDay(gengos, '2024', '2', '29'), isNull);
+      expect(validateDay(nengo, '2024', '2', '29'), isNull);
     });
   });
 
   group('validateHoliday', () {
-    final holidays = [Holiday(date: '20240101', name: '元日')];
+    final holidays = [Holiday.fromString('20240101', name: '元日')];
 
     test('returns error when date is already registered', () {
       expect(validateHoliday(holidays, 2024, 1, 1), isNotNull);

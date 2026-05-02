@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../config/firebase.dart';
 import '../../config/theme.dart';
@@ -18,8 +19,14 @@ class EmailLinkPanel extends HookConsumerWidget {
     final message = ref.read(snackBarMessageProvider.notifier);
     final authUser = ref.watch(authUserProvider).value;
     final email = useTextEditingController(text: authUser?.email ?? '');
+    useListenable(email);
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final isFormValid = useState(false);
+
+    void handleReset() {
+      email.text = authUser?.email ?? '';
+      isFormValid.value = validateRequiredEmail(email.text.trim()) == null;
+    }
 
     Future<void> handleSubmit() async {
       message.clear();
@@ -61,6 +68,12 @@ class EmailLinkPanel extends HookConsumerWidget {
                     labelText: "メールアドレス",
                     helperText: "メールアドレスを入力してください",
                     border: OutlineInputBorder(),
+                    suffixIcon: email.text == (authUser?.email ?? '')
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Symbols.clear),
+                            onPressed: handleReset,
+                          ),
                   ),
                 ),
               ),
@@ -70,7 +83,11 @@ class EmailLinkPanel extends HookConsumerWidget {
                     : null,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [Icon(Icons.send), SizedBox(width: 8), Text("送信")],
+                  children: [
+                    Icon(Symbols.send),
+                    SizedBox(width: 8),
+                    Text("送信"),
+                  ],
                 ),
               ),
             ],

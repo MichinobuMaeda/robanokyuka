@@ -1,7 +1,7 @@
-import 'package:yukyuchecker/models/service.dart';
+import 'package:yukyuchecker/models/holidays.dart';
 
-import '../models/gengo.dart';
-import '../services/helpers.dart';
+import '../models/cal_date.dart';
+import '../models/nengo.dart';
 
 final _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
@@ -40,8 +40,8 @@ String? validateNonNegInt(String? value) {
   return null;
 }
 
-String? validateYear(List<Gengo> gengos, String? value) {
-  final yearParsed = parseNengo(gengos, value ?? '');
+String? validateYear(Nengo nengo, String? value) {
+  final yearParsed = nengo.parseYear(value ?? '');
   if (yearParsed.isEmpty) return '必須項目です';
   final year = int.tryParse(yearParsed);
   if (year == null) return '数値で入力してください';
@@ -69,7 +69,7 @@ int maxDayOfMonth(String? yyyy, String? mm) {
 }
 
 String? validateDay(
-  List<Gengo> gengos,
+  Nengo nengo,
   String? yearText,
   String? monthText,
   String? value,
@@ -79,7 +79,7 @@ String? validateDay(
   final maxDoM = maxDayOfMonth(yearText, monthText);
   if (day < 1 || day > maxDoM) return '1-$maxDoM で入力してください';
   final year = yearText != null
-      ? int.tryParse(parseNengo(gengos, yearText))
+      ? int.tryParse(nengo.parseYear(yearText))
       : null;
   final month = monthText != null ? int.tryParse(monthText) : null;
   if (year != null && month != null) {
@@ -92,8 +92,8 @@ String? validateDay(
 }
 
 String? validateHoliday(List<Holiday> holidays, int year, int month, int day) {
-  final key = formatYmd(year, month, day);
-  if (holidays.any((h) => h.date == key)) {
+  final date = Cal(year, month, day);
+  if (holidays.any((h) => h.date == date)) {
     return 'この日付は既に登録されています';
   }
   return null;

@@ -2,7 +2,7 @@ import {DocumentSnapshot, FieldValue} from "firebase-admin/firestore";
 
 import {holidays} from "./holidays.json";
 import {gengos} from "./gengos.json";
-import {Context} from "./common";
+import {msg, Context} from "./common";
 import {addUserWithEmailAndName} from "./users";
 
 /**
@@ -16,17 +16,18 @@ async function setupV1(
   data: DocumentSnapshot,
 ): Promise<number | undefined> {
   try {
-    logger.info("Performing setup for version 1");
+    logger.info(msg.performingSetupV1);
 
     const email = data.get("email") as string | undefined;
+    const displayName = "Primary User";
 
     if (!email) {
-      logger.error("No admin email provided in the version document");
+      logger.error(msg.noAdminEmail);
       return;
     }
 
-    logger.info("Admin email provided:", email);
-    const user = await auth.createUser({email});
+    logger.info(msg.adminEmailProvided(email));
+    const user = await auth.createUser({email, displayName});
     const batch = db.batch();
     batch.set(
       db.collection("service").doc("conf"),
@@ -66,10 +67,7 @@ async function setupV1(
 
     return 1;
   } catch (e) {
-    logger.error(
-      "Error during setupV1:", e,
-      e instanceof Error ? e.stack : undefined
-    );
+    logger.error(msg.errorSetupVersion(e));
     return;
   }
 }
@@ -89,11 +87,39 @@ export async function updateUiVersion(
   const updatedAt = FieldValue.serverTimestamp();
 
   if (curUiVersion === uiVersion) {
-    logger.info("UI version is already up to date:", curUiVersion);
+    logger.info(msg.uiVersionUpToDate(uiVersion));
     return;
   } else {
-    logger.info("Updating UI version to:", uiVersion);
+    logger.info(msg.updatingUiVersion(uiVersion));
     await confRef.update({uiVersion, updatedAt});
+  }
+}
+
+/**
+ * Adds test data for development and testing purposes.
+ * @param {Context} context - The function context containing logger and db.
+ * @return {Promise<void>}
+ */
+export async function addTestData(
+  {logger, db, auth}: Context,
+): Promise<void> {
+  try {
+    const password = "password";
+    const confRef = db.collection("service").doc("conf");
+    const conf = await confRef.get();
+    const admin = conf.data()?.admins?.[0] as string | undefined;
+    if (admin) {
+      await auth.updateUser(admin, {password});
+    }
+    const email = "user01@example.com";
+    const displayName = "User 01";
+    await auth.createUser({email, password, displayName});
+    await addUserWithEmailAndName({logger, auth, db}, {email});
+  } catch (e) {
+    logger.error(
+      msg.errorAddTestData, e,
+      e instanceof Error ? e.stack : undefined
+    );
   }
 }
 
@@ -108,22 +134,23 @@ export async function setup(
   {data}: { data: DocumentSnapshot | undefined },
 ): Promise<void> {
   const {logger} = context;
+  logger.info(msg.nodeEnv(process.env.NODE_ENV));
 
   try {
     let version: number | undefined = 0;
 
     if (!data) {
-      logger.info("No deleted document found, skipping setup");
+      logger.info(msg.noDeletedDoc);
       return;
     }
 
     const curVersion = (data.get("version") as number) ?? 0;
-    logger.info("Setting up for data version", curVersion);
+    logger.info(msg.settingUpDataVersion, curVersion);
 
     if (curVersion < 1) {
       version = await setupV1(context, data);
       if (!version) {
-        logger.error("Setup for version 1 failed, aborting further setup");
+        logger.error(msg.setupFailed("1"));
         return;
       }
     }
@@ -131,9 +158,13 @@ export async function setup(
     await data.ref.set({version, createdAt: FieldValue.serverTimestamp()});
 
     await updateUiVersion(context);
+
+    if (process.env.NODE_ENV === "development") {
+      await addTestData(context);
+    }
   } catch (e) {
     logger.error(
-      "Error during setup:", e,
+      msg.errorSetup, e,
       e instanceof Error ? e.stack : undefined
     );
   }

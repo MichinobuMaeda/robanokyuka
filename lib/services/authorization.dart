@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import 'helpers.dart';
 import 'authentication.dart';
@@ -24,7 +25,7 @@ enum Privilege { loading, guest, admin, user }
 
 enum PageItem {
   guest(
-    icon: Icons.login,
+    icon: Symbols.login,
     label: '利用開始',
     privileges: [Privilege.guest],
     contents: [
@@ -36,13 +37,13 @@ enum PageItem {
     ],
   ),
   home(
-    icon: Icons.calendar_month,
+    icon: Symbols.calendar_month,
     label: '記録',
     privileges: [Privilege.user, Privilege.admin],
     contents: [RecordPanel(), SummaryPanel(), CalendarPanel()],
   ),
   settings(
-    icon: Icons.account_circle,
+    icon: Symbols.account_circle,
     label: '設定',
     privileges: [Privilege.user, Privilege.admin],
     contents: [
@@ -58,13 +59,13 @@ enum PageItem {
     ],
   ),
   admin(
-    icon: Icons.admin_panel_settings,
+    icon: Symbols.admin_panel_settings,
     label: '管理',
     privileges: [Privilege.admin],
     contents: [UsersPanel(), HolidaysPanel()],
   ),
   info(
-    icon: Icons.info,
+    icon: Symbols.info,
     label: '情報',
     privileges: Privilege.values,
     contents: [MarkdownPanel(asset: assetInfoMd)],

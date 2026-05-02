@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../config/firebase.dart';
 import '../../config/theme.dart';
@@ -80,7 +81,7 @@ class _Header extends HookConsumerWidget {
         Expanded(child: Text('利用者', style: panelTitleStyle(context))),
         IconButton.filledTonal(
           onPressed: showAddSheet,
-          icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
+          icon: Icon(Symbols.add, color: Theme.of(context).colorScheme.primary),
         ),
       ],
     );
@@ -134,13 +135,16 @@ class _Item extends HookConsumerWidget {
       children: [
         IconButton(
           onPressed: showEditSheet,
-          icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+          icon: Icon(
+            Symbols.edit,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         user.disabledAt != null
-            ? Icon(Icons.block, color: Theme.of(context).colorScheme.error)
+            ? Icon(Symbols.block, color: Theme.of(context).colorScheme.error)
             : (admins.contains(user.id)
-                  ? Icon(Icons.admin_panel_settings)
-                  : Icon(Icons.person)),
+                  ? Icon(Symbols.admin_panel_settings)
+                  : Icon(Symbols.person)),
         Expanded(
           child: Text(
             user.name.isEmpty ? '--' : user.name,
@@ -234,7 +238,7 @@ class _AddSheet extends HookWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add),
+                        const Icon(Symbols.add),
                         const SizedBox(width: 8),
                         const Text('追加'),
                       ],
@@ -330,7 +334,7 @@ class _EditSheet extends HookWidget {
                   child: OutlinedButton.icon(
                     onPressed: showDeleteConfirmation,
                     icon: Icon(
-                      Icons.delete,
+                      Symbols.delete,
                       color: Theme.of(context).colorScheme.error,
                     ),
                     label: Text(

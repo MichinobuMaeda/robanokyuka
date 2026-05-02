@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../config/firebase.dart';
 import '../../services/helpers.dart';
@@ -39,7 +40,7 @@ class GoogleAuthPanel extends HookConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.send),
+              Icon(Symbols.send),
               SizedBox(width: 8),
               Text(reauthentication ? "Googleで再認証する" : "Googleでログインする"),
             ],

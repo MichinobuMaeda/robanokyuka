@@ -1,63 +1,10 @@
-/* eslint-disable require-jsdoc */
 import {describe, it, expect, vi, beforeEach} from "vitest";
 import {onUserCreating, addUserWithEmailAndName, handleAddUser, handleDeleteUser, handleUserUpdated} from "./users";
-import type {Context} from "./common";
 import type {AuthBlockingEvent} from "firebase-functions/identity";
 import type {CallableRequest} from "firebase-functions/v2/https";
 
-function makeContext(overrides?: Partial<Context>) {
-  const set = vi.fn().mockResolvedValue(undefined);
-  const update = vi.fn().mockResolvedValue(undefined);
-  const get = vi.fn().mockResolvedValue({
-    data: () => ({admins: ["admin-1"]}),
-  });
-
-  const usersGet = vi.fn().mockResolvedValue({exists: false});
-  const usersDoc = vi.fn().mockReturnValue({set, get: usersGet});
-  const serviceDoc = vi.fn((id: string) => {
-    if (id === "conf") {
-      return {get, update};
-    }
-    return {set, get, update};
-  });
-
-  const collection = vi.fn((name: string) => {
-    if (name === "users") {
-      return {doc: usersDoc};
-    }
-    if (name === "service") {
-      return {doc: serviceDoc};
-    }
-    return {doc: vi.fn()};
-  });
-
-  const auth = {
-    getUserByEmail: vi.fn().mockResolvedValue({uid: "user-123"}),
-    getUser: vi.fn(async (uid: string) => ({uid, email: `${uid}@example.com`})),
-    createUser: vi.fn().mockResolvedValue({uid: "new-uid"}),
-  };
-
-  const db = {collection};
-  const logger = {
-    info: vi.fn(),
-    error: vi.fn(),
-  };
-
-  const context = {logger, db, auth, ...overrides} as unknown as Context;
-
-  return {
-    context,
-    logger,
-    collection,
-    usersDoc,
-    usersGet,
-    serviceDoc,
-    set,
-    get,
-    update,
-    auth,
-  };
-}
+import {msg, type Context} from "./common";
+import {makeContext, adminId, user01Id} from "./testutils";
 
 describe("onUserCreating", () => {
   beforeEach(() => {
@@ -71,20 +18,20 @@ describe("onUserCreating", () => {
     await onUserCreating(context, event);
 
     expect(logger.error).toHaveBeenCalledWith(
-      "No UID found in the event data"
+      msg.noUidInEvent
     );
     expect(collection).not.toHaveBeenCalled();
   });
 
   it("creates user document when uid is present", async () => {
     const {context, logger, collection, usersDoc, set} = makeContext();
-    const event = {data: {uid: "user-123"}} as unknown as AuthBlockingEvent;
+    const event = {data: {uid: user01Id}} as unknown as AuthBlockingEvent;
 
     await onUserCreating(context, event);
 
-    expect(logger.info).toHaveBeenCalledWith("Creating user:", "user-123");
+    expect(logger.info).toHaveBeenCalledWith(msg.creatingUser(user01Id));
     expect(collection).toHaveBeenCalledWith("users");
-    expect(usersDoc).toHaveBeenCalledWith("user-123");
+    expect(usersDoc).toHaveBeenCalledWith(user01Id);
     expect(set).toHaveBeenCalledTimes(1);
     expect(set).toHaveBeenCalledWith(
       expect.objectContaining({createdAt: expect.any(Date)})
@@ -95,7 +42,7 @@ describe("onUserCreating", () => {
     const {context, set} = makeContext();
     const event = {
       data: {
-        uid: "user-123",
+        uid: user01Id,
         email: "foo@example.com",
         displayName: "Foo Bar",
       },
@@ -115,7 +62,7 @@ describe("onUserCreating", () => {
     const {context, set} = makeContext();
     const event = {
       data: {
-        uid: "user-123",
+        uid: user01Id,
         email: "foo@example.com",
       },
     } as unknown as AuthBlockingEvent;
@@ -199,13 +146,13 @@ describe("handleAddUser", () => {
   it("throws Email is required when email is missing", async () => {
     const {context, logger} = makeContext();
     const event = {
-      auth: {uid: "admin-1"},
+      auth: {uid: adminId},
       data: {},
     } as unknown as CallableRequest;
 
     await expect(handleAddUser(context, event)).rejects.toThrow("Email is required");
     expect(logger.error).toHaveBeenCalledWith(
-      "No email provided in the callable request"
+      msg.noEmail
     );
   });
 
@@ -216,9 +163,9 @@ describe("handleAddUser", () => {
       data: {email: "foo@example.com"},
     } as unknown as CallableRequest;
 
-    await expect(handleAddUser(context, event)).rejects.toThrow("Unauthorized");
+    await expect(handleAddUser(context, event)).rejects.toThrow(msg.unauthorized);
     expect(logger.error).toHaveBeenCalledWith(
-      "No UID found in the callable request"
+      msg.missingUid
     );
   });
 
@@ -229,14 +176,14 @@ describe("handleAddUser", () => {
       data: {email: "foo@example.com"},
     } as unknown as CallableRequest;
 
-    await expect(handleAddUser(context, event)).rejects.toThrow("Unauthorized");
-    expect(logger.error).toHaveBeenCalledWith("User is not an admin:", "non-admin");
+    await expect(handleAddUser(context, event)).rejects.toThrow(msg.unauthorized);
+    expect(logger.error).toHaveBeenCalledWith(msg.notAdmin("non-admin"));
   });
 
   it("calls addUserWithEmailAndName when uid is admin and email is present", async () => {
     const {context, auth} = makeContext();
     const event = {
-      auth: {uid: "admin-1"},
+      auth: {uid: adminId},
       data: {email: "foo@example.com", name: "Foo"},
     } as unknown as CallableRequest;
 
@@ -247,7 +194,7 @@ describe("handleAddUser", () => {
 });
 
 describe("handleDeleteUser", () => {
-  function makeDeleteContext(admins = ["admin-1"]) {
+  function makeDeleteContext(admins = [adminId]) {
     const batchDelete = vi.fn();
     const batchCommit = vi.fn().mockResolvedValue(undefined);
     const batch = {delete: batchDelete, commit: batchCommit};
@@ -284,56 +231,56 @@ describe("handleDeleteUser", () => {
   it("throws UID is required when target uid is missing", async () => {
     const {context, logger} = makeDeleteContext();
     const event = {
-      auth: {uid: "admin-1"},
+      auth: {uid: adminId},
       data: {},
     } as unknown as CallableRequest;
 
     await expect(handleDeleteUser(context, event)).rejects.toThrow("UID is required");
     expect(logger.error).toHaveBeenCalledWith(
-      "No target UID provided in the callable request"
+      msg.noTargetUid
     );
   });
 
   it("throws Unauthorized when caller is not admin", async () => {
-    const {context, logger} = makeDeleteContext(["admin-1"]);
+    const {context, logger} = makeDeleteContext([adminId]);
     const event = {
       auth: {uid: "non-admin"},
       data: {uid: "target-uid"},
     } as unknown as CallableRequest;
 
-    await expect(handleDeleteUser(context, event)).rejects.toThrow("Unauthorized");
-    expect(logger.error).toHaveBeenCalledWith("User is not an admin:", "non-admin");
+    await expect(handleDeleteUser(context, event)).rejects.toThrow(msg.unauthorized);
+    expect(logger.error).toHaveBeenCalledWith(msg.notAdmin("non-admin"));
   });
 
   it("deletes records, user doc, and auth user", async () => {
     const {context, logger, auth, usersDoc, batchDelete, batchCommit} = makeDeleteContext();
     const event = {
-      auth: {uid: "admin-1"},
-      data: {uid: "target-uid"},
+      auth: {uid: adminId},
+      data: {uid: user01Id},
     } as unknown as CallableRequest;
 
     await handleDeleteUser(context, event);
 
-    expect(logger.info).toHaveBeenCalledWith("Deleting user:", "target-uid");
-    expect(usersDoc).toHaveBeenCalledWith("target-uid");
+    expect(logger.info).toHaveBeenCalledWith(msg.deletingUser(user01Id));
+    expect(usersDoc).toHaveBeenCalledWith(user01Id);
     expect(batchDelete).toHaveBeenCalledTimes(3); // 2 records + 1 user doc
     expect(batchCommit).toHaveBeenCalled();
-    expect(auth.deleteUser).toHaveBeenCalledWith("target-uid");
+    expect(auth.deleteUser).toHaveBeenCalledWith(user01Id);
   });
 
   it("deletes user doc and auth user when no records exist", async () => {
     const {context, auth, recordsGet, batchDelete, batchCommit} = makeDeleteContext();
     recordsGet.mockResolvedValue({docs: []});
     const event = {
-      auth: {uid: "admin-1"},
-      data: {uid: "target-uid"},
+      auth: {uid: adminId},
+      data: {uid: user01Id},
     } as unknown as CallableRequest;
 
     await handleDeleteUser(context, event);
 
     expect(batchDelete).toHaveBeenCalledTimes(1); // only user doc
     expect(batchCommit).toHaveBeenCalled();
-    expect(auth.deleteUser).toHaveBeenCalledWith("target-uid");
+    expect(auth.deleteUser).toHaveBeenCalledWith(user01Id);
   });
 });
 
@@ -361,7 +308,7 @@ describe("handleUserUpdated", () => {
     const auth = {updateUser: vi.fn()};
     const logger = {info: vi.fn(), error: vi.fn()};
     const context = {logger, auth} as unknown as Context;
-    const event = makeEvent("user-1", "Alice", "Alice");
+    const event = makeEvent(user01Id, "Alice", "Alice");
 
     await handleUserUpdated(context, event as never);
 
@@ -383,12 +330,12 @@ describe("handleUserUpdated", () => {
     const auth = {updateUser: vi.fn().mockResolvedValue(undefined)};
     const logger = {info: vi.fn(), error: vi.fn()};
     const context = {logger, auth} as unknown as Context;
-    const event = makeEvent("user-1", "Alice", "Bob");
+    const event = makeEvent(user01Id, "Alice", "Bob");
 
     await handleUserUpdated(context, event as never);
 
     expect(auth.updateUser).toHaveBeenCalledWith(
-      "user-1", {displayName: "Bob"}
+      user01Id, {displayName: "Bob"}
     );
   });
 
@@ -396,12 +343,12 @@ describe("handleUserUpdated", () => {
     const auth = {updateUser: vi.fn().mockResolvedValue(undefined)};
     const logger = {info: vi.fn(), error: vi.fn()};
     const context = {logger, auth} as unknown as Context;
-    const event = makeEvent("user-1", "Alice", undefined);
+    const event = makeEvent(user01Id, "Alice", undefined);
 
     await handleUserUpdated(context, event as never);
 
     expect(auth.updateUser).toHaveBeenCalledWith(
-      "user-1", {displayName: ""}
+      user01Id, {displayName: ""}
     );
   });
 });

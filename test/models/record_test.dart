@@ -5,30 +5,16 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/models/cal_date.dart';
 import 'package:yukyuchecker/models/record.dart';
-import 'package:yukyuchecker/models/service.dart';
 import 'package:yukyuchecker/services/authentication.dart';
-import 'package:yukyuchecker/services/helpers.dart';
-
-Record _makeRecord({
-  List<bool> publicHolidays = defaultPublicHolidays,
-  List<DateRecord> dates = const [],
-}) {
-  return Record(
-    id: 'test',
-    from: '20240401',
-    to: '20250331',
-    publicHolidays: publicHolidays,
-    dates: dates,
-  );
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('DateRecord', () {
     test('defaults all optional fields', () {
-      final dr = DateRecord(date: '20240101');
+      final dr = DateRecord(Cal.fromYyyymmdd('20240101'));
       expect(dr.companyHoliday, isFalse);
       expect(dr.plan, isNull);
       expect(dr.used, isNull);
@@ -39,7 +25,7 @@ void main() {
 
     test('stores all explicitly provided fields', () {
       final dr = DateRecord(
-        date: '20240615',
+        Cal.fromYyyymmdd('20240615'),
         companyHoliday: true,
         plan: '08:00',
         used: '04:00',
@@ -47,7 +33,7 @@ void main() {
         other: '01:00',
         note: 'memo',
       );
-      expect(dr.date, '20240615');
+      expect(dr.date.yyyymmdd, '20240615');
       expect(dr.companyHoliday, isTrue);
       expect(dr.plan, '08:00');
       expect(dr.used, '04:00');
@@ -59,7 +45,11 @@ void main() {
 
   group('Record', () {
     test('defaults all optional fields', () {
-      final r = Record(id: 'r1', from: '20240401', to: '20250331');
+      final r = Record(
+        id: 'r1',
+        from: Cal.fromYyyymmdd('20240401'),
+        to: Cal.fromYyyymmdd('20250331'),
+      );
       expect(r.publicHolidays, defaultPublicHolidays);
       expect(r.givenLeaves, defaultGivenLeaves);
       expect(r.minLeaves, defaultMinLeaves);
@@ -79,11 +69,11 @@ void main() {
         false,
         false,
       ];
-      final dr = DateRecord(date: '20240615', plan: '08:00');
+      final dr = DateRecord(Cal.fromYyyymmdd('20240615'), plan: '08:00');
       final r = Record(
         id: 'custom',
-        from: '20240101',
-        to: '20241231',
+        from: Cal.fromYyyymmdd('20240101'),
+        to: Cal.fromYyyymmdd('20241231'),
         publicHolidays: customHolidays,
         givenLeaves: 20,
         minLeaves: 10,
@@ -101,104 +91,53 @@ void main() {
     });
   });
 
-  group('isHolyday', () {
-    // 2024/01/07 is a Sunday  → weekday 7, 7 % 7 = 0, publicHolidays[0] = true
-    // 2024/01/06 is a Saturday → weekday 6, 6 % 7 = 6, publicHolidays[6] = true
-    // 2024/01/08 is a Monday  → weekday 1, 1 % 7 = 1, publicHolidays[1] = false
-
-    test('Sunday returns true with default publicHolidays', () {
-      expect(isHolyday(_makeRecord(), [], '20240107'), isTrue);
-    });
-
-    test('Saturday returns true with default publicHolidays', () {
-      expect(isHolyday(_makeRecord(), [], '20240106'), isTrue);
-    });
-
-    test('Monday returns false with default publicHolidays', () {
-      expect(isHolyday(_makeRecord(), [], '20240108'), isFalse);
-    });
-
-    test(
-      'returns true for national holiday when publicHolidays[7] is true',
-      () {
-        const date = '20240108'; // Monday
-        final holiday = Holiday(date: date, name: '成人の日');
-        final record = _makeRecord(
-          publicHolidays: [true, false, false, false, false, false, true, true],
-        );
-        expect(isHolyday(record, [holiday], date), isTrue);
-      },
-    );
-
-    test(
-      'returns false for national holiday when publicHolidays[7] is false',
-      () {
-        const date = '20240108'; // Monday
-        final holiday = Holiday(date: '20240108', name: '成人の日');
-        final record = _makeRecord(
-          publicHolidays: [
-            true,
-            false,
-            false,
-            false,
-            false,
-            false,
-            true,
-            false,
-          ],
-        );
-        expect(isHolyday(record, [holiday], date), isFalse);
-      },
-    );
-
-    test('returns true for company holiday (companyHoliday: true)', () {
-      const date = '20240108'; // Monday
-      final dateRecord = DateRecord(date: '20240108', companyHoliday: true);
-      expect(isHolyday(_makeRecord(dates: [dateRecord]), [], date), isTrue);
-    });
-
-    test('returns false for DateRecord with companyHoliday: false', () {
-      const date = '20240108'; // Monday
-      final dateRecord = DateRecord(date: '20240108', companyHoliday: false);
-      expect(isHolyday(_makeRecord(dates: [dateRecord]), [], date), isFalse);
-    });
-  });
-
-  group('getDefaultRecord', () {
+  group('Record.fromDefault', () {
     test(
       'with empty list: from = current year/04/01, to = next year/03/31',
       () {
-        final result = getDefaultRecord([]);
+        final result = Record.next([]);
         final now = DateTime.now();
         expect(result.id, '');
-        expect(result.from, '${now.year}0401');
-        expect(result.to, '${now.year + 1}0331');
+        expect(result.from.yyyymmdd, '${now.year}0401');
+        expect(result.to.yyyymmdd, '${now.year + 1}0331');
       },
     );
 
     test(
       'with one record: from = day after its to, to = one year after its to',
       () {
-        final existing = Record(id: 'r1', from: '20240401', to: '20250331');
-        final result = getDefaultRecord([existing]);
-        expect(result.from, '20250401');
-        expect(result.to, '20260331');
+        final existing = Record(
+          id: 'r1',
+          from: Cal.fromYyyymmdd('20240401'),
+          to: Cal.fromYyyymmdd('20250331'),
+        );
+        final result = Record.next([existing]);
+        expect(result.from.yyyymmdd, '20250401');
+        expect(result.to.yyyymmdd, '20260331');
       },
     );
 
     test('picks the record with the latest to date when multiple exist', () {
       final records = [
-        Record(id: 'r1', from: '20230401', to: '20240331'),
-        Record(id: 'r2', from: '20240401', to: '20250331'),
+        Record(
+          id: 'r1',
+          from: Cal.fromYyyymmdd('20230401'),
+          to: Cal.fromYyyymmdd('20240331'),
+        ),
+        Record(
+          id: 'r2',
+          from: Cal.fromYyyymmdd('20240401'),
+          to: Cal.fromYyyymmdd('20250331'),
+        ),
       ];
-      final result = getDefaultRecord(records);
-      expect(result.from, '20250401');
+      final result = Record.next(records);
+      expect(result.from.yyyymmdd, '20250401');
     });
 
     test(
       'uses default values for leaves, workingHours, and publicHolidays',
       () {
-        final result = getDefaultRecord([]);
+        final result = Record.next([]);
         expect(result.givenLeaves, defaultGivenLeaves);
         expect(result.minLeaves, defaultMinLeaves);
         expect(result.workingHours, defaultWorkingHours);
@@ -206,6 +145,108 @@ void main() {
         expect(result.useLeavesHourly, isFalse);
       },
     );
+  });
+
+  group('Record.monthList', () {
+    test('returns all months within a single year', () {
+      final r = Record(
+        id: 'r',
+        from: Cal.fromYyyymmdd('20240401'),
+        to: Cal.fromYyyymmdd('20240630'),
+      );
+      expect(r.months, [(2024, 4), (2024, 5), (2024, 6)]);
+    });
+
+    test('spans a year boundary correctly', () {
+      final r = Record(
+        id: 'r',
+        from: Cal.fromYyyymmdd('20241001'),
+        to: Cal.fromYyyymmdd('20250331'),
+      );
+      expect(r.months, [
+        (2024, 10),
+        (2024, 11),
+        (2024, 12),
+        (2025, 1),
+        (2025, 2),
+        (2025, 3),
+      ]);
+    });
+
+    test(
+      'returns a single-element list when from and to are the same month',
+      () {
+        final r = Record(
+          id: 'r',
+          from: Cal.fromYyyymmdd('20240101'),
+          to: Cal.fromYyyymmdd('20240131'),
+        );
+        expect(r.months, [(2024, 1)]);
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  group('Record.isHolidayWeekDay', () {
+    Record makeRecord({List<bool>? publicHolidays}) => Record(
+      id: 'r',
+      from: Cal.fromYyyymmdd('20240101'),
+      to: Cal.fromYyyymmdd('20241231'),
+      publicHolidays: publicHolidays ?? List<bool>.from(defaultPublicHolidays),
+    );
+
+    // 2024-01-07 is a Sunday  (weekday % 7 == 0)
+    // 2024-01-08 is a Monday  (weekday % 7 == 1)
+    // 2024-01-09 is a Tuesday (weekday % 7 == 2)
+    // 2024-01-13 is a Saturday(weekday % 7 == 6)
+
+    test('returns true for Sunday with default holidays', () {
+      expect(
+        makeRecord().isHolidayWeekDay(Cal.fromYyyymmdd('20240107')),
+        isTrue,
+      );
+    });
+
+    test('returns false for Monday with default holidays', () {
+      expect(
+        makeRecord().isHolidayWeekDay(Cal.fromYyyymmdd('20240108')),
+        isFalse,
+      );
+    });
+
+    test('returns false for Tuesday with default holidays', () {
+      expect(
+        makeRecord().isHolidayWeekDay(Cal.fromYyyymmdd('20240109')),
+        isFalse,
+      );
+    });
+
+    test('returns true for Saturday with default holidays', () {
+      expect(
+        makeRecord().isHolidayWeekDay(Cal.fromYyyymmdd('20240113')),
+        isTrue,
+      );
+    });
+
+    test('returns false for Sunday when Sunday is not a holiday', () {
+      final holidays = List<bool>.from(defaultPublicHolidays)..[0] = false;
+      expect(
+        makeRecord(
+          publicHolidays: holidays,
+        ).isHolidayWeekDay(Cal.fromYyyymmdd('20240107')),
+        isFalse,
+      );
+    });
+
+    test('returns true for Monday when Monday is set as a holiday', () {
+      final holidays = List<bool>.from(defaultPublicHolidays)..[1] = true;
+      expect(
+        makeRecord(
+          publicHolidays: holidays,
+        ).isHolidayWeekDay(Cal.fromYyyymmdd('20240108')),
+        isTrue,
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -236,8 +277,8 @@ void main() {
       final record = Record.fromDocument(doc);
 
       expect(record.id, 'r1');
-      expect(record.from, '20240401');
-      expect(record.to, '20250331');
+      expect(record.from.yyyymmdd, '20240401');
+      expect(record.to.yyyymmdd, '20250331');
       expect(record.givenLeaves, 15);
       expect(record.minLeaves, 7);
       expect(record.useLeavesHourly, isTrue);
@@ -300,7 +341,7 @@ void main() {
       final record = Record.fromDocument(doc);
 
       expect(record.dates.length, 1);
-      expect(record.dates[0].date, '20240615');
+      expect(record.dates[0].date.yyyymmdd, '20240615');
       expect(record.dates[0].companyHoliday, isTrue);
       expect(record.dates[0].plan, '08:00');
       expect(record.dates[0].used, '04:00');
@@ -320,7 +361,7 @@ void main() {
           .doc('r1')
           .set({'from': '20240401', 'to': '20250331'});
       final dr = DateRecord(
-        date: '20240615',
+        Cal.fromYyyymmdd('20240615'),
         companyHoliday: true,
         plan: '08:00',
         used: '04:00',
@@ -352,7 +393,7 @@ void main() {
 
     test('returns left when record does not exist', () async {
       final firestore = FakeFirebaseFirestore();
-      final dr = DateRecord(date: '20240615');
+      final dr = DateRecord(Cal.fromYyyymmdd('20240615'));
 
       final result = await saveDateRecord(firestore, 'u1', 'nonexistent', dr);
 
@@ -363,7 +404,11 @@ void main() {
   group('saveRecord', () {
     test('adds a new document when record id is empty', () async {
       final firestore = FakeFirebaseFirestore();
-      final record = Record(id: '', from: '20240401', to: '20250331');
+      final record = Record(
+        id: '',
+        from: Cal.fromYyyymmdd('20240401'),
+        to: Cal.fromYyyymmdd('20250331'),
+      );
 
       final result = await saveRecord(firestore, 'u1', record);
 
@@ -387,8 +432,8 @@ void main() {
           .set({'from': '20230401', 'to': '20240331'});
       final record = Record(
         id: 'r1',
-        from: '20240401',
-        to: '20250331',
+        from: Cal.fromYyyymmdd('20240401'),
+        to: Cal.fromYyyymmdd('20250331'),
         givenLeaves: 20,
       );
 
@@ -411,8 +456,8 @@ void main() {
         .map(
           (d) => Record(
             id: 'r${d[0]}',
-            from: formatYmd(d[0], d[1], d[2]),
-            to: '${d[0] + 1}0331',
+            from: Cal(d[0], d[1], d[2]),
+            to: Cal(d[0] + 1, 3, 31),
           ),
         )
         .toList();
@@ -539,11 +584,15 @@ void main() {
       final now = DateTime.now();
       // First record is well in the past; second starts tomorrow (same month).
       final records = [
-        Record(id: 'past', from: '20200401', to: '20210331'),
+        Record(
+          id: 'past',
+          from: Cal.fromYyyymmdd('20200401'),
+          to: Cal.fromYyyymmdd('20210331'),
+        ),
         Record(
           id: 'future',
-          from: formatYmd(now.year, now.month, now.day + 1),
-          to: formatYmd(now.year + 1, now.month, now.day),
+          from: Cal(now.year, now.month, now.day + 1),
+          to: Cal(now.year + 1, now.month, now.day),
         ),
       ];
       final container = ProviderContainer(
@@ -601,7 +650,7 @@ void main() {
     }
 
     Record record(int year) =>
-        Record(id: 'r$year', from: '${year}0401', to: '${year + 1}0331');
+        Record(id: 'r$year', from: Cal(year, 4, 1), to: Cal(year + 1, 3, 31));
 
     test('sets state to null when records is null', () {
       final container = makeContainer();
@@ -671,8 +720,8 @@ void main() {
         final firestore = FakeFirebaseFirestore();
         final record = Record(
           id: 'nonexistent',
-          from: '20240401',
-          to: '20250331',
+          from: Cal.fromYyyymmdd('20240401'),
+          to: Cal.fromYyyymmdd('20250331'),
         );
 
         final result = await saveRecord(firestore, 'u1', record);
@@ -701,8 +750,11 @@ void main() {
           qs.docs.map((doc) => Record.fromDocument(doc)).toList(growable: true)
             ..sort((a, b) => a.from.compareTo(b.from));
 
-      expect(records[0].from.substring(4, 6), '04'); // April before October
-      expect(records[1].from.substring(4, 6), '10');
+      expect(
+        records[0].from.yyyymmdd.substring(4, 6),
+        '04',
+      ); // April before October
+      expect(records[1].from.yyyymmdd.substring(4, 6), '10');
     });
   });
 
@@ -760,26 +812,28 @@ void main() {
       final records = await container.read(recordsProvider.future);
       expect(records, hasLength(2));
       expect(
-        records![0].from.substring(4, 6),
+        records![0].from.yyyymmdd.substring(4, 6),
         '04',
       ); // sorted: April before October
-      expect(records[1].from.substring(4, 6), '10');
+      expect(records[1].from.yyyymmdd.substring(4, 6), '10');
     });
   });
 
   group('parseYmd', () {
     test('parses a valid yyyymmdd string into a DateTime', () {
-      final dt = parseYmd('20240107');
-      expect(dt.year, 2024);
-      expect(dt.month, 1);
-      expect(dt.day, 7);
+      final cal = Cal.fromYyyymmdd('20240107');
+      expect(cal.year, 2024);
+      expect(cal.month, 1);
+      expect(cal.day, 7);
     });
 
     test('returns correct weekday', () {
       // 2024-01-07 is a Sunday (weekday == 7)
-      expect(parseYmd('20240107').weekday, 7);
+      final cal1 = Cal.fromYyyymmdd('20240107');
+      expect(DateTime(cal1.year, cal1.month, cal1.day).weekday, 7);
       // 2024-01-08 is a Monday (weekday == 1)
-      expect(parseYmd('20240108').weekday, 1);
+      final cal2 = Cal.fromYyyymmdd('20240108');
+      expect(DateTime(cal2.year, cal2.month, cal2.day).weekday, 1);
     });
   });
 }

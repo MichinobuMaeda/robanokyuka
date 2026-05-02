@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/services/authentication.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../config/firebase.dart';
 import '../../config/theme.dart';
-import '../../models/gengo.dart';
-import '../../models/service.dart';
-import '../../models/users.dart';
+import '../../models/cal_date.dart';
+import '../../models/nengo.dart';
 import '../../models/record.dart';
 import '../../services/helpers.dart';
 import '../../services/validators.dart';
@@ -28,14 +28,7 @@ class RecordPanel extends HookConsumerWidget {
     final selectedIndex = ref.watch(selectedRecordIndexProvider);
     final records = ref.watch(recordsProvider).asData?.value ?? [];
     final record = selectedIndex == null ? null : records[selectedIndex];
-    final gengos = ref.watch(gengosProvider);
-    final showNengo = ref.watch(
-      userProvider.select((user) => user?.showNengo == true),
-    );
-
-    final label = record != null
-        ? '${formatDate(record.from, gengos, showNengo)}〜'
-        : '期間を追加してください';
+    final nengo = ref.watch(nengoProvider);
     final currentIndex = selectedIndex ?? -1;
 
     Future<void> handleSave(Record newRecord) async {
@@ -52,12 +45,8 @@ class RecordPanel extends HookConsumerWidget {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        builder: (sheetContext) => _EditSheet(
-          onConfirm: handleSave,
-          record: record,
-          showNengo: showNengo,
-          gengos: gengos,
-        ),
+        builder: (sheetContext) =>
+            _EditSheet(onConfirm: handleSave, record: record, nengo: nengo),
       );
     }
 
@@ -67,66 +56,74 @@ class RecordPanel extends HookConsumerWidget {
         isScrollControlled: true,
         builder: (sheetContext) => _EditSheet(
           onConfirm: handleSave,
-          record: getDefaultRecord(records),
-          showNengo: showNengo,
-          gengos: gengos,
+          record: Record.next(records),
+          nengo: nengo,
         ),
       );
     }
 
-    return BoxPanel(
-      showDivider: false,
-      children: [
-        Row(
-          spacing: 8.0,
-          children: [
-            if (record != null)
-              IconButton(
-                onPressed: showEditSheet,
-                icon: Icon(
-                  Icons.edit,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+    return record == null
+        ? BoxPanel(
+            showDivider: false,
+            children: [
+              FilledButton.icon(
+                onPressed: showAddSheet,
+                icon: Icon(Symbols.add),
+                label: Text('期間を追加'),
               ),
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+            ],
+          )
+        : BoxPanel(
+            showDivider: false,
+            children: [
+              Row(
                 spacing: 8.0,
                 children: [
-                  Text(label),
-                  if (record != null)
-                    IconButton(
-                      onPressed: currentIndex > 0
-                          ? () => ref
-                                .read(selectedRecordIndexProvider.notifier)
-                                .set(currentIndex - 1)
-                          : null,
-                      icon: Icon(Icons.arrow_back_ios_new),
+                  IconButton(
+                    onPressed: showEditSheet,
+                    icon: Icon(
+                      Symbols.edit,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                  if (record != null)
-                    IconButton(
-                      onPressed:
-                          currentIndex >= 0 && currentIndex < records.length - 1
-                          ? () => ref
-                                .read(selectedRecordIndexProvider.notifier)
-                                .set(currentIndex + 1)
-                          : null,
-                      icon: Icon(Icons.arrow_forward_ios),
+                  ),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      spacing: 8.0,
+                      children: [
+                        Text('${nengo.format(record.from)}〜'),
+                        IconButton(
+                          onPressed: currentIndex > 0
+                              ? () => ref
+                                    .read(selectedRecordIndexProvider.notifier)
+                                    .set(currentIndex - 1)
+                              : null,
+                          icon: Icon(Symbols.arrow_back_ios_new),
+                        ),
+                        IconButton(
+                          onPressed:
+                              currentIndex >= 0 &&
+                                  currentIndex < records.length - 1
+                              ? () => ref
+                                    .read(selectedRecordIndexProvider.notifier)
+                                    .set(currentIndex + 1)
+                              : null,
+                          icon: Icon(Symbols.arrow_forward_ios),
+                        ),
+                      ],
                     ),
+                  ),
+                  IconButton.filledTonal(
+                    onPressed: showAddSheet,
+                    icon: Icon(
+                      Symbols.add,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 ],
               ),
-            ),
-            IconButton.filledTonal(
-              onPressed: showAddSheet,
-              icon: Icon(
-                Icons.add,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+            ],
+          );
   }
 }
 
@@ -134,39 +131,23 @@ class _EditSheet extends HookWidget {
   const _EditSheet({
     required this.onConfirm,
     required this.record,
-    required this.showNengo,
-    required this.gengos,
+    required this.nengo,
   });
 
   final Record record;
   final void Function(Record record) onConfirm;
-  final bool showNengo;
-  final List<Gengo> gengos;
+  final Nengo nengo;
 
   @override
   Widget build(BuildContext context) {
     final fromYearC = useTextEditingController(
-      text: showNengo
-          ? formatNengo(gengos, record.from).replaceAll('年', '')
-          : record.from.substring(0, 4),
+      text: nengo.formatYear(record.from),
     );
-    final fromMonthC = useTextEditingController(
-      text: int.parse(record.from.substring(4, 6)).toString(),
-    );
-    final fromDayC = useTextEditingController(
-      text: int.parse(record.from.substring(6, 8)).toString(),
-    );
-    final toYearC = useTextEditingController(
-      text: showNengo
-          ? formatNengo(gengos, record.to).replaceAll('年', '')
-          : record.to.substring(0, 4),
-    );
-    final toMonthC = useTextEditingController(
-      text: int.parse(record.to.substring(4, 6)).toString(),
-    );
-    final toDayC = useTextEditingController(
-      text: int.parse(record.to.substring(6, 8)).toString(),
-    );
+    final fromMonthC = useTextEditingController(text: '${record.from.month}');
+    final fromDayC = useTextEditingController(text: '${record.from.day}');
+    final toYearC = useTextEditingController(text: nengo.formatYear(record.to));
+    final toMonthC = useTextEditingController(text: '${record.to.month}');
+    final toDayC = useTextEditingController(text: '${record.to.day}');
     final givenLeavesC = useTextEditingController(
       text: '${record.givenLeaves}',
     );
@@ -180,13 +161,13 @@ class _EditSheet extends HookWidget {
       if (!(formKey.currentState?.validate() ?? false)) return;
       final updated = Record(
         id: record.id,
-        from: formatYmd(
-          int.parse(parseNengo(gengos, fromYearC.text)),
+        from: Cal(
+          int.parse(nengo.parseYear(fromYearC.text)),
           int.parse(fromMonthC.text),
           int.parse(fromDayC.text),
         ),
-        to: formatYmd(
-          int.parse(parseNengo(gengos, toYearC.text)),
+        to: Cal(
+          int.parse(nengo.parseYear(toYearC.text)),
           int.parse(toMonthC.text),
           int.parse(toDayC.text),
         ),
@@ -229,7 +210,7 @@ class _EditSheet extends HookWidget {
                       yearController: fromYearC,
                       monthController: fromMonthC,
                       dayController: fromDayC,
-                      gengos: gengos,
+                      nengo: nengo,
                     ),
                     Row(
                       spacing: 8,
@@ -239,7 +220,7 @@ class _EditSheet extends HookWidget {
                           yearController: toYearC,
                           monthController: toMonthC,
                           dayController: toDayC,
-                          gengos: gengos,
+                          nengo: nengo,
                         ),
                       ],
                     ),
@@ -362,7 +343,7 @@ class _EditSheet extends HookWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check),
+                        Icon(Symbols.check),
                         SizedBox(width: 8),
                         Text('保存'),
                       ],

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/services/validators.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../config/firebase.dart';
 import '../../config/theme.dart';
 import '../../services/helpers.dart';
-import '../../models/gengo.dart';
-import '../../models/service.dart';
-import '../../models/users.dart';
+import '../../models/cal_date.dart';
+import '../../models/nengo.dart';
+import '../../models/holidays.dart';
 import '../../widgets/bordered_list_item.dart';
 import '../../widgets/date_row.dart';
 
@@ -19,39 +20,31 @@ class HolidaysPanel extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedYear = useState(DateTime.now().year);
     final holidays = ref.watch(holidaysProvider);
-    final gengos = ref.watch(gengosProvider);
-    final showNengo = ref.watch(
-      userProvider.select((user) => user?.showNengo == true),
-    );
+    final nengo = ref.watch(nengoProvider);
 
-    final years =
-        holidays.map((h) => int.parse(h.date.substring(0, 4))).toSet().toList()
-          ..sort();
+    final years = holidays.map((h) => int.parse(h.yyyy)).toSet().toList()
+      ..sort();
     if (!years.contains(selectedYear.value)) {
       years.add(selectedYear.value);
       years.sort();
     }
 
     final filtered = holidays
-        .where(
-          (holiday) =>
-              int.parse(holiday.date.substring(0, 4)) == selectedYear.value,
-        )
+        .where((holiday) => int.parse(holiday.yyyy) == selectedYear.value)
         .toList();
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
         switch (index) {
           case 0:
-            return BorderedListItem(child: _Header(gengos, showNengo));
+            return BorderedListItem(child: _Header(nengo));
           case 1:
             return BorderedListItem(
               child: _Years(
                 years,
                 selectedYear.value,
                 (year) => selectedYear.value = year,
-                showNengo,
-                gengos,
+                nengo,
               ),
             );
           default:
@@ -59,7 +52,7 @@ class HolidaysPanel extends HookConsumerWidget {
             if (itemIndex < filtered.length) {
               return BorderedListItem(
                 border: index % 2 == 0,
-                child: _Item(filtered[itemIndex], gengos, showNengo),
+                child: _Item(filtered[itemIndex], nengo),
               );
             } else {
               return BorderedListItem(child: const Divider());
@@ -71,10 +64,9 @@ class HolidaysPanel extends HookConsumerWidget {
 }
 
 class _Header extends HookConsumerWidget {
-  const _Header(this.gengos, this.showNengo);
+  const _Header(this.nengo);
 
-  final List<Gengo> gengos;
-  final bool showNengo;
+  final Nengo nengo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,13 +86,7 @@ class _Header extends HookConsumerWidget {
         context: context,
         isScrollControlled: true,
         builder: (sheetContext) {
-          return _AddSheet(
-            defaultHoliday,
-            holidays,
-            showNengo,
-            gengos,
-            handleAdd,
-          );
+          return _AddSheet(defaultHoliday, holidays, nengo, handleAdd);
         },
       );
     }
@@ -110,7 +96,7 @@ class _Header extends HookConsumerWidget {
         Expanded(child: Text('祝日', style: panelTitleStyle(context))),
         IconButton.filledTonal(
           onPressed: showAddSheet,
-          icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
+          icon: Icon(Symbols.add, color: Theme.of(context).colorScheme.primary),
         ),
       ],
     );
@@ -118,19 +104,12 @@ class _Header extends HookConsumerWidget {
 }
 
 class _Years extends StatelessWidget {
-  const _Years(
-    this.years,
-    this.selectedYear,
-    this.onSelected,
-    this.showNengo,
-    this.gengos,
-  );
+  const _Years(this.years, this.selectedYear, this.onSelected, this.nengo);
 
   final List<int> years;
   final int selectedYear;
   final ValueChanged<int> onSelected;
-  final bool showNengo;
-  final List<Gengo> gengos;
+  final Nengo nengo;
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +120,7 @@ class _Years extends StatelessWidget {
         children: years
             .map(
               (year) => ChoiceChip(
-                label: Text(
-                  showNengo ? formatNengo(gengos, '$year') : '$year年',
-                ),
+                label: Text('${nengo.formatYear(Cal(year, 1, 1))}年'),
                 selected: selectedYear == year,
                 onSelected: (_) => onSelected(year),
               ),
@@ -155,11 +132,10 @@ class _Years extends StatelessWidget {
 }
 
 class _Item extends HookConsumerWidget {
-  const _Item(this.holiday, this.gengos, this.showNengo);
+  const _Item(this.holiday, this.nengo);
 
   final Holiday holiday;
-  final List<Gengo> gengos;
-  final bool showNengo;
+  final Nengo nengo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -174,10 +150,7 @@ class _Item extends HookConsumerWidget {
     }
 
     Future<void> handleUpdateName(String name) async {
-      final result = await setHoliday(
-        db(),
-        Holiday(date: holiday.date, name: name),
-      );
+      final result = await setHoliday(db(), holiday.copyWith(name: name));
       result.match(
         (error) => message.show('祝日の更新に失敗しました: $error'),
         (_) => message.show('祝日を更新しました'),
@@ -188,7 +161,7 @@ class _Item extends HookConsumerWidget {
       await showModalBottomSheet<void>(
         context: context,
         builder: (sheetContext) {
-          return _DeleteSheet(holiday, gengos, showNengo, handleDelete);
+          return _DeleteSheet(holiday, nengo, handleDelete);
         },
       );
     }
@@ -198,7 +171,7 @@ class _Item extends HookConsumerWidget {
         context: context,
         isScrollControlled: true,
         builder: (sheetContext) {
-          return _EditSheet(holiday, gengos, showNengo, handleUpdateName);
+          return _EditSheet(holiday, nengo, handleUpdateName);
         },
       );
     }
@@ -210,14 +183,17 @@ class _Item extends HookConsumerWidget {
       children: [
         IconButton(
           onPressed: showDeleteConfirmation,
-          icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+          icon: Icon(
+            Symbols.delete,
+            color: Theme.of(context).colorScheme.error,
+          ),
         ),
         SizedBox(
-          width: 96,
+          width: 144,
           child: Align(
             alignment: Alignment.centerRight,
             child: Text(
-              '${formatDate(holiday.date, gengos, showNengo)}(${dateToWeekday(holiday.date)})',
+              '${nengo.format(holiday.date)}(${holiday.date.weekDayLabel})',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -232,7 +208,10 @@ class _Item extends HookConsumerWidget {
         ),
         IconButton(
           onPressed: showEditSheet,
-          icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+          icon: Icon(
+            Symbols.edit,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ],
     );
@@ -240,17 +219,16 @@ class _Item extends HookConsumerWidget {
 }
 
 final defaultHoliday = Holiday(
-  date: '${DateTime.now().year + 1}0101',
+  date: Cal(DateTime.now().year + 1, 1, 1),
   name: '',
 );
 
 class _DeleteSheet extends HookConsumerWidget {
-  const _DeleteSheet(this.holiday, this.gengos, this.showNengo, this.onConfirm);
+  const _DeleteSheet(this.holiday, this.nengo, this.onConfirm);
 
   final Holiday holiday;
   final VoidCallback onConfirm;
-  final List<Gengo> gengos;
-  final bool showNengo;
+  final Nengo nengo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -262,9 +240,7 @@ class _DeleteSheet extends HookConsumerWidget {
         spacing: 16,
         children: [
           Text('祝日を削除', style: Theme.of(context).textTheme.titleLarge),
-          Text(
-            '${formatDate(holiday.date, gengos, showNengo)} ${holiday.name} を削除しますか？',
-          ),
+          Text('${nengo.format(holiday.date)} ${holiday.name} を削除しますか？'),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -286,7 +262,7 @@ class _DeleteSheet extends HookConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.delete,
+                      Symbols.delete,
                       color: Theme.of(context).colorScheme.onError,
                     ),
                     SizedBox(width: 8),
@@ -308,33 +284,22 @@ class _DeleteSheet extends HookConsumerWidget {
 }
 
 class _AddSheet extends HookConsumerWidget {
-  const _AddSheet(
-    this.holiday,
-    this.holidays,
-    this.showNengo,
-    this.gengos,
-    this.onConfirm,
-  );
+  const _AddSheet(this.holiday, this.holidays, this.nengo, this.onConfirm);
 
   final Holiday holiday;
   final List<Holiday> holidays;
-  final bool showNengo;
-  final List<Gengo> gengos;
+  final Nengo nengo;
   final ValueChanged<Holiday> onConfirm;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final yearController = useTextEditingController(
-      text: showNengo
-          ? formatNengo(gengos, holiday.date).replaceAll('年', '')
-          : holiday.date.substring(0, 4),
+      text: nengo.formatYear(holiday.date),
     );
     final monthController = useTextEditingController(
-      text: '${int.parse(holiday.date.substring(4, 6))}',
+      text: '${holiday.date.month}',
     );
-    final dayController = useTextEditingController(
-      text: '${int.parse(holiday.date.substring(6, 8))}',
-    );
+    final dayController = useTextEditingController(text: '${holiday.date.day}');
     final nameController = useTextEditingController(text: holiday.name);
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final isFormValid = useState(false);
@@ -353,10 +318,10 @@ class _AddSheet extends HookConsumerWidget {
       }
 
       final newHoliday = Holiday(
-        date: joinYmd(
-          parseNengo(gengos, yearController.text),
-          monthController.text,
-          dayController.text,
+        date: Cal(
+          int.parse(yearController.text),
+          int.parse(monthController.text),
+          int.parse(dayController.text),
         ),
         name: nameController.text.trim(),
       );
@@ -389,7 +354,7 @@ class _AddSheet extends HookConsumerWidget {
                 yearController: yearController,
                 monthController: monthController,
                 dayController: dayController,
-                gengos: gengos,
+                nengo: nengo,
                 extraDayValidator: (year, month, day) =>
                     validateHoliday(holidays, year, month, day),
               ),
@@ -415,7 +380,7 @@ class _AddSheet extends HookConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add),
+                        Icon(Symbols.add),
                         SizedBox(width: 8),
                         Text('追加'),
                       ],
@@ -432,12 +397,11 @@ class _AddSheet extends HookConsumerWidget {
 }
 
 class _EditSheet extends HookConsumerWidget {
-  const _EditSheet(this.holiday, this.gengos, this.showNengo, this.onConfirm);
+  const _EditSheet(this.holiday, this.nengo, this.onConfirm);
 
   final Holiday holiday;
   final ValueChanged<String> onConfirm;
-  final List<Gengo> gengos;
-  final bool showNengo;
+  final Nengo nengo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -484,7 +448,7 @@ class _EditSheet extends HookConsumerWidget {
             children: [
               Text('祝日を更新', style: Theme.of(context).textTheme.titleLarge),
               Text(
-                formatDate(holiday.date, gengos, showNengo),
+                nengo.format(holiday.date),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               TextFormField(
@@ -509,7 +473,7 @@ class _EditSheet extends HookConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check),
+                        Icon(Symbols.check),
                         SizedBox(width: 8),
                         Text('更新'),
                       ],

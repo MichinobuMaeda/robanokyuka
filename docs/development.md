@@ -7,9 +7,16 @@
 ### Prerequisites
 
 - Git
-- Flutter >= 3.41.5
+- Flutter >= 3.41.9
 - Node.js >= 24
 - Java >= JDK 11
+
+[material_symbols_icons](https://pub.dev/packages/material_symbols_icons)
+
+```bash
+dart pub global activate material_symbols_icons_cli
+install_material_symbols_icons_fonts
+```
 
 ### Get started
 
@@ -19,6 +26,7 @@ cd yukyuchecker
 flutter pug get
 npm i
 npm i --prefix functions
+num test
 num run dev
 ```
 

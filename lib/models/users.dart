@@ -1,8 +1,9 @@
-import 'package:flutter/widgets.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart' show ThemeMode, debugPrint;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
-import 'dart:async';
 
 import '../config/firebase.dart';
 import '../services/authentication.dart';
@@ -12,12 +13,14 @@ class User {
   final String id;
   final String name;
   final bool showNengo;
+  final ThemeMode themeMode;
   final DateTime? disabledAt;
 
   User({
     required this.id,
     required this.name,
     this.showNengo = false,
+    this.themeMode = ThemeMode.system,
     this.disabledAt,
   });
 
@@ -27,6 +30,10 @@ class User {
       id: doc.id,
       name: "${data['name'] ?? ''}",
       showNengo: data['showNengo'] ?? false,
+      themeMode: ThemeMode.values.firstWhere(
+        (e) => e.name == (data['themeMode'] ?? 'system'),
+        orElse: () => ThemeMode.system,
+      ),
       disabledAt: data['disabledAt'] != null
           ? (data['disabledAt'] as Timestamp).toDate()
           : null,
@@ -65,6 +72,42 @@ final userProvider = Provider<User?>((ref) {
   return users.where((u) => u.id == uid).firstOrNull;
 });
 
+Future<Either<String, Unit>> updateUser(
+  FirebaseFirestore db,
+  String id,
+  Map<String, dynamic> data,
+) async {
+  try {
+    await db.collection('users').doc(id).update({
+      ...data,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error updating user: $error\n$stackTrace');
+    return left('$error');
+  }
+}
+
+Future<Either<String, Unit>> updateUserName(
+  FirebaseFirestore db,
+  String id,
+  String name,
+) async => updateUser(db, id, {'name': name});
+
+Future<Either<String, Unit>> updateUserShowNengo(
+  FirebaseFirestore db,
+  String id,
+  bool showNengo,
+) async => updateUser(db, id, {'showNengo': showNengo});
+
+Future<Either<String, Unit>> updateUserThemeMode(
+  FirebaseFirestore db,
+  String id,
+  ThemeMode themeMode,
+) async =>
+    updateUser(db, id, {'themeMode': themeMode.toString().split('.').last});
+
 Future<Either<String, Unit>> deleteUserData(
   FirebaseFirestore db,
   String uid,
@@ -101,38 +144,6 @@ Future<Either<String, Unit>> addUserByAdmin(
   }
 }
 
-Future<Either<String, Unit>> deleteUserByAdmin(
-  CallFunction callFunction,
-  String uid,
-) async {
-  try {
-    await callFunction('deleteUser', {'uid': uid});
-    return right(unit);
-  } catch (error, stackTrace) {
-    debugPrint('Error deleting user: $error\n$stackTrace');
-    return left('$error');
-  }
-}
-
-Future<Either<String, Unit>> updateUser(
-  FirebaseFirestore db,
-  String id,
-  String name, {
-  required bool showNengo,
-}) async {
-  try {
-    await db.collection('users').doc(id).update({
-      'name': name,
-      'showNengo': showNengo,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    return right(unit);
-  } catch (error, stackTrace) {
-    debugPrint('Error updating user: $error\n$stackTrace');
-    return left('$error');
-  }
-}
-
 Future<Either<String, Unit>> updateUserByAdmin(
   FirebaseFirestore db,
   String id,
@@ -148,6 +159,19 @@ Future<Either<String, Unit>> updateUserByAdmin(
     return right(unit);
   } catch (error, stackTrace) {
     debugPrint('Error updating user by admin: $error\n$stackTrace');
+    return left('$error');
+  }
+}
+
+Future<Either<String, Unit>> deleteUserByAdmin(
+  CallFunction callFunction,
+  String uid,
+) async {
+  try {
+    await callFunction('deleteUser', {'uid': uid});
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error deleting user: $error\n$stackTrace');
     return left('$error');
   }
 }

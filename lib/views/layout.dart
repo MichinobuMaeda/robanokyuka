@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:web/web.dart' as web;
 
 import '../config/firebase.dart';
@@ -143,7 +144,7 @@ class _UpdateAvailable extends StatelessWidget {
             spacing: 4.0,
             children: [
               Icon(
-                Icons.sync,
+                Symbols.sync,
                 color: Theme.of(context).colorScheme.onErrorContainer,
               ),
               Text(

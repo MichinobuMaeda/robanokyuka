@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../config/firebase.dart';
 import '../../config/theme.dart';
@@ -76,7 +77,11 @@ class EmailPasswordPanel extends HookConsumerWidget {
                 onPressed: isFormValid.value ? () => handleSubmit() : null,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [Icon(Icons.send), SizedBox(width: 8), Text("送信")],
+                  children: [
+                    Icon(Symbols.send),
+                    SizedBox(width: 8),
+                    Text("送信"),
+                  ],
                 ),
               ),
             ],

@@ -1,10 +1,11 @@
 import {type AuthBlockingEvent} from "firebase-functions/identity";
 import {type CallableRequest} from "firebase-functions/v2/https";
-import {type FirestoreEvent, type Change} from
-  "firebase-functions/v2/firestore";
+import {
+  type FirestoreEvent, type Change,
+} from "firebase-functions/v2/firestore";
 import {type QueryDocumentSnapshot} from "firebase-admin/firestore";
 
-import {Context, isAdminUid} from "./common";
+import {msg, Context, isAdminUid} from "./common";
 
 /**
  * Handles the beforeUserCreated event by creating a Firestore user document.
@@ -21,11 +22,11 @@ export async function onUserCreating(
   const name = event.data?.displayName;
 
   if (!uid) {
-    logger.error("No UID found in the event data");
+    logger.error(msg.noUidInEvent);
     return;
   }
 
-  logger.info("Creating user:", uid);
+  logger.info(msg.creatingUser(uid));
 
   await db.collection("users").doc(uid).set({
     name: name || email?.replace(/@.*/, "") || "",
@@ -45,24 +46,25 @@ export async function addUserWithEmailAndName(
   {logger, auth, db}: Context,
   {email, name}: {email: string, name?: string},
 ): Promise<void> {
-  logger.info("Adding user with email and name: ", {email, name});
+  logger.info(msg.addingUser, {email, name});
 
   let uid: string;
   try {
     const existing = await auth.getUserByEmail(email);
-    logger.info("User with email already exists:", existing.uid);
+    logger.info(msg.authUserExists(email));
     uid = existing.uid;
   } catch {
     const created = await auth.createUser(
       name ? {email, displayName: name} : {email},
     );
     uid = created.uid;
+    logger.info(msg.authUserCreated(email));
   }
 
   const docRef = db.collection("users").doc(uid);
   const docSnap = await docRef.get();
   if (docSnap.exists) {
-    logger.info("Firestore user document already exists:", uid);
+    logger.info(msg.userDocExists(uid));
     return;
   }
 
@@ -70,6 +72,7 @@ export async function addUserWithEmailAndName(
     name: name || email.replace(/@.*/, ""),
     createdAt: new Date(),
   });
+  logger.info(msg.userDocCreated(email));
 }
 
 /**
@@ -82,18 +85,16 @@ export async function handleAddUser(
   {logger, auth, db}: Context,
   event: CallableRequest,
 ): Promise<void> {
-  const uid = event.auth?.uid;
   const email = event.data?.email;
   const name = event.data?.name;
 
   if (!email) {
-    logger.error("No email provided in the callable request");
+    logger.error(msg.noEmail);
     throw new Error("Email is required");
   }
 
-  if (!(await isAdminUid({logger, auth, db}, uid))) {
-    logger.error("User is not an admin:", uid);
-    throw new Error("Unauthorized");
+  if (!(await isAdminUid({logger, auth, db}, event))) {
+    throw new Error(msg.unauthorized);
   }
 
   await addUserWithEmailAndName({logger, auth, db}, {email, name});
@@ -114,13 +115,13 @@ export async function handleUserUpdated(
   >,
 ): Promise<void> {
   const uid = event.data?.after.id;
-  const nameBefore = event.data?.before.get("name") as string | undefined;
-  const nameAfter = event.data?.after.get("name") as string | undefined;
-
-  if (nameBefore === nameAfter) return;
   if (!uid) return;
 
-  logger.info("Updating displayName for user:", uid, "to:", nameAfter);
+  const nameBefore = event.data?.before.get("name") as string | undefined;
+  const nameAfter = event.data?.after.get("name") as string | undefined;
+  if (nameBefore === nameAfter) return;
+
+  logger.info(msg.updatingDisplayName(uid, nameAfter));
   await auth.updateUser(uid, {displayName: nameAfter ?? ""});
 }
 
@@ -138,16 +139,15 @@ export async function handleDeleteUser(
   const uid = event.data?.uid;
 
   if (!uid) {
-    logger.error("No target UID provided in the callable request");
+    logger.error(msg.noTargetUid);
     throw new Error("UID is required");
   }
 
-  if (!(await isAdminUid({logger, auth, db}, event.auth?.uid))) {
-    logger.error("User is not an admin:", event.auth?.uid);
-    throw new Error("Unauthorized");
+  if (!(await isAdminUid({logger, auth, db}, event))) {
+    throw new Error(msg.unauthorized);
   }
 
-  logger.info("Deleting user:", uid);
+  logger.info(msg.deletingUser(uid));
 
   await auth.deleteUser(uid);
   const userDocRef = db.collection("users").doc(uid);

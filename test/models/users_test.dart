@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -18,11 +19,22 @@ void main() {
       expect(user.showNengo, isFalse);
     });
 
-    test('stores id, name, and showNengo', () {
-      final user = User(id: 'u2', name: '佐藤花子', showNengo: true);
+    test('defaults themeMode to system', () {
+      final user = User(id: 'u1', name: '山田太郎');
+      expect(user.themeMode, ThemeMode.system);
+    });
+
+    test('stores id, name, showNengo, and themeMode', () {
+      final user = User(
+        id: 'u2',
+        name: '佐藤花子',
+        showNengo: true,
+        themeMode: ThemeMode.dark,
+      );
       expect(user.id, 'u2');
       expect(user.name, '佐藤花子');
       expect(user.showNengo, isTrue);
+      expect(user.themeMode, ThemeMode.dark);
     });
 
     test('stores disabledAt when provided', () {
@@ -39,6 +51,7 @@ void main() {
       await firestore.collection('users').doc('u1').set({
         'name': '山田太郎',
         'showNengo': true,
+        'themeMode': 'dark',
         'disabledAt': Timestamp.fromDate(disabledAt),
       });
       final doc = await firestore.collection('users').doc('u1').get();
@@ -48,11 +61,25 @@ void main() {
       expect(user.id, 'u1');
       expect(user.name, '山田太郎');
       expect(user.showNengo, isTrue);
+      expect(user.themeMode, ThemeMode.dark);
       expect(user.disabledAt, disabledAt);
     });
 
+    test('parses themeMode light from Firestore document', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('users').doc('u4').set({
+        'name': 'test',
+        'themeMode': 'light',
+      });
+      final doc = await firestore.collection('users').doc('u4').get();
+
+      final user = User.fromDocument(doc);
+
+      expect(user.themeMode, ThemeMode.light);
+    });
+
     test(
-      'defaults showNengo to false and disabledAt to null when absent',
+      'defaults showNengo to false, themeMode to system, and disabledAt to null when absent',
       () async {
         final firestore = FakeFirebaseFirestore();
         await firestore.collection('users').doc('u2').set({'name': '佐藤花子'});
@@ -62,9 +89,23 @@ void main() {
 
         expect(user.id, 'u2');
         expect(user.showNengo, isFalse);
+        expect(user.themeMode, ThemeMode.system);
         expect(user.disabledAt, isNull);
       },
     );
+
+    test('falls back to system for unknown themeMode value', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('users').doc('u5').set({
+        'name': 'test',
+        'themeMode': 'unknown',
+      });
+      final doc = await firestore.collection('users').doc('u5').get();
+
+      final user = User.fromDocument(doc);
+
+      expect(user.themeMode, ThemeMode.system);
+    });
 
     test('uses empty string for missing name field', () async {
       final firestore = FakeFirebaseFirestore();
@@ -169,35 +210,73 @@ service cloud.firestore {
   });
 
   group('updateUser', () {
-    test('updates name and showNengo in Firestore', () async {
+    test('updates arbitrary fields in Firestore', () async {
       final firestore = FakeFirebaseFirestore();
       await firestore.collection('users').doc('u1').set({
-        'name': 'Old Name',
+        'name': 'Alice',
         'showNengo': false,
       });
 
-      final result = await updateUser(
-        firestore,
-        'u1',
-        'New Name',
-        showNengo: true,
-      );
+      final result = await updateUser(firestore, 'u1', {
+        'name': 'Bob',
+        'showNengo': true,
+      });
 
       expect(result.isRight(), isTrue);
       final doc = await firestore.collection('users').doc('u1').get();
-      expect(doc.data()!['name'], 'New Name');
+      expect(doc.data()!['name'], 'Bob');
       expect(doc.data()!['showNengo'], isTrue);
     });
 
     test('returns left when Firestore update fails', () async {
       final firestore = FakeFirebaseFirestore();
-      final result = await updateUser(
-        firestore,
-        'nonexistent',
-        'Name',
-        showNengo: false,
-      );
+      final result = await updateUser(firestore, 'nonexistent', {'name': 'X'});
       expect(result.isLeft(), isTrue);
+    });
+  });
+
+  group('updateUserName', () {
+    test('updates name in Firestore', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('users').doc('u1').set({'name': 'Old Name'});
+
+      final result = await updateUserName(firestore, 'u1', 'New Name');
+
+      expect(result.isRight(), isTrue);
+      final doc = await firestore.collection('users').doc('u1').get();
+      expect(doc.data()!['name'], 'New Name');
+    });
+  });
+
+  group('updateUserShowNengo', () {
+    test('updates showNengo in Firestore', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('users').doc('u1').set({
+        'name': 'Alice',
+        'showNengo': false,
+      });
+
+      final result = await updateUserShowNengo(firestore, 'u1', true);
+
+      expect(result.isRight(), isTrue);
+      final doc = await firestore.collection('users').doc('u1').get();
+      expect(doc.data()!['showNengo'], isTrue);
+    });
+  });
+
+  group('updateUserThemeMode', () {
+    test('updates themeMode in Firestore', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('users').doc('u1').set({
+        'name': 'Alice',
+        'themeMode': 'system',
+      });
+
+      final result = await updateUserThemeMode(firestore, 'u1', ThemeMode.dark);
+
+      expect(result.isRight(), isTrue);
+      final doc = await firestore.collection('users').doc('u1').get();
+      expect(doc.data()!['themeMode'], 'dark');
     });
   });
 

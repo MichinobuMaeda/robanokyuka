@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 const appName = '有休チェッカー';
 const seedColor = Color.fromARGB(255, 0x6A, 0xB0, 0x7F);
@@ -57,4 +58,33 @@ ThemeData generateThemeData(Brightness brightness) {
       ),
     ),
   );
+}
+
+final iconWorked = Icon(Symbols.work, fill: 0);
+final iconCompanyHoliday = Icon(Symbols.work_off, fill: 1.0);
+final iconPaidFull = Icon(Symbols.battery_android_frame_full);
+final iconPaidHalf = Icon(Symbols.battery_android_frame_4);
+final iconPaidEmpty = Icon(Symbols.battery_android_0);
+final iconSickFull = Icon(Symbols.home_health, fill: 1.0);
+final iconSickHalf = Icon(Symbols.home_health, fill: 0.0);
+final iconSickEmpty = Icon(Symbols.health_cross, fill: 0.0);
+final iconOtherFull = Icon(Symbols.star, fill: 1.0);
+final iconOtherHalf = Icon(Symbols.star_half);
+final iconOtherEmpty = Icon(Symbols.star, fill: 0.0);
+
+const weekdayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+
+const calHeaderHeight = 24.0;
+const calCellHeight = 48.0;
+const calGridWidth = 400.0;
+const calGridHeight = calHeaderHeight * 2 + calCellHeight * 6;
+const calGridSpacing = 1.0;
+
+Color panelColor(BuildContext context, int month) {
+  return switch (month % 4) {
+    0 => Theme.of(context).colorScheme.surfaceContainerLowest,
+    1 => Theme.of(context).colorScheme.surfaceContainerLow.withAlpha(168),
+    2 => Theme.of(context).colorScheme.surfaceContainerLow.withAlpha(64),
+    _ => Theme.of(context).colorScheme.surfaceContainerLow.withAlpha(252),
+  };
 }

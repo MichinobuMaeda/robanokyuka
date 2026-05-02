@@ -4,9 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../config/firebase.dart';
+import '../models/cal_date.dart';
 import '../services/authentication.dart';
 import '../services/helpers.dart';
-import '../models/service.dart';
 
 const defaultPublicHolidays = [
   true, // Sunday
@@ -24,7 +24,7 @@ const defaultMinLeaves = 5;
 const defaultWorkingHours = '08:00';
 
 class DateRecord {
-  final String date;
+  final Cal date;
   final bool companyHoliday;
   final String? plan;
   final String? used;
@@ -32,8 +32,8 @@ class DateRecord {
   final String? other;
   final String? note;
 
-  DateRecord({
-    required this.date,
+  DateRecord(
+    this.date, {
     this.companyHoliday = false,
     this.plan,
     this.used,
@@ -43,10 +43,10 @@ class DateRecord {
   });
 }
 
-class Record {
+class Record implements Comparable<Record> {
   final String id;
-  final String from;
-  final String to;
+  final Cal from;
+  final Cal to;
   final List<bool> publicHolidays;
   final int givenLeaves;
   final int minLeaves;
@@ -70,8 +70,8 @@ class Record {
     final data = doc.data()!;
     return Record(
       id: doc.id,
-      from: data['from'] as String,
-      to: data['to'] as String,
+      from: Cal.fromYyyymmdd(data['from'] as String),
+      to: Cal.fromYyyymmdd(data['to'] as String),
       publicHolidays: List<bool>.from(
         data['holidays'] ?? defaultPublicHolidays,
       ),
@@ -83,7 +83,7 @@ class Record {
           (data['dates'] as Map<String, dynamic>?)?.entries
               .map(
                 (entry) => DateRecord(
-                  date: entry.key,
+                  Cal.fromYyyymmdd(entry.key),
                   companyHoliday: entry.value['c'] ?? false,
                   plan: entry.value['p'],
                   used: entry.value['u'],
@@ -96,6 +96,56 @@ class Record {
           [],
     );
   }
+
+  List<(int, int)>? get months {
+    final months = <(int, int)>[];
+    var year = from.year;
+    var month = from.month;
+    while (year < to.year || (year == to.year && month <= to.month)) {
+      months.add((year, month));
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+    }
+    return months;
+  }
+
+  factory Record.next(List<Record> records) {
+    final Cal from;
+    final Cal to;
+
+    if (records.isEmpty) {
+      final year = DateTime.now().year;
+      from = Cal(year, 4, 1);
+      to = Cal(year + 1, 3, 31);
+    } else {
+      // find the record with the latest `to` date
+      final maxTo = records
+          .map((r) => r.to)
+          .reduce((a, b) => a.compareTo(b) >= 0 ? a : b)
+          .dateTime;
+      from = Cal.fromDateTime(maxTo.add(const Duration(days: 1)));
+      to = Cal(maxTo.year + 1, maxTo.month, maxTo.day);
+    }
+
+    return Record(
+      id: '',
+      from: from,
+      to: to,
+      publicHolidays: List<bool>.from(defaultPublicHolidays),
+      givenLeaves: defaultGivenLeaves,
+      minLeaves: defaultMinLeaves,
+      useLeavesHourly: false,
+      workingHours: defaultWorkingHours,
+    );
+  }
+
+  bool isHolidayWeekDay(Cal date) => publicHolidays[date.dateTime.weekday % 7];
+
+  @override
+  int compareTo(Record other) => from.compareTo(other.from);
 }
 
 Stream<List<Record>?> recordsStream(Ref ref) {
@@ -113,7 +163,7 @@ Stream<List<Record>?> recordsStream(Ref ref) {
                   snapshot.docs
                       .map((doc) => Record.fromDocument(doc))
                       .toList(growable: true)
-                    ..sort((a, b) => a.from.compareTo(b.from)),
+                    ..sort(),
             );
 }
 
@@ -133,12 +183,11 @@ class SelectedRecordIndexNotifier extends Notifier<int?> {
 
     final records = ref.watch(recordsProvider).asData?.value;
     if (records == null || records.isEmpty) return null;
-    final now = DateTime.now();
-    final todayStr = formatYmd(now.year, now.month, now.day);
+    final today = Cal.fromDateTime(DateTime.now());
     int index = 0;
     for (int i = 0; i < records.length; i++) {
       final record = records[i];
-      if (record.from.compareTo(todayStr) > 0) break;
+      if (record.from.compareTo(today) > 0) break;
       index = i;
     }
     return index;
@@ -161,42 +210,6 @@ class SelectedRecordIndexNotifier extends Notifier<int?> {
   }
 }
 
-Record getDefaultRecord(List<Record> records) {
-  final String from;
-  final String to;
-
-  if (records.isEmpty) {
-    final now = DateTime.now();
-    from = '${now.year}0401';
-    to = '${now.year + 1}0331';
-  } else {
-    // find the record with the latest `to` date
-    final maxTo = records
-        .map((r) => r.to)
-        .reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
-    final maxToDate = parseYmd(maxTo);
-    final next = maxToDate.add(const Duration(days: 1));
-    final oneYearLater = DateTime(
-      maxToDate.year + 1,
-      maxToDate.month,
-      maxToDate.day,
-    );
-    from = formatYmd(next.year, next.month, next.day);
-    to = formatYmd(oneYearLater.year, oneYearLater.month, oneYearLater.day);
-  }
-
-  return Record(
-    id: '',
-    from: from,
-    to: to,
-    publicHolidays: List<bool>.from(defaultPublicHolidays),
-    givenLeaves: defaultGivenLeaves,
-    minLeaves: defaultMinLeaves,
-    useLeavesHourly: false,
-    workingHours: defaultWorkingHours,
-  );
-}
-
 Future<Either<String, Unit>> saveRecord(
   FirebaseFirestore db,
   String uid,
@@ -205,8 +218,8 @@ Future<Either<String, Unit>> saveRecord(
   try {
     final userRef = db.collection('users').doc(uid);
     final data = {
-      'from': record.from,
-      'to': record.to,
+      'from': record.from.yyyymmdd,
+      'to': record.to.yyyymmdd,
       'holidays': record.publicHolidays,
       'givenLeaves': record.givenLeaves,
       'minLeaves': record.minLeaves,
@@ -239,7 +252,7 @@ Future<Either<String, Unit>> saveDateRecord(
   DateRecord dateRecord,
 ) async {
   try {
-    final key = dateRecord.date;
+    final key = dateRecord.date.yyyymmdd;
     await db
         .collection('users')
         .doc(uid)
@@ -261,11 +274,4 @@ Future<Either<String, Unit>> saveDateRecord(
     debugPrint('Error saving date record: $error\n$stackTrace');
     return left('$error');
   }
-}
-
-bool isHolyday(Record record, List<Holiday> holidays, String date) {
-  return record.publicHolidays[parseYmd(date).weekday % 7] ||
-      (record.publicHolidays[7] &&
-          holidays.any((holiday) => holiday.date == date)) ||
-      record.dates.any((item) => item.date == date && item.companyHoliday);
 }

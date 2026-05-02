@@ -21,27 +21,27 @@ const db = getFirestore();
 const auth = getAuth();
 const context = {logger, db, auth};
 
-exports.onServiceVersionDeleted = onDocumentDeleted(
+export const onServiceVersionDeleted = onDocumentDeleted(
   {region, document: "service/version"},
   (event) => setup(context, event),
 );
 
-exports.handleBeforeUserCreated = beforeUserCreated(
+export const handleBeforeUserCreated = beforeUserCreated(
   {region},
   (event) => users.onUserCreating(context, event),
 );
 
-exports.onUserUpdated = onDocumentUpdated(
+export const onUserUpdated = onDocumentUpdated(
   {region, document: "users/{uid}"},
   (event) => users.handleUserUpdated(context, event),
 );
 
-exports.addUser = onCall(
+export const addUser = onCall(
   {region},
   (event) => users.handleAddUser(context, event),
 );
 
-exports.deleteUser = onCall(
+export const deleteUser = onCall(
   {region},
   (event) => users.handleDeleteUser(context, event),
 );
