@@ -6,8 +6,8 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
 
-import '../config/theme.dart';
-import 'box_panel.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/widgets/box_panel.dart';
 
 const loadingIndicatorSize = 48.0;
 

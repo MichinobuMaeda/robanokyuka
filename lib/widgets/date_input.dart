@@ -1,0 +1,69 @@
+import 'package:flutter/material.dart';
+
+import 'package:yukyuchecker/models/cal_date.dart';
+import 'package:yukyuchecker/models/nengo.dart';
+import 'package:yukyuchecker/services/validators.dart';
+
+class DateInput extends StatelessWidget {
+  const DateInput({
+    super.key,
+    required this.labelText,
+    this.helperText = '日付を入力してください',
+    required this.dateController,
+    required this.nengo,
+    this.extraValidator,
+  });
+
+  final String labelText;
+  final String helperText;
+  final TextEditingController dateController;
+  final Nengo nengo;
+
+  /// Called after built-in date validation passes. Receives the validated
+  /// [Cal] and should return an error string or null.
+  final String? Function(Cal date)? extraValidator;
+
+  Future<void> _pickDate(BuildContext context) async {
+    final cal = nengo.parseDate(dateController.text);
+    final initial = cal != null ? cal.dateTime : DateTime.now();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(DateTime.now().year - 10),
+      lastDate: DateTime(DateTime.now().year + 10),
+    );
+
+    if (picked != null) {
+      dateController.text = nengo.formatShort(
+        Cal(picked.year, picked.month, picked.day),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: dateController,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: labelText,
+        border: const OutlineInputBorder(),
+        helperText: helperText,
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.calendar_today),
+          onPressed: () => _pickDate(context),
+        ),
+      ),
+      validator: (value) {
+        final error = validateDate(nengo, value);
+        if (error != null) return error;
+        if (extraValidator != null) {
+          final cal = nengo.parseDate(value ?? '');
+          if (cal != null) return extraValidator!(cal);
+        }
+        return null;
+      },
+    );
+  }
+}

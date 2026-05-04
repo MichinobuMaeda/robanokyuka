@@ -28,6 +28,7 @@
     "subosito",
     "testutils",
     "uids",
+    "Unrecognised",
     "Yukyu",
     "yukyuchecker"
   ],
@@ -62,5 +63,6 @@
   },
   "[typescript]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  }
+  },
+  "git.addAICoAuthor": "off"
 }

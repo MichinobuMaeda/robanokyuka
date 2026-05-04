@@ -7,38 +7,100 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/config/firebase.dart';
 import 'package:yukyuchecker/models/cal_date.dart';
 import 'package:yukyuchecker/models/record.dart';
+
 import 'package:yukyuchecker/services/authentication.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('WorkTime', () {
+    test(
+      'toString returns empty string when seconds is 0 and all is false',
+      () {
+        expect(WorkTime(0).toString(), '');
+      },
+    );
+
+    test('toString returns allString when all is true', () {
+      expect(WorkTime(0, true).toString(), WorkTime.allString);
+    });
+
+    test('toString returns HH:MM string for non-zero seconds', () {
+      expect(WorkTime(3600 * 8).toString(), '08:00');
+    });
+
+    test('hashCode is equal for equal WorkTime instances', () {
+      expect(WorkTime(3600).hashCode, WorkTime(3600).hashCode);
+    });
+
+    test('hashCode differs for different WorkTime instances', () {
+      expect(WorkTime(3600).hashCode, isNot(WorkTime(7200).hashCode));
+    });
+  });
+
+  group('formatTime', () {
+    test('returns HH:MM with leading zero for single-digit hours', () {
+      expect(formatTime(8 * 3600), '08:00');
+    });
+
+    test('returns HH:MM for double-digit hours', () {
+      expect(formatTime(10 * 3600 + 30 * 60), '10:30');
+    });
+
+    test('short: true returns H:MM without leading zero', () {
+      expect(formatTime(8 * 3600, short: true), '8:00');
+    });
+  });
+
+  group('formatTimeShort', () {
+    test('returns H:MM without leading zero for single-digit hours', () {
+      expect(formatTimeShort(8 * 3600), '8:00');
+    });
+
+    test('returns H:MM for zero hours', () {
+      expect(formatTimeShort(30 * 60), '0:30');
+    });
+
+    test('returns H:MM for double-digit hours', () {
+      expect(formatTimeShort(10 * 3600 + 30 * 60), '10:30');
+    });
+  });
+
   group('DateRecord', () {
-    test('defaults all optional fields', () {
-      final dr = DateRecord(Cal.fromYyyymmdd('20240101'));
+    test('stores date, companyHoliday and note', () {
+      final dr = DateRecord(
+        Cal.fromString('20240101'),
+        false,
+        null,
+        plan: WorkTime(0),
+        used: WorkTime(0),
+        sick: WorkTime(0),
+        other: WorkTime(0),
+      );
       expect(dr.companyHoliday, isFalse);
-      expect(dr.plan, isNull);
-      expect(dr.used, isNull);
-      expect(dr.sick, isNull);
-      expect(dr.other, isNull);
+      expect(dr.plan, WorkTime(0));
+      expect(dr.used, WorkTime(0));
+      expect(dr.sick, WorkTime(0));
+      expect(dr.other, WorkTime(0));
       expect(dr.note, isNull);
     });
 
     test('stores all explicitly provided fields', () {
       final dr = DateRecord(
-        Cal.fromYyyymmdd('20240615'),
-        companyHoliday: true,
-        plan: '08:00',
-        used: '04:00',
-        sick: '02:00',
-        other: '01:00',
-        note: 'memo',
+        Cal.fromString('20240615'),
+        true,
+        'memo',
+        plan: WorkTime.parse('08:00'),
+        used: WorkTime.parse('04:00'),
+        sick: WorkTime.parse('02:00'),
+        other: WorkTime.parse('01:00'),
       );
       expect(dr.date.yyyymmdd, '20240615');
       expect(dr.companyHoliday, isTrue);
-      expect(dr.plan, '08:00');
-      expect(dr.used, '04:00');
-      expect(dr.sick, '02:00');
-      expect(dr.other, '01:00');
+      expect(dr.plan, WorkTime.parse('08:00'));
+      expect(dr.used, WorkTime.parse('04:00'));
+      expect(dr.sick, WorkTime.parse('02:00'));
+      expect(dr.other, WorkTime.parse('01:00'));
       expect(dr.note, 'memo');
     });
   });
@@ -47,8 +109,8 @@ void main() {
     test('defaults all optional fields', () {
       final r = Record(
         id: 'r1',
-        from: Cal.fromYyyymmdd('20240401'),
-        to: Cal.fromYyyymmdd('20250331'),
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
       );
       expect(r.publicHolidays, defaultPublicHolidays);
       expect(r.givenLeaves, defaultGivenLeaves);
@@ -69,16 +131,24 @@ void main() {
         false,
         false,
       ];
-      final dr = DateRecord(Cal.fromYyyymmdd('20240615'), plan: '08:00');
+      final dr = DateRecord(
+        Cal.fromString('20240615'),
+        false,
+        null,
+        plan: WorkTime.parse('08:00'),
+        used: WorkTime(0),
+        sick: WorkTime(0),
+        other: WorkTime(0),
+      );
       final r = Record(
         id: 'custom',
-        from: Cal.fromYyyymmdd('20240101'),
-        to: Cal.fromYyyymmdd('20241231'),
+        from: Cal.fromString('20240101'),
+        to: Cal.fromString('20241231'),
         publicHolidays: customHolidays,
         givenLeaves: 20,
         minLeaves: 10,
         useLeavesHourly: true,
-        workingHours: '09:00',
+        stdSeconds: parseTime('09:00'),
         dates: [dr],
       );
       expect(r.id, 'custom');
@@ -86,8 +156,7 @@ void main() {
       expect(r.givenLeaves, 20);
       expect(r.minLeaves, 10);
       expect(r.useLeavesHourly, isTrue);
-      expect(r.workingHours, '09:00');
-      expect(r.dates, [dr]);
+      expect(r.workingHours, parseTime('09:00'));
     });
   });
 
@@ -108,8 +177,8 @@ void main() {
       () {
         final existing = Record(
           id: 'r1',
-          from: Cal.fromYyyymmdd('20240401'),
-          to: Cal.fromYyyymmdd('20250331'),
+          from: Cal.fromString('20240401'),
+          to: Cal.fromString('20250331'),
         );
         final result = Record.next([existing]);
         expect(result.from.yyyymmdd, '20250401');
@@ -121,13 +190,13 @@ void main() {
       final records = [
         Record(
           id: 'r1',
-          from: Cal.fromYyyymmdd('20230401'),
-          to: Cal.fromYyyymmdd('20240331'),
+          from: Cal.fromString('20230401'),
+          to: Cal.fromString('20240331'),
         ),
         Record(
           id: 'r2',
-          from: Cal.fromYyyymmdd('20240401'),
-          to: Cal.fromYyyymmdd('20250331'),
+          from: Cal.fromString('20240401'),
+          to: Cal.fromString('20250331'),
         ),
       ];
       final result = Record.next(records);
@@ -151,8 +220,8 @@ void main() {
     test('returns all months within a single year', () {
       final r = Record(
         id: 'r',
-        from: Cal.fromYyyymmdd('20240401'),
-        to: Cal.fromYyyymmdd('20240630'),
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20240630'),
       );
       expect(r.months, [(2024, 4), (2024, 5), (2024, 6)]);
     });
@@ -160,8 +229,8 @@ void main() {
     test('spans a year boundary correctly', () {
       final r = Record(
         id: 'r',
-        from: Cal.fromYyyymmdd('20241001'),
-        to: Cal.fromYyyymmdd('20250331'),
+        from: Cal.fromString('20241001'),
+        to: Cal.fromString('20250331'),
       );
       expect(r.months, [
         (2024, 10),
@@ -178,8 +247,8 @@ void main() {
       () {
         final r = Record(
           id: 'r',
-          from: Cal.fromYyyymmdd('20240101'),
-          to: Cal.fromYyyymmdd('20240131'),
+          from: Cal.fromString('20240101'),
+          to: Cal.fromString('20240131'),
         );
         expect(r.months, [(2024, 1)]);
       },
@@ -187,11 +256,130 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  group('Record.summary', () {
+    Record makeRecord({int? workingHours}) => Record(
+      id: 'r',
+      from: Cal.fromString('20240401'),
+      to: Cal.fromString('20250331'),
+      stdSeconds: workingHours ?? defaultWorkingHours, // 8h = 28800s
+    );
+
+    test('returns 0 for empty list', () {
+      expect(makeRecord().summary([]), '0');
+    });
+
+    test('counts an "all" entry as one workingHours worth of seconds', () {
+      // 1 × 28800s = 1 day exactly → no remainder
+      expect(makeRecord().summary([WorkTime(0, true)]), '1');
+    });
+
+    test('sums plain seconds and formats remainder as d(h:mm)', () {
+      // 4.5h = 16200s → 0 days, 4:30 remaining
+      expect(makeRecord().summary([WorkTime(4 * 3600 + 30 * 60)]), '0(4:30)');
+    });
+
+    test('mixes all and plain seconds', () {
+      // 28800 + 3600 = 32400s → 1 day + 3600s = 1(1:00)
+      expect(
+        makeRecord().summary([WorkTime(0, true), WorkTime(3600)]),
+        '1(1:00)',
+      );
+    });
+
+    test('minutes are zero-padded to two digits', () {
+      expect(makeRecord().summary([WorkTime(5 * 60)]), '0(0:05)');
+    });
+
+    test('multiple all entries accumulate', () {
+      // 2 × 28800 = 57600s → 2 days, no remainder
+      expect(makeRecord().summary([WorkTime(0, true), WorkTime(0, true)]), '2');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  group('Record.plannedLeaves / usedLeaves / sickLeaves / otherLeaves', () {
+    // Build a record with one DateRecord that has distinct values per field.
+    // plan=8h (all), used=4h, sick=2h, other=1h — workingHours=8h (28800s)
+    final date = Cal.fromString('20240615');
+    final dr = DateRecord(
+      date,
+      false,
+      null,
+      plan: WorkTime(0, true), // all → 1 workingHours = 8h
+      used: WorkTime(4 * 3600), // 4h
+      sick: WorkTime(2 * 3600), // 2h
+      other: WorkTime(3600), // 1h
+    );
+    final record = Record(
+      id: 'r',
+      from: Cal.fromString('20240401'),
+      to: Cal.fromString('20250331'),
+      stdSeconds: defaultWorkingHours, // 8h = 28800s
+      dates: [dr],
+    );
+
+    test('plannedLeaves sums plan field across all dates', () {
+      // all → 28800s → 1 day, no remainder
+      expect(record.plannedLeaves, '1');
+    });
+
+    test('usedLeaves sums used field across all dates', () {
+      // 4h = 14400s → 0d, 4:00 remaining
+      expect(record.usedLeaves, '0(4:00)');
+    });
+
+    test('sickLeaves sums sick field across all dates', () {
+      // 2h = 7200s → 0d, 2:00 remaining
+      expect(record.sickLeaves, '0(2:00)');
+    });
+
+    test('otherLeaves sums other field across all dates', () {
+      // 1h = 3600s → 0d, 1:00 remaining
+      expect(record.otherLeaves, '0(1:00)');
+    });
+
+    test('returns 0 for each field when dates is empty', () {
+      final empty = Record(
+        id: 'r',
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
+      );
+      expect(empty.plannedLeaves, '0');
+      expect(empty.usedLeaves, '0');
+      expect(empty.sickLeaves, '0');
+      expect(empty.otherLeaves, '0');
+    });
+
+    test('accumulates across multiple dates', () {
+      final dr2 = DateRecord(
+        Cal.fromString('20240616'),
+        false,
+        null,
+        plan: WorkTime(0, true), // another all day
+        used: WorkTime(4 * 3600),
+        sick: WorkTime(0),
+        other: WorkTime(0),
+      );
+      final r2 = Record(
+        id: 'r2',
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
+        stdSeconds: defaultWorkingHours,
+        dates: [dr, dr2],
+      );
+      // plan: 2 × all → 2 × 28800 = 57600s → 2 days, no remainder
+      expect(r2.plannedLeaves, '2');
+      // used: 4h + 4h = 8h = 28800s → 1 day, no remainder
+      expect(r2.usedLeaves, '1');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   group('Record.isHolidayWeekDay', () {
     Record makeRecord({List<bool>? publicHolidays}) => Record(
       id: 'r',
-      from: Cal.fromYyyymmdd('20240101'),
-      to: Cal.fromYyyymmdd('20241231'),
+      from: Cal.fromString('20240101'),
+      to: Cal.fromString('20241231'),
       publicHolidays: publicHolidays ?? List<bool>.from(defaultPublicHolidays),
     );
 
@@ -201,31 +389,25 @@ void main() {
     // 2024-01-13 is a Saturday(weekday % 7 == 6)
 
     test('returns true for Sunday with default holidays', () {
-      expect(
-        makeRecord().isHolidayWeekDay(Cal.fromYyyymmdd('20240107')),
-        isTrue,
-      );
+      expect(makeRecord().isHolidayWeekDay(Cal.fromString('20240107')), isTrue);
     });
 
     test('returns false for Monday with default holidays', () {
       expect(
-        makeRecord().isHolidayWeekDay(Cal.fromYyyymmdd('20240108')),
+        makeRecord().isHolidayWeekDay(Cal.fromString('20240108')),
         isFalse,
       );
     });
 
     test('returns false for Tuesday with default holidays', () {
       expect(
-        makeRecord().isHolidayWeekDay(Cal.fromYyyymmdd('20240109')),
+        makeRecord().isHolidayWeekDay(Cal.fromString('20240109')),
         isFalse,
       );
     });
 
     test('returns true for Saturday with default holidays', () {
-      expect(
-        makeRecord().isHolidayWeekDay(Cal.fromYyyymmdd('20240113')),
-        isTrue,
-      );
+      expect(makeRecord().isHolidayWeekDay(Cal.fromString('20240113')), isTrue);
     });
 
     test('returns false for Sunday when Sunday is not a holiday', () {
@@ -233,7 +415,7 @@ void main() {
       expect(
         makeRecord(
           publicHolidays: holidays,
-        ).isHolidayWeekDay(Cal.fromYyyymmdd('20240107')),
+        ).isHolidayWeekDay(Cal.fromString('20240107')),
         isFalse,
       );
     });
@@ -243,7 +425,7 @@ void main() {
       expect(
         makeRecord(
           publicHolidays: holidays,
-        ).isHolidayWeekDay(Cal.fromYyyymmdd('20240108')),
+        ).isHolidayWeekDay(Cal.fromString('20240108')),
         isTrue,
       );
     });
@@ -282,7 +464,7 @@ void main() {
       expect(record.givenLeaves, 15);
       expect(record.minLeaves, 7);
       expect(record.useLeavesHourly, isTrue);
-      expect(record.workingHours, '09:00');
+      expect(record.workingHours, parseTime('09:00'));
       expect(record.dates, isEmpty);
     });
 
@@ -343,10 +525,10 @@ void main() {
       expect(record.dates.length, 1);
       expect(record.dates[0].date.yyyymmdd, '20240615');
       expect(record.dates[0].companyHoliday, isTrue);
-      expect(record.dates[0].plan, '08:00');
-      expect(record.dates[0].used, '04:00');
-      expect(record.dates[0].sick, '02:00');
-      expect(record.dates[0].other, '01:00');
+      expect(record.dates[0].plan, WorkTime.parse('08:00'));
+      expect(record.dates[0].used, WorkTime.parse('04:00'));
+      expect(record.dates[0].sick, WorkTime.parse('02:00'));
+      expect(record.dates[0].other, WorkTime.parse('01:00'));
       expect(record.dates[0].note, 'memo');
     });
   });
@@ -361,13 +543,13 @@ void main() {
           .doc('r1')
           .set({'from': '20240401', 'to': '20250331'});
       final dr = DateRecord(
-        Cal.fromYyyymmdd('20240615'),
-        companyHoliday: true,
-        plan: '08:00',
-        used: '04:00',
-        sick: '02:00',
-        other: '01:00',
-        note: 'memo',
+        Cal.fromString('20240615'),
+        true,
+        'memo',
+        plan: WorkTime.parse('06:00'),
+        used: WorkTime.parse('04:00'),
+        sick: WorkTime.parse('02:00'),
+        other: WorkTime.parse('01:00'),
       );
 
       final result = await saveDateRecord(firestore, 'u1', 'r1', dr);
@@ -383,7 +565,7 @@ void main() {
       expect(dates.containsKey('20240615'), isTrue);
       final entry = dates['20240615'] as Map<String, dynamic>;
       expect(entry['c'], isTrue);
-      expect(entry['p'], '08:00');
+      expect(entry['p'], '06:00');
       expect(entry['u'], '04:00');
       expect(entry['s'], '02:00');
       expect(entry['o'], '01:00');
@@ -393,7 +575,15 @@ void main() {
 
     test('returns left when record does not exist', () async {
       final firestore = FakeFirebaseFirestore();
-      final dr = DateRecord(Cal.fromYyyymmdd('20240615'));
+      final dr = DateRecord(
+        Cal.fromString('20240615'),
+        false,
+        null,
+        plan: WorkTime(0),
+        used: WorkTime(0),
+        sick: WorkTime(0),
+        other: WorkTime(0),
+      );
 
       final result = await saveDateRecord(firestore, 'u1', 'nonexistent', dr);
 
@@ -406,8 +596,8 @@ void main() {
       final firestore = FakeFirebaseFirestore();
       final record = Record(
         id: '',
-        from: Cal.fromYyyymmdd('20240401'),
-        to: Cal.fromYyyymmdd('20250331'),
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
       );
 
       final result = await saveRecord(firestore, 'u1', record);
@@ -432,8 +622,8 @@ void main() {
           .set({'from': '20230401', 'to': '20240331'});
       final record = Record(
         id: 'r1',
-        from: Cal.fromYyyymmdd('20240401'),
-        to: Cal.fromYyyymmdd('20250331'),
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
         givenLeaves: 20,
       );
 
@@ -586,8 +776,8 @@ void main() {
       final records = [
         Record(
           id: 'past',
-          from: Cal.fromYyyymmdd('20200401'),
-          to: Cal.fromYyyymmdd('20210331'),
+          from: Cal.fromString('20200401'),
+          to: Cal.fromString('20210331'),
         ),
         Record(
           id: 'future',
@@ -720,8 +910,8 @@ void main() {
         final firestore = FakeFirebaseFirestore();
         final record = Record(
           id: 'nonexistent',
-          from: Cal.fromYyyymmdd('20240401'),
-          to: Cal.fromYyyymmdd('20250331'),
+          from: Cal.fromString('20240401'),
+          to: Cal.fromString('20250331'),
         );
 
         final result = await saveRecord(firestore, 'u1', record);
@@ -821,7 +1011,7 @@ void main() {
 
   group('parseYmd', () {
     test('parses a valid yyyymmdd string into a DateTime', () {
-      final cal = Cal.fromYyyymmdd('20240107');
+      final cal = Cal.fromString('20240107');
       expect(cal.year, 2024);
       expect(cal.month, 1);
       expect(cal.day, 7);
@@ -829,10 +1019,10 @@ void main() {
 
     test('returns correct weekday', () {
       // 2024-01-07 is a Sunday (weekday == 7)
-      final cal1 = Cal.fromYyyymmdd('20240107');
+      final cal1 = Cal.fromString('20240107');
       expect(DateTime(cal1.year, cal1.month, cal1.day).weekday, 7);
       // 2024-01-08 is a Monday (weekday == 1)
-      final cal2 = Cal.fromYyyymmdd('20240108');
+      final cal2 = Cal.fromString('20240108');
       expect(DateTime(cal2.year, cal2.month, cal2.day).weekday, 1);
     });
   });

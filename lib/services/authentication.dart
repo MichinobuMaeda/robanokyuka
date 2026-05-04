@@ -2,7 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
-import '../platform/platforms.dart';
+
+import 'package:yukyuchecker/platform/platforms.dart';
 
 const keyEmailForSignIn = 'yukyuchecker_email_for_sign_in';
 

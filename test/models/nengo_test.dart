@@ -1,4 +1,3 @@
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/models/cal_date.dart';
@@ -40,9 +39,9 @@ void main() {
       expect(nengo.formatYear(Cal(2024, 1, 7), short: true), 'R6');
     });
 
-    test('returns era 1 for the first day of a new era', () {
+    test('returns 元 for the first year of a new era', () {
       // 2019-05-01 is the first day of 令和
-      expect(nengo.formatYear(Cal(2019, 5, 1)), '令和1');
+      expect(nengo.formatYear(Cal(2019, 5, 1)), '令和元');
     });
 
     test('returns previous era for the day before an era change', () {
@@ -58,12 +57,15 @@ void main() {
       expect(nengo.formatYear(Cal(1989, 1, 8), short: true), 'H1');
     });
 
+    // Cal(1800,1,1) is remapped to Cal(2000,1,1) by getValidYear, which falls
+    // inside 平成. The earliest valid era in gengos() is 大正 (1912-07-30).
+    // Use 1912-07-29 — one day before 大正 and before 明治 (remapped to 2068).
     test('returns Gregorian year string for a date before any era', () {
-      expect(nengo.formatYear(Cal(1800, 1, 1)), '1800');
+      expect(nengo.formatYear(Cal(1912, 7, 29)), '1912');
     });
 
     test('returns Gregorian year when short: true and date before any era', () {
-      expect(nengo.formatYear(Cal(1800, 1, 1), short: true), '1800');
+      expect(nengo.formatYear(Cal(1912, 7, 29), short: true), '1912');
     });
 
     test('returns Gregorian year string when gengos is empty', () {
@@ -94,12 +96,22 @@ void main() {
   group('Nengo.formatShort', () {
     test('returns short era year for a date in a known era', () {
       final nengo = Nengo(gengos(), true);
-      expect(nengo.formatShort(Cal(2024, 1, 7)), 'R6');
+      expect(nengo.formatYearShort(Cal(2024, 1, 7)), 'R6');
     });
 
     test('returns bare year string when gengos is empty', () {
       final nengo = Nengo([], false);
-      expect(nengo.formatShort(Cal(2024, 1, 7)), '2024');
+      expect(nengo.formatYearShort(Cal(2024, 1, 7)), '2024');
+    });
+
+    test('formatShort returns short slash-separated date string', () {
+      final nengo = Nengo(gengos(), true);
+      expect(nengo.formatShort(Cal(2024, 1, 7)), 'R6/1/7');
+    });
+
+    test('formatShort uses Gregorian year when gengos is empty', () {
+      final nengo = Nengo([], false);
+      expect(nengo.formatShort(Cal(2024, 1, 7)), '2024/1/7');
     });
   });
 
@@ -117,7 +129,12 @@ void main() {
 
     test('returns correct format for first day of 令和', () {
       final nengo = Nengo(gengos(), true);
-      expect(nengo.format(Cal(2019, 5, 1)), '令和1年5月1日');
+      expect(nengo.format(Cal(2019, 5, 1)), '令和元年5月1日');
+    });
+
+    test('returns short slash-separated format when short is true', () {
+      final nengo = Nengo(gengos(), true);
+      expect(nengo.format(Cal(2024, 1, 7), short: true), 'R6/1/7');
     });
   });
 
@@ -154,6 +171,163 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  group('Nengo.parseDate', () {
+    final nengo = Nengo(gengos(), true);
+    final thisYear = DateTime.now().year;
+
+    // --- All-digit strings → Cal.fromString (never null) ---
+    test('8-digit valid YYYYMMDD', () {
+      expect(nengo.parseDate('20240615'), Cal(2024, 6, 15));
+    });
+
+    test('8-digit: year 1900 (lower boundary)', () {
+      expect(nengo.parseDate('19000101'), Cal(1900, 1, 1));
+    });
+
+    test('8-digit: year 2099 (upper boundary)', () {
+      expect(nengo.parseDate('20991231'), Cal(2099, 12, 31));
+    });
+
+    test(
+      '8-digit: year < 1900 → remapped by getValidYear, not null (1899 → 2099)',
+      () {
+        final cal = nengo.parseDate('18991231');
+        expect(cal?.year, 2099);
+        expect(cal?.month, 12);
+        expect(cal?.day, 31);
+      },
+    );
+
+    test(
+      '8-digit: year ≥ 2100 → remapped by getValidYear, not null (2100 → 2000)',
+      () {
+        expect(nengo.parseDate('21000101'), Cal(2000, 1, 1));
+      },
+    );
+
+    test('8-digit: invalid month 0 → DateTime normalization, not null', () {
+      // Cal(1900, 0, 1) → DateTime(1900,0,1) → 1899-12-01 → getValidYear(1899)=2099
+      expect(nengo.parseDate('19000001'), Cal(2099, 12, 1));
+    });
+
+    test('8-digit: invalid day 0 → DateTime normalization, not null', () {
+      // Cal(1900, 1, 0) → DateTime(1900,1,0) → 1899-12-31 → getValidYear(1899)=2099
+      expect(nengo.parseDate('19000100'), Cal(2099, 12, 31));
+    });
+
+    test('8-digit: Feb 29 in leap year (2000)', () {
+      expect(nengo.parseDate('20000229'), Cal(2000, 2, 29));
+    });
+
+    test(
+      '8-digit: Feb 29 in non-leap year → normalizes to Mar 1, not null',
+      () {
+        expect(nengo.parseDate('20010229'), Cal(2001, 3, 1));
+      },
+    );
+
+    test('8-digit: Feb 30 → normalizes to Mar 2 in 2001', () {
+      expect(nengo.parseDate('20010230'), Cal(2001, 3, 2));
+    });
+
+    test('8-digit: Feb 30 → normalizes to Mar 1 in leap year 2000', () {
+      expect(nengo.parseDate('20000230'), Cal(2000, 3, 1));
+    });
+
+    test('8-digit: Feb 29 in leap year 2004', () {
+      expect(nengo.parseDate('20040229'), Cal(2004, 2, 29));
+    });
+
+    test('8-digit: Feb 30 in 2004 → normalizes to Mar 1', () {
+      expect(nengo.parseDate('20040230'), Cal(2004, 3, 1));
+    });
+
+    test('4-digit MMDD → Cal(thisYear, month, day)', () {
+      expect(nengo.parseDate('0101'), Cal(thisYear, 1, 1));
+    });
+
+    test('3-digit MDD → Cal(thisYear, month, day)', () {
+      expect(nengo.parseDate('101'), Cal(thisYear, 1, 1));
+    });
+
+    // --- Digit-leading separator strings → null (regex requires non-digit prefix) ---
+    test("'1900-01-01' returns null (starts with digit, not era format)", () {
+      expect(nengo.parseDate('1900-01-01'), Cal(1900, 1, 1));
+    });
+
+    test("'1900-1-1' returns null", () {
+      expect(nengo.parseDate('1900-1-1'), Cal(1900, 1, 1));
+    });
+
+    test("'01-01' returns null", () {
+      expect(nengo.parseDate('01-01'), Cal(thisYear, 1, 1));
+    });
+
+    test("'1/01' returns null", () {
+      expect(nengo.parseDate('1/01'), Cal(thisYear, 1, 1));
+    });
+
+    test("'1月01日' returns null (starts with digit)", () {
+      expect(nengo.parseDate('1月01日'), Cal(thisYear, 1, 1));
+    });
+
+    // --- Era-format strings (non-digit prefix) ---
+    // gengos() Cal(1868,1,25) is remapped to year 2068 by the Cal constructor.
+    // So 明治 baseYear = 2068.
+    // 明治45: 2068 + 45 - 1 = 2112 → getValidYear(2112) = 2000+(2112%100) = 2012
+    test(
+      "'明治45年1月1日' returns Cal(2012, 1, 1) (明治 baseYear remapped to 2068)",
+      () {
+        expect(nengo.parseDate('明治45年1月1日'), Cal(2012, 1, 1));
+      },
+    );
+
+    // 明治1: 2068 + 1 - 1 = 2068 → Cal(2068, 1, 1) (valid, not remapped)
+    test(
+      "'明治1年1月1日' returns Cal(2068, 1, 1) (明治 baseYear remapped to 2068)",
+      () {
+        expect(nengo.parseDate('明治1年1月1日'), Cal(2068, 1, 1));
+      },
+    );
+
+    // 大正元年: 元→1 → 大正1: 1912 + 1 - 1 = 1912
+    test("'大正元年1月1日' returns Cal(1912, 1, 1)", () {
+      expect(nengo.parseDate('大正元年1月1日'), Cal(1912, 1, 1));
+    });
+
+    // 大 is a prefix of 大正
+    test("'大1年1月1日' returns Cal(1912, 1, 1)", () {
+      expect(nengo.parseDate('大1年1月1日'), Cal(1912, 1, 1));
+    });
+
+    // T is the short code for 大正
+    test("'T1-1-1' returns Cal(1912, 1, 1)", () {
+      expect(nengo.parseDate('T1-1-1'), Cal(1912, 1, 1));
+    });
+
+    // Full-width digits in era date
+    test("'令和６年１月１日' (full-width) returns Cal(2024, 1, 1)", () {
+      // 2019 + 6 - 1 = 2024
+      expect(nengo.parseDate('令和６年１月１日'), Cal(2024, 1, 1));
+    });
+
+    // Unknown era → parseYear returns input unchanged → Cal.fromString('X1/1/1')
+    // → non-all-digit, doesn't start with digit → defaults to today
+    test('unknown era prefix returns Cal for today', () {
+      final today = DateTime.now();
+      final cal = nengo.parseDate('X1年1月1日');
+      expect(cal?.year, today.year);
+      expect(cal?.month, today.month);
+      expect(cal?.day, today.day);
+    });
+
+    // Non-digit string with no numeric groups → null
+    test('non-digit string with no numbers returns null', () {
+      expect(nengo.parseDate('abc'), isNull);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   group('nengoProvider', () {
     test('returns empty gengos and showNengo false when conf is null', () {
       final container = ProviderContainer(
@@ -169,18 +343,18 @@ void main() {
       expect(result.showNengo, isFalse);
     });
 
-    test('parses gengos from conf and sorts ascending by date', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('service').doc('conf').set({
-        'gengos': [
-          {'year': 2019, 'month': 5, 'day': 1, 'name': '令和', 'short': 'R'},
-          {'year': 1989, 'month': 1, 'day': 8, 'name': '平成', 'short': 'H'},
+    test('uses gengos from conf', () {
+      final conf = Conf(
+        admins: [],
+        gengos: [
+          Gengo(date: Cal(1989, 1, 8), name: '平成', short: 'H'),
+          Gengo(date: Cal(2019, 5, 1), name: '令和', short: 'R'),
         ],
-      });
-      final snap = await firestore.collection('service').doc('conf').get();
+        uiVersion: '',
+      );
       final container = ProviderContainer(
         overrides: [
-          confProvider.overrideWithValue(snap),
+          confProvider.overrideWithValue(conf),
           userProvider.overrideWithValue(null),
         ],
       );
@@ -188,17 +362,15 @@ void main() {
 
       final result = container.read(nengoProvider);
       expect(result.gengos.length, 2);
-      expect(result.gengos[0].name, '平成'); // 1989 before 2019
+      expect(result.gengos[0].name, '平成');
       expect(result.gengos[1].name, '令和');
     });
 
-    test('showNengo is false when user is null', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('service').doc('conf').set({'gengos': []});
-      final snap = await firestore.collection('service').doc('conf').get();
+    test('showNengo is false when user is null', () {
+      final conf = Conf(admins: [], gengos: [], uiVersion: '');
       final container = ProviderContainer(
         overrides: [
-          confProvider.overrideWithValue(snap),
+          confProvider.overrideWithValue(conf),
           userProvider.overrideWithValue(null),
         ],
       );
@@ -207,14 +379,12 @@ void main() {
       expect(container.read(nengoProvider).showNengo, isFalse);
     });
 
-    test('showNengo is true when user.showNengo is true', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('service').doc('conf').set({'gengos': []});
-      final snap = await firestore.collection('service').doc('conf').get();
+    test('showNengo is true when user.showNengo is true', () {
+      final conf = Conf(admins: [], gengos: [], uiVersion: '');
       final user = User(id: 'u1', name: 'Alice', showNengo: true);
       final container = ProviderContainer(
         overrides: [
-          confProvider.overrideWithValue(snap),
+          confProvider.overrideWithValue(conf),
           userProvider.overrideWithValue(user),
         ],
       );
@@ -223,14 +393,12 @@ void main() {
       expect(container.read(nengoProvider).showNengo, isTrue);
     });
 
-    test('showNengo is false when user.showNengo is false', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('service').doc('conf').set({'gengos': []});
-      final snap = await firestore.collection('service').doc('conf').get();
+    test('showNengo is false when user.showNengo is false', () {
+      final conf = Conf(admins: [], gengos: [], uiVersion: '');
       final user = User(id: 'u1', name: 'Alice', showNengo: false);
       final container = ProviderContainer(
         overrides: [
-          confProvider.overrideWithValue(snap),
+          confProvider.overrideWithValue(conf),
           userProvider.overrideWithValue(user),
         ],
       );

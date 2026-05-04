@@ -3,6 +3,7 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/models/cal_date.dart';
 import 'package:yukyuchecker/models/service.dart';
 import 'package:yukyuchecker/services/authentication.dart';
 
@@ -10,79 +11,53 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // ---------------------------------------------------------------------------
-  group('adminsProvider', () {
-    test('returns empty list when confProvider is null', () {
-      final container = ProviderContainer(
-        overrides: [confProvider.overrideWithValue(null)],
-      );
-      addTearDown(container.dispose);
-
-      expect(container.read(adminsProvider), isEmpty);
-    });
-
-    test('returns admin uids from conf document', () async {
+  group('Conf.fromDocument', () {
+    Future<Conf> makeConf(Map<String, dynamic> data) async {
       final firestore = FakeFirebaseFirestore();
-      await firestore.collection('service').doc('conf').set({
+      await firestore.collection('service').doc('conf').set(data);
+      final snap = await firestore.collection('service').doc('conf').get();
+      return Conf.fromDocument(snap);
+    }
+
+    test('parses admins list', () async {
+      final conf = await makeConf({
         'admins': ['uid1', 'uid2'],
       });
-      final snap = await firestore.collection('service').doc('conf').get();
-      final container = ProviderContainer(
-        overrides: [confProvider.overrideWithValue(snap)],
-      );
-      addTearDown(container.dispose);
-
-      expect(container.read(adminsProvider), ['uid1', 'uid2']);
+      expect(conf.admins, ['uid1', 'uid2']);
     });
 
-    test('returns empty list when admins field is missing', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('service').doc('conf').set({'uiVersion': '1'});
-      final snap = await firestore.collection('service').doc('conf').get();
-      final container = ProviderContainer(
-        overrides: [confProvider.overrideWithValue(snap)],
-      );
-      addTearDown(container.dispose);
-
-      expect(container.read(adminsProvider), isEmpty);
-    });
-  });
-
-  group('uiVersionProvider', () {
-    test('returns null when confProvider is null', () {
-      final container = ProviderContainer(
-        overrides: [confProvider.overrideWithValue(null)],
-      );
-      addTearDown(container.dispose);
-
-      expect(container.read(uiVersionProvider), isNull);
+    test('defaults admins to empty when field is missing', () async {
+      final conf = await makeConf({'uiVersion': '1'});
+      expect(conf.admins, isEmpty);
     });
 
-    test('returns version string from conf document', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('service').doc('conf').set({
-        'uiVersion': '0.2.2+1',
+    test('parses uiVersion', () async {
+      final conf = await makeConf({'uiVersion': '0.2.2+1'});
+      expect(conf.uiVersion, '0.2.2+1');
+    });
+
+    test('defaults uiVersion to empty string when field is missing', () async {
+      final conf = await makeConf({'admins': []});
+      expect(conf.uiVersion, '');
+    });
+
+    test('parses gengos sorted ascending by date', () async {
+      final conf = await makeConf({
+        'gengos': [
+          {'year': 2019, 'month': 5, 'day': 1, 'name': '令和', 'short': 'R'},
+          {'year': 1989, 'month': 1, 'day': 8, 'name': '平成', 'short': 'H'},
+        ],
       });
-      final snap = await firestore.collection('service').doc('conf').get();
-      final container = ProviderContainer(
-        overrides: [confProvider.overrideWithValue(snap)],
-      );
-      addTearDown(container.dispose);
-
-      expect(container.read(uiVersionProvider), '0.2.2+1');
+      expect(conf.gengos.length, 2);
+      expect(conf.gengos[0].name, '平成'); // 1989 before 2019
+      expect(conf.gengos[0].date, Cal(1989, 1, 8));
+      expect(conf.gengos[1].name, '令和');
+      expect(conf.gengos[1].date, Cal(2019, 5, 1));
     });
 
-    test('returns null when uiVersion field is missing', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('service').doc('conf').set({
-        'admins': <String>[],
-      });
-      final snap = await firestore.collection('service').doc('conf').get();
-      final container = ProviderContainer(
-        overrides: [confProvider.overrideWithValue(snap)],
-      );
-      addTearDown(container.dispose);
-
-      expect(container.read(uiVersionProvider), isNull);
+    test('defaults gengos to empty when field is missing', () async {
+      final conf = await makeConf({'admins': []});
+      expect(conf.gengos, isEmpty);
     });
   });
 
@@ -162,7 +137,9 @@ void main() {
       await container.read(serviceProvider.future);
       final conf = container.read(confProvider);
       expect(conf, isNotNull);
-      expect(conf!.data()!['uiVersion'], '2');
+      expect(conf!.uiVersion, '2');
+      expect(conf.admins, isEmpty);
+      expect(conf.gengos, isEmpty);
     });
   });
 }

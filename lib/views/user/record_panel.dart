@@ -4,17 +4,16 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/services/authentication.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../config/firebase.dart';
-import '../../config/theme.dart';
-import '../../models/cal_date.dart';
-import '../../models/nengo.dart';
-import '../../models/record.dart';
-import '../../services/helpers.dart';
-import '../../services/validators.dart';
-import '../../widgets/box_panel.dart';
-import '../../widgets/date_row.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/models/nengo.dart';
+import 'package:yukyuchecker/models/record.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/services/validators.dart';
+import 'package:yukyuchecker/widgets/box_panel.dart';
+import 'package:yukyuchecker/widgets/date_input.dart';
 
-const _publicHolidaysLabels = ['日', '月', '火', '水', '木', '金', '土', '祝日'];
+const _publicHolidaysLabels = [...weekdayLabels, '祝日'];
 
 class RecordPanel extends HookConsumerWidget {
   const RecordPanel({super.key});
@@ -68,7 +67,7 @@ class RecordPanel extends HookConsumerWidget {
             children: [
               FilledButton.icon(
                 onPressed: showAddSheet,
-                icon: Icon(Symbols.add),
+                icon: iconAdd,
                 label: Text('期間を追加'),
               ),
             ],
@@ -81,10 +80,8 @@ class RecordPanel extends HookConsumerWidget {
                 children: [
                   IconButton(
                     onPressed: showEditSheet,
-                    icon: Icon(
-                      Symbols.edit,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    icon: iconEdit,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   Expanded(
                     child: Row(
@@ -115,10 +112,7 @@ class RecordPanel extends HookConsumerWidget {
                   ),
                   IconButton.filledTonal(
                     onPressed: showAddSheet,
-                    icon: Icon(
-                      Symbols.add,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    icon: iconAdd,
                   ),
                 ],
               ),
@@ -140,42 +134,34 @@ class _EditSheet extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fromYearC = useTextEditingController(
-      text: nengo.formatYear(record.from),
+    final fromC = useTextEditingController(
+      text: nengo.formatShort(record.from),
     );
-    final fromMonthC = useTextEditingController(text: '${record.from.month}');
-    final fromDayC = useTextEditingController(text: '${record.from.day}');
-    final toYearC = useTextEditingController(text: nengo.formatYear(record.to));
-    final toMonthC = useTextEditingController(text: '${record.to.month}');
-    final toDayC = useTextEditingController(text: '${record.to.day}');
+    final toC = useTextEditingController(text: nengo.formatShort(record.to));
     final givenLeavesC = useTextEditingController(
       text: '${record.givenLeaves}',
     );
     final minLeavesC = useTextEditingController(text: '${record.minLeaves}');
     final publicHolidays = useState(List<bool>.from(record.publicHolidays));
     final useLeavesHourly = useState(!!record.useLeavesHourly);
-    final workingHours = useTextEditingController(text: record.workingHours);
+    final workingHours = useTextEditingController(
+      text: formatTimeShort(record.workingHours),
+    );
     final formKey = useMemoized(GlobalKey<FormState>.new);
 
     void handleSubmit() {
       if (!(formKey.currentState?.validate() ?? false)) return;
+      final from = nengo.parseDate(fromC.text)!;
+      final to = nengo.parseDate(toC.text)!;
       final updated = Record(
         id: record.id,
-        from: Cal(
-          int.parse(nengo.parseYear(fromYearC.text)),
-          int.parse(fromMonthC.text),
-          int.parse(fromDayC.text),
-        ),
-        to: Cal(
-          int.parse(nengo.parseYear(toYearC.text)),
-          int.parse(toMonthC.text),
-          int.parse(toDayC.text),
-        ),
+        from: from,
+        to: to,
         publicHolidays: List<bool>.from(publicHolidays.value),
         givenLeaves: int.parse(givenLeavesC.text),
         minLeaves: int.parse(minLeavesC.text),
         useLeavesHourly: useLeavesHourly.value,
-        workingHours: workingHours.text,
+        stdSeconds: parseTime(workingHours.text),
       );
       Navigator.pop(context);
       onConfirm(updated);
@@ -206,21 +192,25 @@ class _EditSheet extends HookWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final rows = [
-                    DateRow(
-                      yearController: fromYearC,
-                      monthController: fromMonthC,
-                      dayController: fromDayC,
-                      nengo: nengo,
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: 192),
+                      child: DateInput(
+                        labelText: '開始日',
+                        dateController: fromC,
+                        nengo: nengo,
+                      ),
                     ),
                     Row(
                       spacing: 8,
                       children: [
                         Text('〜'),
-                        DateRow(
-                          yearController: toYearC,
-                          monthController: toMonthC,
-                          dayController: toDayC,
-                          nengo: nengo,
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: 192),
+                          child: DateInput(
+                            labelText: '終了日',
+                            dateController: toC,
+                            nengo: nengo,
+                          ),
                         ),
                       ],
                     ),
@@ -293,7 +283,7 @@ class _EditSheet extends HookWidget {
                           controller: workingHours,
                           decoration: const InputDecoration(
                             labelText: '所定労働時間',
-                            hintText: '08:00',
+                            hintText: '8:00',
                             border: OutlineInputBorder(),
                           ),
                           validator: validateHhmmOptional,

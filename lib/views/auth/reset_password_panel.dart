@@ -3,12 +3,12 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../config/firebase.dart';
-import '../../config/theme.dart';
-import '../../services/helpers.dart';
-import '../../services/validators.dart';
-import '../../services/authentication.dart';
-import '../../widgets/box_panel.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/services/validators.dart';
+import 'package:yukyuchecker/services/authentication.dart';
+import 'package:yukyuchecker/widgets/box_panel.dart';
 
 class ResetPasswordPanel extends HookConsumerWidget {
   const ResetPasswordPanel({super.key});
@@ -60,7 +60,7 @@ class ResetPasswordPanel extends HookConsumerWidget {
                       validateRequiredEmail(value?.trim() ?? ''),
                   decoration: InputDecoration(
                     labelText: "メールアドレス",
-                    helperText: "メールアドレスを入力してください",
+                    helperText: "入力必須です",
                     border: OutlineInputBorder(),
                     suffixIcon: email.text == (authUser?.email ?? '')
                         ? null

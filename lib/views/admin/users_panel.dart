@@ -3,13 +3,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../config/firebase.dart';
-import '../../config/theme.dart';
-import '../../services/helpers.dart';
-import '../../services/validators.dart';
-import '../../models/service.dart';
-import '../../models/users.dart';
-import '../../widgets/bordered_list_item.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/models/service.dart';
+import 'package:yukyuchecker/models/users.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/services/validators.dart';
+import 'package:yukyuchecker/widgets/bordered_list_item.dart';
 
 class UsersPanel extends HookConsumerWidget {
   const UsersPanel({super.key});
@@ -22,7 +22,7 @@ class UsersPanel extends HookConsumerWidget {
     );
     final users = usersAsync.asData?.value ?? [];
     debugPrint('users: ${users.length}');
-    final admins = ref.watch(adminsProvider);
+    final admins = ref.watch(confProvider.select((conf) => conf?.admins ?? []));
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
@@ -79,10 +79,7 @@ class _Header extends HookConsumerWidget {
     return Row(
       children: [
         Expanded(child: Text('利用者', style: panelTitleStyle(context))),
-        IconButton.filledTonal(
-          onPressed: showAddSheet,
-          icon: Icon(Symbols.add, color: Theme.of(context).colorScheme.primary),
-        ),
+        IconButton.filledTonal(onPressed: showAddSheet, icon: iconAdd),
       ],
     );
   }
@@ -135,10 +132,8 @@ class _Item extends HookConsumerWidget {
       children: [
         IconButton(
           onPressed: showEditSheet,
-          icon: Icon(
-            Symbols.edit,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          icon: iconEdit,
+          color: Theme.of(context).colorScheme.primary,
         ),
         user.disabledAt != null
             ? Icon(Symbols.block, color: Theme.of(context).colorScheme.error)
@@ -238,7 +233,7 @@ class _AddSheet extends HookWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Symbols.add),
+                        iconAdd,
                         const SizedBox(width: 8),
                         const Text('追加'),
                       ],
@@ -333,20 +328,13 @@ class _EditSheet extends HookWidget {
                   alignment: Alignment.centerLeft,
                   child: OutlinedButton.icon(
                     onPressed: showDeleteConfirmation,
-                    icon: Icon(
-                      Symbols.delete,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    label: Text(
-                      '利用者を削除',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
+                    icon: iconDelete,
+                    label: Text('利用者を削除'),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
                         color: Theme.of(context).colorScheme.error,
                       ),
+                      foregroundColor: Theme.of(context).colorScheme.error,
                     ),
                   ),
                 ),

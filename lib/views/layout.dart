@@ -4,13 +4,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:web/web.dart' as web;
 
-import '../config/firebase.dart';
-import '../config/theme.dart';
-import '../config/version.dart';
-import '../services/authentication.dart';
-import '../services/authorization.dart';
-import '../services/helpers.dart';
-import '../models/service.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/config/version.dart';
+import 'package:yukyuchecker/models/service.dart';
+import 'package:yukyuchecker/services/authentication.dart';
+import 'package:yukyuchecker/services/authorization.dart';
+import 'package:yukyuchecker/services/helpers.dart';
 
 enum MediaSize { narrow, middle, wide }
 
@@ -21,7 +21,7 @@ class Layout extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final privilege = ref.watch(privilegeProvider);
     final pages = ref.watch(pagesProvider);
-    final uiVersion = ref.watch(uiVersionProvider);
+    final uiVersion = ref.watch(confProvider.select((conf) => conf?.uiVersion));
     final selectedIndex = useState(0);
     final selectedPage = useState(pages.first);
 

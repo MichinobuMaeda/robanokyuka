@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../services/validators.dart';
+import 'package:yukyuchecker/services/validators.dart';
 
 class PasswordFormField extends HookWidget {
   const PasswordFormField({
@@ -25,7 +25,7 @@ class PasswordFormField extends HookWidget {
     return TextFormField(
       controller: controller,
       obscureText: !isVisible.value,
-      validator: validator ?? (value) => validateRequiredPassword(value ?? ''),
+      validator: validator ?? (value) => validateRequired(value),
       decoration: InputDecoration(
         labelText: labelText,
         helperText: helperText,

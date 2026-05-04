@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
-import '../models/cal_date.dart';
-import 'service.dart';
+import 'package:yukyuchecker/models/cal_date.dart';
+import 'package:yukyuchecker/models/service.dart';
 
 class Holiday implements Comparable<Holiday> {
   final Cal date;
@@ -13,7 +13,7 @@ class Holiday implements Comparable<Holiday> {
   Holiday({required this.date, required this.name});
 
   factory Holiday.fromString(String date, {required String name}) {
-    return Holiday(date: Cal.fromYyyymmdd(date), name: name);
+    return Holiday(date: Cal.fromString(date), name: name);
   }
 
   Holiday copyWith({Cal? date, String? name}) {

@@ -3,12 +3,12 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../config/firebase.dart';
-import '../../config/theme.dart';
-import '../../models/users.dart';
-import '../../services/helpers.dart';
-import '../../widgets/box_panel.dart';
-import '../../widgets/toggle_button.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/models/users.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/widgets/box_panel.dart';
+import 'package:yukyuchecker/widgets/toggle_button.dart';
 
 class EditProfilePanel extends HookConsumerWidget {
   const EditProfilePanel({super.key});

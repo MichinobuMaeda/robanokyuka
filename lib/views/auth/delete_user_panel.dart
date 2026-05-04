@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
-import '../../config/firebase.dart';
-import '../../config/theme.dart';
-import '../../services/authentication.dart';
-import '../../services/helpers.dart';
-import '../../models/users.dart';
-import '../../widgets/box_panel.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/services/authentication.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/models/users.dart';
+import 'package:yukyuchecker/widgets/box_panel.dart';
 
 const _aboutAccountDeletion = 'アカウントを削除するとすべてのデータが失われ、元に戻すことができません。';
 const _confirmAccountDeletion = '本当にアカウントを削除しますか？';
@@ -80,7 +79,7 @@ class DeleteUserPanel extends HookConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Symbols.delete),
+                        iconDelete,
                         SizedBox(width: 8),
                         Text("アカウント削除"),
                       ],
@@ -99,11 +98,7 @@ class DeleteUserPanel extends HookConsumerWidget {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Symbols.delete),
-                    SizedBox(width: 8),
-                    Text("アカウント削除"),
-                  ],
+                  children: [iconDelete, SizedBox(width: 8), Text("アカウント削除")],
                 ),
               ),
             ],
@@ -139,11 +134,7 @@ class _ConfirmationSheet extends StatelessWidget {
                 onPressed: onConfirm,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Symbols.delete),
-                    SizedBox(width: 8),
-                    Text('削除する'),
-                  ],
+                  children: [iconDelete, SizedBox(width: 8), Text('削除する')],
                 ),
               ),
             ],

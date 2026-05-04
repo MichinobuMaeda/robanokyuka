@@ -1,24 +1,35 @@
 import 'dart:io';
+
+import 'package:path/path.dart' as p;
 import 'package:markdown/markdown.dart' as md;
 import 'md2html_template.dart';
 
+final inputPath = 'docs';
+final outputPath = p.join('build', 'web', 'docs');
+final assetPath = 'assets';
+
 void main() {
-  final docsDir = Directory('docs');
-  if (!docsDir.existsSync()) {
-    stderr.writeln('Error: docs directory not found.');
+  final inputDir = Directory(inputPath);
+  if (!inputDir.existsSync()) {
+    stderr.writeln('Error: $inputPath directory not found.');
     exitCode = 1;
     return;
   }
 
+  final outputDir = Directory(outputPath);
+  if (!outputDir.existsSync()) {
+    outputDir.createSync(recursive: true);
+  }
+
   // Copy CSS file
   try {
-    final cssSource = File('tools/md2html.css');
+    final cssSource = File(p.join('tools', 'md2html.css'));
     if (!cssSource.existsSync()) {
       stderr.writeln('Error: tools/md2html.css not found.');
       exitCode = 1;
       return;
     }
-    final cssDest = File('docs/main.css');
+    final cssDest = File(p.join(outputPath, 'main.css'));
     cssSource.copySync(cssDest.path);
     stdout.writeln('Copied: ${cssDest.path}');
   } catch (e) {
@@ -27,8 +38,26 @@ void main() {
     return;
   }
 
+  // Copy non-Markdown files from inputPath to outputPath
+  final nonMdFiles = inputDir
+      .listSync()
+      .whereType<File>()
+      .where((f) => !f.path.endsWith('.md'))
+      .toList();
+
+  for (final file in nonMdFiles) {
+    try {
+      final destPath = p.join(outputPath, file.uri.pathSegments.last);
+      file.copySync(destPath);
+      stdout.writeln('Copied: $destPath');
+    } catch (e) {
+      stderr.writeln('Error copying ${file.path}: $e');
+      exitCode = 1;
+    }
+  }
+
   // Process Markdown files
-  final mdFiles = docsDir
+  final mdFiles = inputDir
       .listSync()
       .whereType<File>()
       .where((f) => f.path.endsWith('.md'))
@@ -46,7 +75,11 @@ void main() {
       // Replace .md links with .html
       markdown = markdown.replaceAll(RegExp(r'\.md(?=[\)\]])'), '.html');
       final html = md.markdownToHtml(markdown);
-      final htmlPath = file.path.replaceAll('.md', '.html');
+      final htmlFileName = file.uri.pathSegments.last.replaceAll(
+        '.md',
+        '.html',
+      );
+      final htmlPath = p.join(outputPath, htmlFileName);
       final htmlContent = template(file.uri.pathSegments.last, html);
       File(htmlPath).writeAsStringSync(htmlContent);
       stdout.writeln('Generated: $htmlPath');
@@ -58,15 +91,15 @@ void main() {
 
   // Copy info.md to assets and replace links
   try {
-    final infoSource = File('docs/info.md');
+    final infoSource = File(p.join(inputPath, 'info.md'));
     if (infoSource.existsSync()) {
       var infoMarkdown = infoSource.readAsStringSync();
       // Replace local index.md link with external URL
       infoMarkdown = infoMarkdown.replaceAll(
         RegExp(r'./index\.md'),
-        'https://pages.michinobu.jp/yukyuchecker/index.html',
+        'https://yukyuchecker.firebaseapp.com/docs/index.html',
       );
-      final infoDest = File('assets/info.md');
+      final infoDest = File(p.join(assetPath, 'info.md'));
       infoDest.writeAsStringSync(infoMarkdown);
       stdout.writeln('Copied and processed: ${infoDest.path}');
     }

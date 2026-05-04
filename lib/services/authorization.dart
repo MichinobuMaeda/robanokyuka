@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import 'helpers.dart';
-import 'authentication.dart';
-import '../models/service.dart';
-import '../views/auth/email_link_panel.dart';
-import '../views/auth/email_password_panel.dart';
-import '../views/auth/reset_password_panel.dart';
-import '../views/user/record_panel.dart';
-import '../views/user/summary_panel.dart';
-import '../views/user/calendar_panel.dart';
-import '../views/user/edit_profile_panel.dart';
-import '../views/auth/sign_out_panel.dart';
-import '../views/auth/password_reauthenticate_panel.dart';
-import '../views/auth/change_email_panel.dart';
-import '../views/auth/google_auth_panel.dart';
-import '../views/auth/delete_user_panel.dart';
-import '../views/admin/users_panel.dart';
-import '../views/admin/holidays_panel.dart';
-import '../widgets/markdown_panel.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/services/authentication.dart';
+import 'package:yukyuchecker/models/service.dart';
+import 'package:yukyuchecker/views/auth/email_link_panel.dart';
+import 'package:yukyuchecker/views/auth/email_password_panel.dart';
+import 'package:yukyuchecker/views/auth/reset_password_panel.dart';
+import 'package:yukyuchecker/views/user/record_panel.dart';
+import 'package:yukyuchecker/views/user/summary_panel.dart';
+import 'package:yukyuchecker/views/user/calendar_panel.dart';
+import 'package:yukyuchecker/views/user/edit_profile_panel.dart';
+import 'package:yukyuchecker/views/auth/sign_out_panel.dart';
+import 'package:yukyuchecker/views/auth/password_reauthenticate_panel.dart';
+import 'package:yukyuchecker/views/auth/change_email_panel.dart';
+import 'package:yukyuchecker/views/auth/google_auth_panel.dart';
+import 'package:yukyuchecker/views/auth/delete_user_panel.dart';
+import 'package:yukyuchecker/views/admin/users_panel.dart';
+import 'package:yukyuchecker/views/admin/holidays_panel.dart';
+import 'package:yukyuchecker/widgets/markdown_panel.dart';
 
 enum Privilege { loading, guest, admin, user }
 
@@ -87,7 +87,7 @@ enum PageItem {
 final privilegeProvider = Provider<Privilege>((ref) {
   final authUser = ref.watch(authUserProvider);
   final service = ref.watch(serviceProvider);
-  final admins = ref.watch(adminsProvider);
+  final admins = ref.watch(confProvider.select((conf) => conf?.admins ?? []));
 
   return authUser.isLoading || service.isLoading
       ? Privilege.loading

@@ -1,5 +1,5 @@
 import 'package:yukyuchecker/models/cal_date.dart';
-import 'package:yukyuchecker/models/nengo.dart';
+import 'package:yukyuchecker/models/service.dart';
 
 List<Gengo> gengos() => [
   Gengo(date: Cal(1868, 1, 25), name: '明治', short: 'M'),

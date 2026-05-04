@@ -34,6 +34,7 @@ async function setupV1(
       {
         admins: [user.uid],
         gengos,
+        uiVersion: process.env.UI_VERSION,
         createdAt: FieldValue.serverTimestamp(),
       }
     );

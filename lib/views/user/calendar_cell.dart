@@ -3,15 +3,16 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../config/firebase.dart';
-import '../../config/theme.dart';
-import '../../models/cal_date.dart';
-import '../../models/nengo.dart';
-import '../../models/record.dart';
-import '../../models/holidays.dart';
-import '../../services/authentication.dart';
-import '../../services/helpers.dart';
-import '../../widgets/toggle_button.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/models/cal_date.dart';
+import 'package:yukyuchecker/models/nengo.dart';
+import 'package:yukyuchecker/models/record.dart';
+import 'package:yukyuchecker/models/holidays.dart';
+import 'package:yukyuchecker/services/authentication.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/services/validators.dart';
+import 'package:yukyuchecker/widgets/toggle_button.dart';
 
 class CalendarCell extends StatelessWidget {
   const CalendarCell({
@@ -31,7 +32,15 @@ class CalendarCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateRecord =
         record.dates.where((d) => d.date == date).firstOrNull ??
-        DateRecord(date);
+        DateRecord(
+          date,
+          false,
+          null,
+          plan: WorkTime(0, false),
+          used: WorkTime(0, false),
+          sick: WorkTime(0, false),
+          other: WorkTime(0, false),
+        );
     final today = Cal.fromDateTime(DateTime.now());
     final isPastOrToday = !date.dateTime.isAfter(today.dateTime);
     final isPublicHoliday =
@@ -47,6 +56,7 @@ class CalendarCell extends StatelessWidget {
           dateRecord: dateRecord,
           holiday: holiday,
           useLeavesHourly: record.useLeavesHourly,
+          workingHours: record.workingHours,
         ),
       ),
       child: Container(
@@ -72,19 +82,19 @@ class CalendarCell extends StatelessWidget {
                 Symbols.cottage,
                 color: Theme.of(context).colorScheme.onErrorContainer,
               )
-            else if (dateRecord.other == 'all')
+            else if (dateRecord.other.all)
               iconOtherFull
-            else if (dateRecord.other != null)
+            else if (dateRecord.other.seconds > 0)
               iconOtherHalf
-            else if (dateRecord.sick == 'all')
+            else if (dateRecord.sick.all)
               iconSickFull
-            else if (dateRecord.sick != null)
+            else if (dateRecord.sick.seconds > 0)
               iconSickHalf
-            else if (dateRecord.used == 'all')
+            else if (dateRecord.used.all)
               iconPaidFull
-            else if (dateRecord.used != null)
+            else if (dateRecord.used.seconds > 0)
               iconPaidHalf
-            else if (dateRecord.plan != null)
+            else if (dateRecord.plan.seconds > 0)
               iconPaidEmpty
             else if (dateRecord.companyHoliday)
               iconCompanyHoliday
@@ -104,6 +114,7 @@ class _DayCellSheet extends HookConsumerWidget {
     required this.dateRecord,
     this.holiday,
     this.useLeavesHourly = false,
+    required this.workingHours,
   });
 
   final String recordId;
@@ -111,6 +122,7 @@ class _DayCellSheet extends HookConsumerWidget {
   final DateRecord dateRecord;
   final Holiday? holiday;
   final bool useLeavesHourly;
+  final int workingHours;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -122,28 +134,28 @@ class _DayCellSheet extends HookConsumerWidget {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final companyHoliday = useState(dateRecord.companyHoliday);
 
-    final planAll = useState(dateRecord.plan == 'all');
+    final planAll = useState(dateRecord.plan.all);
     final planCtrl = useTextEditingController(
-      text: (dateRecord.plan != null && dateRecord.plan != 'all')
-          ? dateRecord.plan!
+      text: !dateRecord.plan.all && dateRecord.plan.seconds > 0
+          ? formatTimeShort(dateRecord.plan.seconds)
           : '',
     );
-    final usedAll = useState(dateRecord.used == 'all');
+    final usedAll = useState(dateRecord.used.all);
     final usedCtrl = useTextEditingController(
-      text: (dateRecord.used != null && dateRecord.used != 'all')
-          ? dateRecord.used!
+      text: !dateRecord.used.all && dateRecord.used.seconds > 0
+          ? formatTimeShort(dateRecord.used.seconds)
           : '',
     );
-    final sickAll = useState(dateRecord.sick == 'all');
+    final sickAll = useState(dateRecord.sick.all);
     final sickCtrl = useTextEditingController(
-      text: (dateRecord.sick != null && dateRecord.sick != 'all')
-          ? dateRecord.sick!
+      text: !dateRecord.sick.all && dateRecord.sick.seconds > 0
+          ? formatTimeShort(dateRecord.sick.seconds)
           : '',
     );
-    final otherAll = useState(dateRecord.other == 'all');
+    final otherAll = useState(dateRecord.other.all);
     final otherCtrl = useTextEditingController(
-      text: (dateRecord.other != null && dateRecord.other != 'all')
-          ? dateRecord.other!
+      text: !dateRecord.other.all && dateRecord.other.seconds > 0
+          ? formatTimeShort(dateRecord.other.seconds)
           : '',
     );
     final noteCtrl = useTextEditingController(text: dateRecord.note ?? '');
@@ -153,11 +165,13 @@ class _DayCellSheet extends HookConsumerWidget {
         '${nengo.format(date)}(${date.weekDayLabel})'
         '${holidayName != null ? '  $holidayName' : ''}';
 
-    String? fieldValue(bool all, String time) {
-      if (all) return 'all';
+    WorkTime fieldValue(bool all, String time) {
+      if (all) return WorkTime(0, true);
       final text = time.trim();
-      if (text.isEmpty || text == '0:00' || text == '00:00') return null;
-      return padHhmm(text);
+      if (text.isEmpty || text == '0:00' || text == '00:00') {
+        return WorkTime(0, false);
+      }
+      return WorkTime(parseTime(text), false);
     }
 
     Future<void> handleSave() async {
@@ -165,12 +179,12 @@ class _DayCellSheet extends HookConsumerWidget {
       if (!(formKey.currentState?.validate() ?? true)) return;
       final newRecord = DateRecord(
         date,
-        companyHoliday: companyHoliday.value,
+        companyHoliday.value,
+        noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
         plan: fieldValue(planAll.value, planCtrl.text),
         used: fieldValue(usedAll.value, usedCtrl.text),
         sick: fieldValue(sickAll.value, sickCtrl.text),
         other: fieldValue(otherAll.value, otherCtrl.text),
-        note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
       );
       final result = await saveDateRecord(db, uid, recordId, newRecord);
       if (context.mounted) {
@@ -397,13 +411,7 @@ class _LeaveTimeRange extends HookWidget {
                 labelText: label,
                 helperText: 'H:MM',
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) return null;
-                if (!RegExp(r'^\d{1,2}:\d{2}$').hasMatch(value.trim())) {
-                  return 'H:MM形式';
-                }
-                return null;
-              },
+              validator: validateHhmmOptional,
             ),
           ),
         ],

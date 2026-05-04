@@ -5,9 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
-import '../config/firebase.dart';
-import '../services/authentication.dart';
-import '../services/authorization.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/services/authentication.dart';
+import 'package:yukyuchecker/services/authorization.dart';
 
 class User {
   final String id;

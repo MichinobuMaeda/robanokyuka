@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from "vitest";
-import {setup, addTestData} from "./setup";
+import {setup, addTestData, updateUiVersion} from "./setup";
 import {msg, type Context} from "./common";
 import type {
   DocumentReference,
@@ -346,6 +346,50 @@ describe("addTestData", () => {
     await addTestData(ctx);
     expect(ctx.logger.error).toHaveBeenCalledWith(
       msg.errorAddTestData, "boom", undefined
+    );
+  });
+});
+
+describe("updateUiVersion", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.UI_VERSION = uiVersion;
+  });
+
+  function makeUpdateUiVersionContext(storedVersion: string | undefined) {
+    const update = vi.fn().mockResolvedValue(undefined);
+    const confRef = {
+      get: vi.fn().mockResolvedValue({data: () => ({uiVersion: storedVersion})}),
+      update,
+    } as unknown as DocumentReference;
+    const db = {
+      collection: vi.fn(() => ({doc: vi.fn().mockReturnValue(confRef)})),
+    } as unknown as import("./common").Context["db"];
+    const logger = {info: vi.fn(), error: vi.fn()};
+    return {context: {logger, db} as unknown as import("./common").Context, update};
+  }
+
+  it("logs up-to-date and does not update when version matches", async () => {
+    const {context: ctx, update} = makeUpdateUiVersionContext(uiVersion);
+    await updateUiVersion(ctx);
+    expect(ctx.logger.info).toHaveBeenCalledWith(msg.uiVersionUpToDate(uiVersion));
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("updates conf and logs when stored version differs", async () => {
+    const {context: ctx, update} = makeUpdateUiVersionContext("0.1.1+1");
+    await updateUiVersion(ctx);
+    expect(ctx.logger.info).toHaveBeenCalledWith(msg.updatingUiVersion(uiVersion));
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({uiVersion})
+    );
+  });
+
+  it("updates conf when stored version is undefined", async () => {
+    const {context: ctx, update} = makeUpdateUiVersionContext(undefined);
+    await updateUiVersion(ctx);
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({uiVersion})
     );
   });
 });

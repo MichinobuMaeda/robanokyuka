@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../config/firebase.dart';
-import '../../services/helpers.dart';
-import '../../services/authentication.dart';
-import '../../widgets/box_panel.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/services/authentication.dart';
+import 'package:yukyuchecker/widgets/box_panel.dart';
 
 class GoogleAuthPanel extends HookConsumerWidget {
   const GoogleAuthPanel({super.key, this.reauthentication = false});

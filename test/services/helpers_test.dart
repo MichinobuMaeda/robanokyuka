@@ -3,46 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:yukyuchecker/services/helpers.dart';
 
 void main() {
-  group('padHhmm', () {
-    test('returns null for null input', () {
-      expect(padHhmm(null), isNull);
-    });
-
-    test('returns empty string unchanged', () {
-      expect(padHhmm(''), '');
-    });
-
-    test('pads single-digit hour and minute', () {
-      expect(padHhmm('8:5'), '08:05');
-    });
-
-    test('does not double-pad already padded values', () {
-      expect(padHhmm('08:30'), '08:30');
-    });
-
-    test('parses 4-char hhmm without colon', () {
-      expect(padHhmm('0830'), '08:30');
-    });
-
-    test('parses 3-char hmm without colon', () {
-      expect(padHhmm('830'), '08:30');
-    });
-
-    test('returns other no-colon strings unchanged', () {
-      expect(padHhmm('8'), '8');
-      expect(padHhmm('83'), '83');
-    });
-
-    test('short: omits leading zero on hour', () {
-      expect(padHhmm('8:5', short: true), '8:05');
-      expect(padHhmm('08:30', short: true), '8:30');
-    });
-
-    test('short: multi-digit hour is unchanged', () {
-      expect(padHhmm('10:05', short: true), '10:05');
-    });
-  });
-
   group('toHankaku', () {
     test('converts full-width digits to half-width', () {
       expect(toHankaku('０１２３４５６７８９'), '0123456789');

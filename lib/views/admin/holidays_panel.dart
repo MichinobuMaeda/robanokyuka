@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:yukyuchecker/services/validators.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import '../../config/firebase.dart';
-import '../../config/theme.dart';
-import '../../services/helpers.dart';
-import '../../models/cal_date.dart';
-import '../../models/nengo.dart';
-import '../../models/holidays.dart';
-import '../../widgets/bordered_list_item.dart';
-import '../../widgets/date_row.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/services/helpers.dart';
+import 'package:yukyuchecker/services/validators.dart';
+import 'package:yukyuchecker/models/cal_date.dart';
+import 'package:yukyuchecker/models/nengo.dart';
+import 'package:yukyuchecker/models/holidays.dart';
+import 'package:yukyuchecker/widgets/bordered_list_item.dart';
+import 'package:yukyuchecker/widgets/date_input.dart';
 
 class HolidaysPanel extends HookConsumerWidget {
   const HolidaysPanel({super.key});
@@ -94,10 +94,7 @@ class _Header extends HookConsumerWidget {
     return Row(
       children: [
         Expanded(child: Text('祝日', style: panelTitleStyle(context))),
-        IconButton.filledTonal(
-          onPressed: showAddSheet,
-          icon: Icon(Symbols.add, color: Theme.of(context).colorScheme.primary),
-        ),
+        IconButton.filledTonal(onPressed: showAddSheet, icon: iconAdd),
       ],
     );
   }
@@ -183,10 +180,8 @@ class _Item extends HookConsumerWidget {
       children: [
         IconButton(
           onPressed: showDeleteConfirmation,
-          icon: Icon(
-            Symbols.delete,
-            color: Theme.of(context).colorScheme.error,
-          ),
+          icon: iconDelete,
+          color: Theme.of(context).colorScheme.error,
         ),
         SizedBox(
           width: 144,
@@ -208,10 +203,8 @@ class _Item extends HookConsumerWidget {
         ),
         IconButton(
           onPressed: showEditSheet,
-          icon: Icon(
-            Symbols.edit,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          icon: iconEdit,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ],
     );
@@ -257,22 +250,11 @@ class _DeleteSheet extends HookConsumerWidget {
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Symbols.delete,
-                      color: Theme.of(context).colorScheme.onError,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      '削除',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onError,
-                      ),
-                    ),
-                  ],
+                  children: [iconDelete, SizedBox(width: 8), Text('削除')],
                 ),
               ),
             ],
@@ -293,13 +275,9 @@ class _AddSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final yearController = useTextEditingController(
-      text: nengo.formatYear(holiday.date),
+    final dateController = useTextEditingController(
+      text: nengo.formatShort(holiday.date),
     );
-    final monthController = useTextEditingController(
-      text: '${holiday.date.month}',
-    );
-    final dayController = useTextEditingController(text: '${holiday.date.day}');
     final nameController = useTextEditingController(text: holiday.name);
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final isFormValid = useState(false);
@@ -317,16 +295,12 @@ class _AddSheet extends HookConsumerWidget {
         return;
       }
 
-      final newHoliday = Holiday(
-        date: Cal(
-          int.parse(yearController.text),
-          int.parse(monthController.text),
-          int.parse(dayController.text),
-        ),
+      final holiday = Holiday(
+        date: nengo.parseDate(dateController.text)!,
         name: nameController.text.trim(),
       );
       Navigator.pop(context);
-      onConfirm(newHoliday);
+      onConfirm(holiday);
     }
 
     return Padding(
@@ -350,13 +324,15 @@ class _AddSheet extends HookConsumerWidget {
             spacing: 16,
             children: [
               Text('祝日を追加', style: Theme.of(context).textTheme.titleLarge),
-              DateRow(
-                yearController: yearController,
-                monthController: monthController,
-                dayController: dayController,
-                nengo: nengo,
-                extraDayValidator: (year, month, day) =>
-                    validateHoliday(holidays, year, month, day),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: 192),
+                child: DateInput(
+                  labelText: '日付',
+                  dateController: dateController,
+                  nengo: nengo,
+                  extraValidator: (cal) =>
+                      validateHoliday(holidays, cal.year, cal.month, cal.day),
+                ),
               ),
               TextFormField(
                 controller: nameController,
@@ -379,11 +355,7 @@ class _AddSheet extends HookConsumerWidget {
                     onPressed: isFormValid.value ? handleSubmit : null,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Symbols.add),
-                        SizedBox(width: 8),
-                        Text('追加'),
-                      ],
+                      children: [iconAdd, SizedBox(width: 8), Text('追加')],
                     ),
                   ),
                 ],

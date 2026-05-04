@@ -60,6 +60,10 @@ ThemeData generateThemeData(Brightness brightness) {
   );
 }
 
+final iconAdd = Icon(Symbols.add);
+final iconEdit = Icon(Symbols.edit);
+final iconDelete = Icon(Symbols.delete);
+final iconClose = Icon(Symbols.close);
 final iconWorked = Icon(Symbols.work, fill: 0);
 final iconCompanyHoliday = Icon(Symbols.work_off, fill: 1.0);
 final iconPaidFull = Icon(Symbols.battery_android_frame_full);

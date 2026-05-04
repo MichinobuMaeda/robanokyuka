@@ -12,7 +12,7 @@ import 'package:yukyuchecker/services/authorization.dart';
 // ---------------------------------------------------------------------------
 
 /// Returns a [ProviderContainer] with [authUserProvider], [serviceProvider],
-/// and [adminsProvider] all overridden so no Firebase calls are made.
+/// and [confProvider] all overridden so no Firebase calls are made.
 ProviderContainer _makeContainer({
   required AsyncValue<User?> authUser,
   AsyncValue<QuerySnapshot<Map<String, dynamic>>?> service = const AsyncData(
@@ -26,7 +26,9 @@ ProviderContainer _makeContainer({
         (_) => Stream.value(authUser.asData?.value),
       ),
       serviceProvider.overrideWith((_) => Stream.value(service.asData?.value)),
-      adminsProvider.overrideWith((_) => admins),
+      confProvider.overrideWithValue(
+        admins.isEmpty ? null : Conf(admins: admins, gengos: [], uiVersion: ''),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -53,7 +55,6 @@ void main() {
         overrides: [
           authUserProvider.overrideWith((_) => const Stream.empty()),
           serviceProvider.overrideWith((_) => const Stream.empty()),
-          adminsProvider.overrideWith((_) => <String>[]),
         ],
       );
       addTearDown(container.dispose);
@@ -99,7 +100,6 @@ void main() {
         overrides: [
           authUserProvider.overrideWith((_) => const Stream.empty()),
           serviceProvider.overrideWith((_) => const Stream.empty()),
-          adminsProvider.overrideWith((_) => <String>[]),
         ],
       );
       addTearDown(container.dispose);

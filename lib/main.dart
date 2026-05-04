@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'config/firebase.dart';
-import 'config/theme.dart';
-import 'models/users.dart';
-import 'services/authentication.dart';
-import 'platform/platforms.dart';
-import 'views/layout.dart';
+import 'package:yukyuchecker/config/firebase.dart';
+import 'package:yukyuchecker/config/theme.dart';
+import 'package:yukyuchecker/models/users.dart';
+import 'package:yukyuchecker/platform/platforms.dart';
+import 'package:yukyuchecker/services/authentication.dart';
+import 'package:yukyuchecker/views/layout.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +36,13 @@ class MyApp extends HookConsumerWidget {
       themeMode: themeMode,
       theme: generateThemeData(Brightness.light),
       darkTheme: generateThemeData(Brightness.dark),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('ja', 'JP')],
+      locale: const Locale('ja', 'JP'),
       home: const Layout(),
     );
   }
