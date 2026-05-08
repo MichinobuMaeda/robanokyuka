@@ -194,7 +194,7 @@ class _NavDrawer extends StatelessWidget {
         selectedIndex: selectedIndex,
         onDestinationSelected: onDestinationSelected,
         header: Padding(
-          padding: EdgeInsets.all(8.0),
+          padding: EdgeInsets.all(16.0),
           child: Image.asset(assetAppLogo),
         ),
         children: pages
