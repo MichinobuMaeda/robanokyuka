@@ -31,6 +31,8 @@ jobs:
         run: flutter pub get
       - name: Test Flutter
         run: flutter test --coverage
+      - name: Install lcov
+        run: sudo apt-get install -y lcov
       - name: Filter Flutter coverage
         run: lcov --extract coverage/lcov.info 'lib/models/*' 'lib/services/*' --output-file coverage/lcov.info
       - name: Upload Flutter coverage to Codecov
