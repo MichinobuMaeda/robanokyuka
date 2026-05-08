@@ -15,7 +15,7 @@ import 'package:robanokyuka/views/user/edit_profile_panel.dart';
 import 'package:robanokyuka/views/auth/sign_out_panel.dart';
 import 'package:robanokyuka/views/auth/password_reauthenticate_panel.dart';
 import 'package:robanokyuka/views/auth/change_email_panel.dart';
-import 'package:robanokyuka/views/auth/google_auth_panel.dart';
+// import 'package:robanokyuka/views/auth/google_auth_panel.dart';
 import 'package:robanokyuka/views/auth/delete_user_panel.dart';
 import 'package:robanokyuka/views/admin/users_panel.dart';
 import 'package:robanokyuka/views/admin/holidays_panel.dart';
@@ -33,7 +33,7 @@ enum PageItem {
       EmailLinkPanel(),
       EmailPasswordPanel(),
       ResetPasswordPanel(),
-      GoogleAuthPanel(),
+      // GoogleAuthPanel(),
     ],
   ),
   home(
@@ -53,7 +53,7 @@ enum PageItem {
       MarkdownPanel(asset: assetReauthenticateMd),
       EmailLinkPanel(),
       PasswordReauthenticatePanel(),
-      GoogleAuthPanel(reauthentication: true),
+      // GoogleAuthPanel(reauthentication: true),
       ChangeEmailPanel(),
       DeleteUserPanel(),
     ],

@@ -10,7 +10,7 @@
 
 ## 開発・運用
 
-[» Development](./development.md)
+[» 開発](./development.md)
 
 ロバの休暇は現在、個人で開発・運用しています。ご要望等は
 <https://pages.michinobu.jp>

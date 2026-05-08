@@ -15,9 +15,9 @@ FirebaseOptions firebaseConfig = FirebaseOptions(
   authDomain: "robanokyuka.firebaseapp.com",
   projectId: "robanokyuka",
   storageBucket: "robanokyuka.firebasestorage.app",
-  messagingSenderId: "823109354081",
-  appId: "1:823109354081:web:36d1a10d8e80b0e9d8e020",
-  measurementId: "G-5EWNJZNW19",
+  messagingSenderId: "506698003908",
+  appId: "1:506698003908:web:17437702a35ccbfbdf2091",
+  measurementId: "G-0YGD503CHF",
 );
 
 Future<void> initializeFirebase() async {

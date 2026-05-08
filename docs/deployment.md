@@ -1,6 +1,6 @@
 # ロバの休暇
 
-[« 概要](./index.md) [« Development](./development.md)
+[« 概要](./index.md) [« 開発](./development.md)
 
 ## Create this project
 
@@ -12,6 +12,8 @@ https://console.firebase.google.com/
 - Choose or create a Google Analytics account: robanokyuka
 - Analytics location: Japan
 - [v] Use the default settings for sharing Google Analytics data
+
+https://console.firebase.google.com/project/robanokyuka
 
 - Settings
     - Project settings
@@ -266,7 +268,13 @@ $ npx firebase deploy --only functions
 ✔  Deploy complete!
 ```
 
-https://console.firebase.google.com/
+https://console.cloud.google.com/welcome?project=robanokyuka
+
+- IAM & Admin
+    - IAM
+        - github-action-\*: add Role "Editor"
+
+https://console.firebase.google.com/project/robanokyuka
 
 - Security
     - Authentication

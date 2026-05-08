@@ -15,16 +15,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+      - name: Install functions dependencies
+        run: npm ci && npm --prefix functions ci
+      - name: Test functions
+        run: npm --prefix functions run test
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Test Flutter
+        run: flutter test --coverage
+      - name: Upload functions coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: functions/coverage/clover.xml
+          flags: functions
+      - name: Upload Flutter coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          flags: flutter
       - name: Set firebase api key
         run: |
           sed 's/FIREBASE_API_KEY/${{ secrets.FIREBASE_API_KEY_ROBANOKYUKA }}/' \
             -i lib/config/firebase.dart
-      - name: Install dependencies
-        run: flutter pub get
       - name: Build web
         run: dart tools/set_ui_version.dart && flutter build web --release --wasm
       - uses: FirebaseExtended/action-hosting-deploy@v0

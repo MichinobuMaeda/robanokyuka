@@ -2,7 +2,7 @@
 
 [« 概要](./index.md)
 
-## Development
+## 開発
 
 ### Prerequisites
 
