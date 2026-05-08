@@ -1,10 +1,10 @@
-# 有休チェッカー
+# ロバの休暇
 
-<https://yukyuchecker.firebaseapp.com>
+<https://robanokyuka.firebaseapp.com>
 
-![https://yukyuchecker.firebaseapp.com>](qrcode.png)
+![https://robanokyuka.firebaseapp.com>](qrcode.png)
 
-有休チェッカーは有給休暇取得の計画と記録のための無料のアプリです。利用規約をご確認の上、ご利用ください。
+ロバの休暇は有給休暇取得の計画と記録のための無料のアプリです。利用規約をご確認の上、ご利用ください。
 
 [利用規約](./info.md)
 
@@ -12,7 +12,7 @@
 
 [» Development](./development.md)
 
-有休チェッカーは現在、個人で開発・運用しています。ご要望等は
+ロバの休暇は現在、個人で開発・運用しています。ご要望等は
 <https://pages.michinobu.jp>
 に掲載のメールアドレスや各種ソーシャルメディアのアカウントにご連絡ください。
 

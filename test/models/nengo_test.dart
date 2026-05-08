@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:yukyuchecker/models/cal_date.dart';
-import 'package:yukyuchecker/models/nengo.dart';
-import 'package:yukyuchecker/models/service.dart';
-import 'package:yukyuchecker/models/users.dart';
+import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/nengo.dart';
+import 'package:robanokyuka/models/service.dart';
+import 'package:robanokyuka/models/users.dart';
 import '../test_utils.dart';
 
 void main() {

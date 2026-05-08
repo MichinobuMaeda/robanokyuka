@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:yukyuchecker/config/theme.dart';
+import 'package:robanokyuka/config/theme.dart';
 
 class BoxPanel extends HookConsumerWidget {
   const BoxPanel({super.key, required this.children, this.showDivider = true});

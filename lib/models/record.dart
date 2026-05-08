@@ -3,9 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fpdart/fpdart.dart';
 
-import 'package:yukyuchecker/config/firebase.dart';
-import 'package:yukyuchecker/models/cal_date.dart';
-import 'package:yukyuchecker/services/authentication.dart';
+import 'package:robanokyuka/config/firebase.dart';
+import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/services/authentication.dart';
 
 int parseTime(String hhmm) {
   final parts = hhmm.split(':');

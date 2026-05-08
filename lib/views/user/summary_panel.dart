@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:yukyuchecker/config/theme.dart';
+import 'package:robanokyuka/config/theme.dart';
 
-import 'package:yukyuchecker/models/record.dart';
+import 'package:robanokyuka/models/record.dart';
 
 class SummaryItem {
   final String label;

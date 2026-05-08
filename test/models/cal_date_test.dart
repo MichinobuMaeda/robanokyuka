@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukyuchecker/models/cal_date.dart';
+import 'package:robanokyuka/models/cal_date.dart';
 
 // Asserts that [cal] matches today's year/month/day.
 void expectToday(Cal cal) {

@@ -97,7 +97,7 @@ void main() {
       // Replace local index.md link with external URL
       infoMarkdown = infoMarkdown.replaceAll(
         RegExp(r'./index\.md'),
-        'https://yukyuchecker.firebaseapp.com/docs/index.html',
+        'https://robanokyuka.firebaseapp.com/docs/index.html',
       );
       final infoDest = File(p.join(assetPath, 'info.md'));
       infoDest.writeAsStringSync(infoMarkdown);

@@ -7,6 +7,7 @@
   },
   "functions": [
     {
+      "source": "functions",
       "codebase": "default",
       "disallowLegacyRuntimeConfig": true,
       "ignore": [
@@ -19,8 +20,7 @@
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" run lint",
         "npm --prefix \"$RESOURCE_DIR\" run build"
-      ],
-      "source": "functions"
+      ]
     }
   ],
   "hosting": {
@@ -30,6 +30,9 @@
       "**/.*",
       "**/node_modules/**"
     ]
+  },
+  "storage": {
+    "rules": "storage.rules"
   },
   "emulators": {
     "auth": {
@@ -41,6 +44,15 @@
     "firestore": {
       "port": 8080
     },
+    "pubsub": {
+      "port": 8085
+    },
+    "storage": {
+      "port": 9199
+    },
+    "tasks": {
+      "port": 9499
+    },
     "ui": {
       "enabled": true,
       "port": 4000
@@ -51,8 +63,8 @@
     "providers": {
       "emailPassword": true,
       "googleSignIn": {
-        "oAuthBrandDisplayName": "Yukyu Checker",
-        "supportEmail": "michinobumaeda@gmail.com"
+        "oAuthBrandDisplayName": "ロバの休暇",
+        "supportEmail": "support@undefined.firebaseapp.com"
       }
     }
   }

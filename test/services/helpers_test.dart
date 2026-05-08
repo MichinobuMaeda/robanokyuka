@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:yukyuchecker/services/helpers.dart';
+import 'package:robanokyuka/services/helpers.dart';
 
 void main() {
   group('toHankaku', () {

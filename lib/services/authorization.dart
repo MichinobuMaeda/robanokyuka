@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import 'package:yukyuchecker/services/helpers.dart';
-import 'package:yukyuchecker/services/authentication.dart';
-import 'package:yukyuchecker/models/service.dart';
-import 'package:yukyuchecker/views/auth/email_link_panel.dart';
-import 'package:yukyuchecker/views/auth/email_password_panel.dart';
-import 'package:yukyuchecker/views/auth/reset_password_panel.dart';
-import 'package:yukyuchecker/views/user/record_panel.dart';
-import 'package:yukyuchecker/views/user/summary_panel.dart';
-import 'package:yukyuchecker/views/user/calendar_panel.dart';
-import 'package:yukyuchecker/views/user/edit_profile_panel.dart';
-import 'package:yukyuchecker/views/auth/sign_out_panel.dart';
-import 'package:yukyuchecker/views/auth/password_reauthenticate_panel.dart';
-import 'package:yukyuchecker/views/auth/change_email_panel.dart';
-import 'package:yukyuchecker/views/auth/google_auth_panel.dart';
-import 'package:yukyuchecker/views/auth/delete_user_panel.dart';
-import 'package:yukyuchecker/views/admin/users_panel.dart';
-import 'package:yukyuchecker/views/admin/holidays_panel.dart';
-import 'package:yukyuchecker/widgets/markdown_panel.dart';
+import 'package:robanokyuka/services/helpers.dart';
+import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/models/service.dart';
+import 'package:robanokyuka/views/auth/email_link_panel.dart';
+import 'package:robanokyuka/views/auth/email_password_panel.dart';
+import 'package:robanokyuka/views/auth/reset_password_panel.dart';
+import 'package:robanokyuka/views/user/record_panel.dart';
+import 'package:robanokyuka/views/user/summary_panel.dart';
+import 'package:robanokyuka/views/user/calendar_panel.dart';
+import 'package:robanokyuka/views/user/edit_profile_panel.dart';
+import 'package:robanokyuka/views/auth/sign_out_panel.dart';
+import 'package:robanokyuka/views/auth/password_reauthenticate_panel.dart';
+import 'package:robanokyuka/views/auth/change_email_panel.dart';
+import 'package:robanokyuka/views/auth/google_auth_panel.dart';
+import 'package:robanokyuka/views/auth/delete_user_panel.dart';
+import 'package:robanokyuka/views/admin/users_panel.dart';
+import 'package:robanokyuka/views/admin/holidays_panel.dart';
+import 'package:robanokyuka/widgets/markdown_panel.dart';
 
 enum Privilege { loading, guest, admin, user }
 

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1024"
+   height="1024"
+   viewBox="0 0 270.93333 270.93333"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   sodipodi:docname="logo.svg"
+   inkscape:export-filename="logo16.png"
+   inkscape:export-xdpi="1.5"
+   inkscape:export-ydpi="1.5"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.52056833"
+     inkscape:cx="491.77022"
+     inkscape:cy="520.58488"
+     inkscape:window-width="1363"
+     inkscape:window-height="783"
+     inkscape:window-x="323"
+     inkscape:window-y="34"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <ellipse
+       style="fill:#bf6f40;fill-opacity:1;stroke-width:0.143985"
+       id="ellipse9"
+       cx="-23.947493"
+       cy="116.64533"
+       rx="19.969954"
+       ry="54.383671"
+       transform="matrix(-0.54788263,-0.83655522,-0.83655522,0.54788263,270.93331,0)" />
+    <ellipse
+       style="fill:#bf6f40;fill-opacity:1;stroke-width:0.143985"
+       id="path8-0"
+       cx="-23.947493"
+       cy="116.64533"
+       rx="19.969954"
+       ry="54.383671"
+       transform="rotate(-56.778127)" />
+    <ellipse
+       style="fill:#bf6f40;fill-opacity:1;stroke-width:0.273409"
+       id="path8"
+       cx="135.46667"
+       cy="169.75848"
+       rx="42.333332"
+       ry="92.503067" />
+    <path
+       id="rect9"
+       style="fill:#f2e2d9;fill-opacity:1;stroke-width:0.139054"
+       d="M 95.581763 200.76191 A 42.333332 92.503067 0 0 0 111.15652 245.48889 L 159.77681 245.48889 A 42.333332 92.503067 0 0 0 175.35157 200.76191 L 95.581763 200.76191 z " />
+    <path
+       id="rect10"
+       style="fill:#734226;fill-opacity:1;stroke-width:0.264583"
+       d="M 110.82838 244.9804 A 42.333332 92.503067 0 0 0 135.46667 262.26151 A 42.333332 92.503067 0 0 0 160.10496 244.9804 L 110.82838 244.9804 z " />
+  </g>
+</svg>

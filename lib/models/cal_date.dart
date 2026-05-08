@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
-import 'package:yukyuchecker/config/theme.dart';
-import 'package:yukyuchecker/services/helpers.dart';
+import 'package:robanokyuka/config/theme.dart';
+import 'package:robanokyuka/services/helpers.dart';
 
 @visibleForTesting
 String pad2(int n) => n.toString().padLeft(2, '0');

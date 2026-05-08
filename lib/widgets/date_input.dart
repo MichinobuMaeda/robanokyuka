@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:yukyuchecker/models/cal_date.dart';
-import 'package:yukyuchecker/models/nengo.dart';
-import 'package:yukyuchecker/services/validators.dart';
+import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/nengo.dart';
+import 'package:robanokyuka/services/validators.dart';
 
 class DateInput extends StatelessWidget {
   const DateInput({

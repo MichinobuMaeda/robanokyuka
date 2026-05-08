@@ -4,13 +4,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:web/web.dart' as web;
 
-import 'package:yukyuchecker/config/firebase.dart';
-import 'package:yukyuchecker/config/theme.dart';
-import 'package:yukyuchecker/config/version.dart';
-import 'package:yukyuchecker/models/service.dart';
-import 'package:yukyuchecker/services/authentication.dart';
-import 'package:yukyuchecker/services/authorization.dart';
-import 'package:yukyuchecker/services/helpers.dart';
+import 'package:robanokyuka/config/firebase.dart';
+import 'package:robanokyuka/config/theme.dart';
+import 'package:robanokyuka/config/version.dart';
+import 'package:robanokyuka/models/service.dart';
+import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/services/authorization.dart';
+import 'package:robanokyuka/services/helpers.dart';
 
 enum MediaSize { narrow, middle, wide }
 
@@ -169,7 +169,7 @@ class _Footer extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Text('yukyuchecker $packageVersion'),
+        child: Text('robanokyuka $packageVersion'),
       ),
     );
   }

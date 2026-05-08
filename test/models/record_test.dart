@@ -4,11 +4,11 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:yukyuchecker/config/firebase.dart';
-import 'package:yukyuchecker/models/cal_date.dart';
-import 'package:yukyuchecker/models/record.dart';
+import 'package:robanokyuka/config/firebase.dart';
+import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/record.dart';
 
-import 'package:yukyuchecker/services/authentication.dart';
+import 'package:robanokyuka/services/authentication.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

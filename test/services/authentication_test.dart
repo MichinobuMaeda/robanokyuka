@@ -3,8 +3,8 @@ import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mock_exceptions/mock_exceptions.dart';
-import 'package:yukyuchecker/services/authentication.dart';
-import 'package:yukyuchecker/platform/platforms.dart';
+import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/platform/platforms.dart';
 
 /// Subclasses [FirebaseAuthNotifier] so tests can inject a [FirebaseAuth]
 /// instance without touching [FirebaseAuth.instance].

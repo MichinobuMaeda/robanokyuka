@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
-const emailFrom = "noreply@yukyuchecker.firebaseapp.com";
+const emailFrom = "noreply@robanokyuka.firebaseapp.com";
 
 const _flutterEnv = String.fromEnvironment('FLUTTER_ENV');
 
@@ -12,9 +12,9 @@ const String functionsRegion = 'asia-northeast2';
 
 FirebaseOptions firebaseConfig = FirebaseOptions(
   apiKey: "FIREBASE_API_KEY",
-  authDomain: "yukyuchecker.firebaseapp.com",
-  projectId: "yukyuchecker",
-  storageBucket: "yukyuchecker.firebasestorage.app",
+  authDomain: "robanokyuka.firebaseapp.com",
+  projectId: "robanokyuka",
+  storageBucket: "robanokyuka.firebasestorage.app",
   messagingSenderId: "823109354081",
   appId: "1:823109354081:web:36d1a10d8e80b0e9d8e020",
   measurementId: "G-5EWNJZNW19",

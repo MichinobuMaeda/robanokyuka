@@ -1,4 +1,4 @@
-# 有休チェッカー
+# ロバの休暇
 
 [« 概要](./index.md)
 
@@ -21,8 +21,8 @@ install_material_symbols_icons_fonts
 ### Get started
 
 ```bash
-git clone git@github.com:MichinobuMaeda/yukyuchecker.git
-cd yukyuchecker
+git clone git@github.com:MichinobuMaeda/robanokyuka.git
+cd robanokyuka
 flutter pug get
 npm i
 npm i --prefix functions

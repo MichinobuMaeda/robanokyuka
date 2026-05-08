@@ -3,12 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:yukyuchecker/config/firebase.dart';
-import 'package:yukyuchecker/config/theme.dart';
-import 'package:yukyuchecker/models/users.dart';
-import 'package:yukyuchecker/platform/platforms.dart';
-import 'package:yukyuchecker/services/authentication.dart';
-import 'package:yukyuchecker/views/layout.dart';
+import 'package:robanokyuka/config/firebase.dart';
+import 'package:robanokyuka/config/theme.dart';
+import 'package:robanokyuka/models/users.dart';
+import 'package:robanokyuka/platform/platforms.dart';
+import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/views/layout.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

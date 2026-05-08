@@ -1,9 +1,9 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:yukyuchecker/models/cal_date.dart';
-import 'package:yukyuchecker/models/service.dart';
-import 'package:yukyuchecker/models/holidays.dart';
+import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/service.dart';
+import 'package:robanokyuka/models/holidays.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

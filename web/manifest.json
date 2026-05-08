@@ -1,11 +1,11 @@
 {
-  "name": "有休チェッカー",
-  "short_name": "有休チェッカー",
+  "name": "ロバの休暇",
+  "short_name": "ロバの休暇",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0175C2",
-  "theme_color": "#0175C2",
-  "description": "有休チェッカーアプリ",
+  "background_color": "#734226",
+  "theme_color": "#734226",
+  "description": "ロバの休暇アプリ",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [

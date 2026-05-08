@@ -5,10 +5,10 @@ import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:yukyuchecker/config/firebase.dart';
-import 'package:yukyuchecker/models/users.dart';
-import 'package:yukyuchecker/services/authentication.dart';
-import 'package:yukyuchecker/services/authorization.dart';
+import 'package:robanokyuka/config/firebase.dart';
+import 'package:robanokyuka/models/users.dart';
+import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/services/authorization.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

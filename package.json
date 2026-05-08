@@ -1,11 +1,11 @@
 {
-  "name": "yukyuchecker",
-  "version": "0.2.2",
+  "name": "robanokyuka",
+  "version": "0.3.0",
   "license": "BSD-3-Clause",
   "author": "Michinobu Maeda",
   "repository": {
     "type": "git",
-    "url": "https://github.com/MichinobuMaeda/yukyuchecker.git"
+    "url": "https://github.com/MichinobuMaeda/robanokyuka.git"
   },
   "scripts": {
     "lint:functions": "npm --prefix functions run lint",
@@ -28,6 +28,6 @@
     "dev:edge": "npm run build:functions && npm run test:emulate -- \"npm run test:data && npm run dev:ui -- edge\""
   },
   "devDependencies": {
-    "firebase-tools": "^15.10.0"
+    "firebase-tools": "^15.17.0"
   }
 }

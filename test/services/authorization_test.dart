@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:yukyuchecker/models/service.dart';
-import 'package:yukyuchecker/services/authentication.dart';
-import 'package:yukyuchecker/services/authorization.dart';
+import 'package:robanokyuka/models/service.dart';
+import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/services/authorization.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers

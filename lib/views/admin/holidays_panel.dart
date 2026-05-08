@@ -3,15 +3,15 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import 'package:yukyuchecker/config/firebase.dart';
-import 'package:yukyuchecker/config/theme.dart';
-import 'package:yukyuchecker/services/helpers.dart';
-import 'package:yukyuchecker/services/validators.dart';
-import 'package:yukyuchecker/models/cal_date.dart';
-import 'package:yukyuchecker/models/nengo.dart';
-import 'package:yukyuchecker/models/holidays.dart';
-import 'package:yukyuchecker/widgets/bordered_list_item.dart';
-import 'package:yukyuchecker/widgets/date_input.dart';
+import 'package:robanokyuka/config/firebase.dart';
+import 'package:robanokyuka/config/theme.dart';
+import 'package:robanokyuka/services/helpers.dart';
+import 'package:robanokyuka/services/validators.dart';
+import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/nengo.dart';
+import 'package:robanokyuka/models/holidays.dart';
+import 'package:robanokyuka/widgets/bordered_list_item.dart';
+import 'package:robanokyuka/widgets/date_input.dart';
 
 class HolidaysPanel extends HookConsumerWidget {
   const HolidaysPanel({super.key});

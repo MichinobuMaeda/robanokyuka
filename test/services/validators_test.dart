@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yukyuchecker/models/nengo.dart';
-import 'package:yukyuchecker/models/holidays.dart';
-import 'package:yukyuchecker/services/validators.dart';
+import 'package:robanokyuka/models/nengo.dart';
+import 'package:robanokyuka/models/holidays.dart';
+import 'package:robanokyuka/services/validators.dart';
 import '../test_utils.dart';
 
 const requiredError = '入力必須です';

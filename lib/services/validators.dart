@@ -1,8 +1,8 @@
-import 'package:yukyuchecker/models/holidays.dart';
-import 'package:yukyuchecker/services/helpers.dart';
+import 'package:robanokyuka/models/holidays.dart';
+import 'package:robanokyuka/services/helpers.dart';
 
-import 'package:yukyuchecker/models/cal_date.dart';
-import 'package:yukyuchecker/models/nengo.dart';
+import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/nengo.dart';
 
 final _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 

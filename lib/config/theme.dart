@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-const appName = '有休チェッカー';
-const seedColor = Color.fromARGB(255, 0x6A, 0xB0, 0x7F);
+const appName = 'ロバの休暇';
+const seedColor = Color.fromARGB(255, 0x73, 0x42, 0x26);
 const defaultFont = 'NotoSansJP';
 const navDrawerWidth = 256.0;
 const contentMaxWidth = 1024.0;

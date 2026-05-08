@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
-import 'package:yukyuchecker/platform/platforms.dart';
+import 'package:robanokyuka/platform/platforms.dart';
 
-const keyEmailForSignIn = 'yukyuchecker_email_for_sign_in';
+const keyEmailForSignIn = 'robanokyuka_email_for_sign_in';
 
 class FirebaseAuthNotifier extends Notifier<FirebaseAuth?> {
   @override

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:yukyuchecker/config/firebase.dart';
-import 'package:yukyuchecker/services/authentication.dart';
-import 'package:yukyuchecker/models/cal_date.dart';
+import 'package:robanokyuka/config/firebase.dart';
+import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/models/cal_date.dart';
 
 Stream<QuerySnapshot<Map<String, dynamic>>?> serviceStream(Ref ref) {
   final uid = ref.watch(
