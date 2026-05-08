@@ -26,8 +26,8 @@ cd yukyuchecker
 flutter pug get
 npm i
 npm i --prefix functions
-num test
-num run dev
+npm test
+npm run dev
 ```
 
 - http://localhost:8000/ -- Web Server in debug mode
