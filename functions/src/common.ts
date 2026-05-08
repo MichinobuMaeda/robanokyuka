@@ -25,6 +25,7 @@ export const msg = {
   deletingUser: (uid: string) => `Deleting user: ${uid}`,
   noAdminEmail: "No admin email provided in the version document",
   adminEmailProvided: (email: string) => `Admin email provided: ${email}`,
+  noAppVersionUrl: "APP_VERSION_URL environment variable is not set",
   uiVersionUpToDate: (version: string) =>
     `UI version is already up to date: ${version}`,
   updatingUiVersion: (version: string | undefined) =>

@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from "vitest";
-import {setup, addTestData, updateUiVersion} from "./setup";
+import {setup, addTestData, updateUiVersion, getUiVersion} from "./setup";
 import {msg, type Context} from "./common";
 import type {
   DocumentReference,
@@ -17,11 +17,20 @@ import {
 } from "./testutils";
 
 const testUser01 = "user01@example.com";
+const appVersionUrl = "https://example.com/version.json";
 
 describe("setup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.UI_VERSION = uiVersion;
+    process.env.APP_VERSION_URL = appVersionUrl;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({version: "0.1.2", build_number: "1"}),
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.APP_VERSION_URL;
   });
 
   it("does nothing when data is undefined", async () => {
@@ -272,6 +281,50 @@ describe("setup", () => {
   });
 });
 
+describe("getUiVersion", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.APP_VERSION_URL = appVersionUrl;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({version: "0.1.2", build_number: "1"}),
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.APP_VERSION_URL;
+  });
+
+  function makeGetUiVersionContext() {
+    const logger = {info: vi.fn(), error: vi.fn()};
+    return {logger} as unknown as Context;
+  }
+
+  it("returns null and logs error when APP_VERSION_URL is not set", async () => {
+    delete process.env.APP_VERSION_URL;
+    const ctx = makeGetUiVersionContext();
+    const result = await getUiVersion(ctx);
+    expect(result).toBeNull();
+    expect(ctx.logger.error).toHaveBeenCalledWith(msg.noAppVersionUrl);
+  });
+
+  it("fetches version JSON and constructs version string from https URL", async () => {
+    const ctx = makeGetUiVersionContext();
+    const result = await getUiVersion(ctx);
+    expect(fetch).toHaveBeenCalledWith(appVersionUrl);
+    expect(result).toBe(uiVersion);
+  });
+
+  it("returns APP_VERSION_URL directly when it does not start with https://", async () => {
+    const directVersion = "0.9.9+1";
+    process.env.APP_VERSION_URL = directVersion;
+    const ctx = makeGetUiVersionContext();
+    const result = await getUiVersion(ctx);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(result).toBe(directVersion);
+  });
+});
+
 describe("addTestData", () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -351,9 +404,19 @@ describe("addTestData", () => {
 });
 
 describe("updateUiVersion", () => {
+  const appVersionUrl = "https://example.com/version.json";
+
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.UI_VERSION = uiVersion;
+    process.env.APP_VERSION_URL = appVersionUrl;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      json: vi.fn().mockResolvedValue({version: "0.1.2", build_number: "1"}),
+    }));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.APP_VERSION_URL;
   });
 
   function makeUpdateUiVersionContext(storedVersion: string | undefined) {
@@ -368,6 +431,13 @@ describe("updateUiVersion", () => {
     const logger = {info: vi.fn(), error: vi.fn()};
     return {context: {logger, db} as unknown as import("./common").Context, update};
   }
+
+  it("returns early when getUiVersion returns null", async () => {
+    delete process.env.APP_VERSION_URL;
+    const {context: ctx, update} = makeUpdateUiVersionContext(uiVersion);
+    await updateUiVersion(ctx);
+    expect(update).not.toHaveBeenCalled();
+  });
 
   it("logs up-to-date and does not update when version matches", async () => {
     const {context: ctx, update} = makeUpdateUiVersionContext(uiVersion);

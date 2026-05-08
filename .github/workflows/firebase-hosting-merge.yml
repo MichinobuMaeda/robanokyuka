@@ -21,10 +21,8 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
-      - name: Install functions dependencies
-        run: npm ci && npm --prefix functions ci
-      - name: Test functions
-        run: npm --prefix functions run test
+      - name: Install dependencies
+        run: npm ci
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -33,12 +31,8 @@ jobs:
         run: flutter pub get
       - name: Test Flutter
         run: flutter test --coverage
-      - name: Upload functions coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: functions/coverage/clover.xml
-          flags: functions
+      - name: Filter Flutter coverage
+        run: lcov --extract coverage/lcov.info 'lib/models/*' 'lib/services/*' --output-file coverage/lcov.info
       - name: Upload Flutter coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -50,10 +44,17 @@ jobs:
           sed 's/FIREBASE_API_KEY/${{ secrets.FIREBASE_API_KEY_ROBANOKYUKA }}/' \
             -i lib/config/firebase.dart
       - name: Build web
-        run: dart tools/set_ui_version.dart && flutter build web --release --wasm
+        run: dart tools/md2html.dart && dart tools/set_ui_version.dart && flutter build web --release --wasm --no-tree-shake-icons
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ROBANOKYUKA }}
           channelId: live
           projectId: robanokyuka
+      - name: Update data
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ROBANOKYUKA }}' \
+          > $GOOGLE_APPLICATION_CREDENTIALS
+          npx firebase firestore:delete -f service/version

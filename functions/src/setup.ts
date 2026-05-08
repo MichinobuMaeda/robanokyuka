@@ -6,15 +6,38 @@ import {msg, Context} from "./common";
 import {addUserWithEmailAndName} from "./users";
 
 /**
+ * Fetches the UI version from the specified URL or environment variable.
+ * @param {Context} context - The function context containing logger.
+ * @return {String | null} The UI version string or null if the APP_VERSION_URL environment variable is not set.
+ */
+export async function getUiVersion({logger}: Context,): Promise<string | null> {
+  const appVersionUrl = process.env.APP_VERSION_URL;
+  if (!appVersionUrl) {
+    logger.error(msg.noAppVersionUrl);
+    return null;
+  }
+  let uiVersion: string;
+  if (appVersionUrl.startsWith("https://")) {
+    const res = await fetch(appVersionUrl);
+    const json = await res.json() as {version: string, build_number: string};
+    uiVersion = `${json.version}+${json.build_number}`;
+  } else {
+    uiVersion = appVersionUrl;
+  }
+  return uiVersion;
+}
+
+/**
  * Performs initial setup for version 1 of the service configuration.
  * @param {Context} context - The function context containing logger, db, and auth.
  * @param {DocumentSnapshot | undefined} data - The deleted version document snapshot.
  * @return {Promise<void>}
  */
 async function setupV1(
-  {logger, db, auth}: Context,
+  context: Context,
   data: DocumentSnapshot,
 ): Promise<number | undefined> {
+  const {logger, db, auth} = context;
   try {
     logger.info(msg.performingSetupV1);
 
@@ -28,18 +51,19 @@ async function setupV1(
 
     logger.info(msg.adminEmailProvided(email));
     const user = await auth.createUser({email, displayName});
+    const uiVersion = await getUiVersion(context);
     const batch = db.batch();
     batch.set(
       db.collection("service").doc("conf"),
       {
         admins: [user.uid],
         gengos,
-        uiVersion: process.env.UI_VERSION,
+        uiVersion,
         createdAt: FieldValue.serverTimestamp(),
       }
     );
 
-    await addUserWithEmailAndName({logger, auth, db}, {email});
+    await addUserWithEmailAndName(context, {email});
 
     const pad2 = (num: number) => String(num).padStart(2, "0");
     const mmdd = (month: number, day: number) => `${pad2(month)}${pad2(day)}`;
@@ -79,12 +103,16 @@ async function setupV1(
  * @return {Promise<void>}
  */
 export async function updateUiVersion(
-  {logger, db}: Context,
+  context: Context,
 ): Promise<void> {
+  const {logger, db} = context;
   const confRef = db.collection("service").doc("conf");
   const curUiVersion = (await confRef.get()).data()?.uiVersion as string | "";
+  const uiVersion = await getUiVersion(context);
+  if (!uiVersion) {
+    return;
+  }
 
-  const uiVersion = process.env.UI_VERSION;
   const updatedAt = FieldValue.serverTimestamp();
 
   if (curUiVersion === uiVersion) {
@@ -102,8 +130,9 @@ export async function updateUiVersion(
  * @return {Promise<void>}
  */
 export async function addTestData(
-  {logger, db, auth}: Context,
+  context: Context,
 ): Promise<void> {
+  const {logger, db, auth} = context;
   try {
     const password = "password";
     const confRef = db.collection("service").doc("conf");

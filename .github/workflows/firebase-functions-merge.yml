@@ -19,6 +19,14 @@ jobs:
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
       - run: npm ci && npm --prefix functions ci && npm --prefix functions run build
+      - name: Test functions
+        run: npm --prefix functions run test
+      - name: Upload functions coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: functions/coverage/clover.xml
+          flags: functions
       - name: Deploy Functions
         env:
           WORK_DIR: ${{ runner.temp }}
@@ -26,4 +34,11 @@ jobs:
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ROBANOKYUKA }}' \
           > $GOOGLE_APPLICATION_CREDENTIALS
-          npx firebase deploy --only functions && npx firebase firestore:delete -f service/version
+          npx firebase deploy --only functions
+      - name: Update data
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ROBANOKYUKA }}' \
+          > $GOOGLE_APPLICATION_CREDENTIALS
+          npx firebase firestore:delete -f service/version
