@@ -239,7 +239,10 @@ describe("setup", () => {
     await setup(ctx, {data});
 
     expect(ctx.logger.error).toHaveBeenCalledWith(msg.setupFailed("1"));
-    expect(data.ref.set).not.toHaveBeenCalled();
+    expect(data.ref.set).toHaveBeenCalledTimes(1);
+    expect(data.ref.set).toHaveBeenCalledWith({
+      version: 0, createdAt: expect.objectContaining({}),
+    });
   });
 
   it("logs error without stack when setupV1 batch throws non-Error", async () => {
@@ -262,7 +265,10 @@ describe("setup", () => {
       msg.errorSetupVersion("holiday write failed")
     );
     expect(ctx.logger.error).toHaveBeenCalledWith(msg.setupFailed("1"));
-    expect(data.ref.set).not.toHaveBeenCalled();
+    expect(data.ref.set).toHaveBeenCalledTimes(1);
+    expect(data.ref.set).toHaveBeenCalledWith({
+      version: 0, createdAt: expect.objectContaining({}),
+    });
   });
 
   it("calls addTestData when NODE_ENV is development", async () => {

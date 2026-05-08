@@ -167,25 +167,23 @@ export async function setup(
   logger.info(msg.nodeEnv(process.env.NODE_ENV));
 
   try {
-    let version: number | undefined = 0;
-
     if (!data) {
       logger.info(msg.noDeletedDoc);
       return;
     }
 
-    const curVersion = (data.get("version") as number) ?? 0;
-    logger.info(msg.settingUpDataVersion, curVersion);
+    let version: number | undefined = (data.get("version") as number) ?? 0;
+    await data.ref.set({version, createdAt: FieldValue.serverTimestamp()});
+    logger.info(msg.settingUpDataVersion, version);
 
-    if (curVersion < 1) {
+    if (version < 1) {
       version = await setupV1(context, data);
       if (!version) {
         logger.error(msg.setupFailed("1"));
         return;
       }
+      await data.ref.set({version, createdAt: FieldValue.serverTimestamp()});
     }
-
-    await data.ref.set({version, createdAt: FieldValue.serverTimestamp()});
 
     await updateUiVersion(context);
 
