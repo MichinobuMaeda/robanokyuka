@@ -1,6 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-const assetAppLogo = 'assets/logo.png';
+const assetAppLogo = 'assets/logo.svg';
 const assetGuestMd = 'assets/guest.md';
 const assetReauthenticateMd = 'assets/reauthenticate.md';
 const assetInfoMd = 'assets/info.md';

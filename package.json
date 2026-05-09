@@ -1,6 +1,6 @@
 {
   "name": "robanokyuka",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "license": "BSD-3-Clause",
   "author": "Michinobu Maeda",
   "repository": {
@@ -16,18 +16,20 @@
     "build:pre-commit": "npm run build:ui:version && npm run build:docs",
     "build:functions": "npm run build:pre-commit && npm --prefix functions run build",
     "build:ui": "npm run build:pre-commit && flutter build web",
-    "build": "npm run lint && npm run build:functions && npm run build:ui",
+    "build": "npm run lint && npm run build:functions && flutter build web",
     "dev:ui": "flutter run --dart-define=FLUTTER_ENV=development --web-port 8000 -d",
     "test:ui:unit": "flutter test test/ --coverage --coverage-path=coverage/all.info && lcov --extract coverage/all.info 'lib/models/*' 'lib/services/*' -o coverage/lcov.info && lcov --summary coverage/lcov.info",
-    "test:emulate": "npx firebase emulators:exec --only auth,functions,firestore --ui --import test/emulators",
     "test:data": "npx firebase firestore:delete -f service/version",
     "test:ci": "npm run test --prefix functions && npm run test:ui:unit",
     "test": "npm run test:ci && lcov --summary coverage/lcov.info && genhtml coverage/lcov.info -o coverage/html",
-    "dev": "npm run build:functions && npm run test:emulate -- \"npm run test:data && npm run dev:ui -- web-server\"",
-    "dev:chrome": "npm run build:functions && npm run test:emulate -- \"npm run test:data && npm run dev:ui -- chrome\"",
-    "dev:edge": "npm run build:functions && npm run test:emulate -- \"npm run test:data && npm run dev:ui -- edge\""
+    "test:emulate": "npx firebase emulators:exec --only auth,functions,firestore --ui --import test/emulators",
+    "dev:emulate": "npm run build:functions && cross-env METADATA_SERVER_DETECTION=none npm run test:emulate",
+    "dev": "npm run dev:emulate -- \"npm run test:data && npm run dev:ui -- web-server\"",
+    "dev:chrome": "npm run dev:emulate -- \"npm run test:data && npm run dev:ui -- chrome\"",
+    "dev:edge": "npm run dev:emulate -- \"npm run test:data && npm run dev:ui -- edge\""
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "firebase-tools": "^15.17.0"
   }
 }

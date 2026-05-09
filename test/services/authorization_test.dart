@@ -48,6 +48,37 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // -------------------------------------------------------------------------
+  group('PageItem.privileges', () {
+    test('guest is only available to Privilege.guest', () {
+      expect(PageItem.guest.privileges, equals([Privilege.guest]));
+    });
+
+    test('home is available to user and admin', () {
+      expect(
+        PageItem.home.privileges,
+        containsAll([Privilege.user, Privilege.admin]),
+      );
+      expect(PageItem.home.privileges, isNot(contains(Privilege.guest)));
+    });
+
+    test('settings is available to user and admin', () {
+      expect(
+        PageItem.settings.privileges,
+        containsAll([Privilege.user, Privilege.admin]),
+      );
+      expect(PageItem.settings.privileges, isNot(contains(Privilege.guest)));
+    });
+
+    test('admin is only available to Privilege.admin', () {
+      expect(PageItem.admin.privileges, equals([Privilege.admin]));
+    });
+
+    test('info is available to all privileges', () {
+      expect(PageItem.info.privileges, containsAll(Privilege.values));
+    });
+  });
+
+  // -------------------------------------------------------------------------
   group('privilegeProvider', () {
     test('returns Privilege.loading while authUser is loading', () {
       // Use a stream that never emits so the provider stays in AsyncLoading.

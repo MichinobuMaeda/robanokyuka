@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:web/web.dart' as web;
@@ -8,11 +9,50 @@ import 'package:robanokyuka/config/firebase.dart';
 import 'package:robanokyuka/config/theme.dart';
 import 'package:robanokyuka/config/version.dart';
 import 'package:robanokyuka/models/service.dart';
+import 'package:robanokyuka/platform/platforms.dart';
 import 'package:robanokyuka/services/authentication.dart';
 import 'package:robanokyuka/services/authorization.dart';
 import 'package:robanokyuka/services/helpers.dart';
+import 'package:robanokyuka/views/auth/change_email_panel.dart';
+import 'package:robanokyuka/views/auth/delete_user_panel.dart';
+import 'package:robanokyuka/views/auth/email_link_panel.dart';
+import 'package:robanokyuka/views/auth/email_password_panel.dart';
+import 'package:robanokyuka/views/auth/password_reauthenticate_panel.dart';
+import 'package:robanokyuka/views/auth/reset_password_panel.dart';
+import 'package:robanokyuka/views/auth/sign_out_panel.dart';
+import 'package:robanokyuka/views/admin/holidays_panel.dart';
+import 'package:robanokyuka/views/admin/users_panel.dart';
+import 'package:robanokyuka/views/user/calendar_panel.dart';
+import 'package:robanokyuka/views/user/edit_profile_panel.dart';
+import 'package:robanokyuka/views/user/record_panel.dart';
+import 'package:robanokyuka/views/user/summary_panel.dart';
+import 'package:robanokyuka/widgets/markdown_panel.dart';
 
 enum MediaSize { narrow, middle, wide }
+
+List<Widget> getContents(PageItem pageItem) => switch (pageItem) {
+  PageItem.guest => [
+    MarkdownPanel(asset: assetGuestMd),
+    if (getAppEnvironment() != AppEnvironment.pwa) EmailLinkPanel(),
+    EmailPasswordPanel(),
+    ResetPasswordPanel(),
+    // GoogleAuthPanel(),
+  ],
+  PageItem.home => [RecordPanel(), SummaryPanel(), CalendarPanel()],
+  PageItem.settings => [
+    EditProfilePanel(),
+    ResetPasswordPanel(),
+    SignOutPanel(),
+    MarkdownPanel(asset: assetReauthenticateMd),
+    if (getAppEnvironment() != AppEnvironment.pwa) EmailLinkPanel(),
+    PasswordReauthenticatePanel(),
+    // GoogleAuthPanel(reauthentication: true),
+    ChangeEmailPanel(),
+    DeleteUserPanel(),
+  ],
+  PageItem.admin => [UsersPanel(), HolidaysPanel()],
+  PageItem.info => [MarkdownPanel(asset: assetInfoMd)],
+};
 
 class Layout extends HookConsumerWidget {
   const Layout({super.key});
@@ -90,7 +130,7 @@ class Layout extends HookConsumerWidget {
                       if (media() != MediaSize.wide) const _Header(),
                       if (uiVersion != null && uiVersion != packageVersion)
                         const _UpdateAvailable(),
-                      ...selectedPage.value.contents,
+                      ...getContents(selectedPage.value),
                       const _Footer(),
                     ],
                   ),
@@ -119,7 +159,7 @@ class _Header extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Padding(
         padding: EdgeInsets.all(8.0),
-        child: Image.asset(assetAppLogo, height: 48.0),
+        child: SvgPicture.asset(assetAppLogo, height: 48.0),
       ),
     );
   }
@@ -195,7 +235,7 @@ class _NavDrawer extends StatelessWidget {
         onDestinationSelected: onDestinationSelected,
         header: Padding(
           padding: EdgeInsets.all(16.0),
-          child: Image.asset(assetAppLogo),
+          child: SvgPicture.asset(assetAppLogo),
         ),
         children: pages
             .map(

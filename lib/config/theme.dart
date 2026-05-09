@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 const appName = 'ロバの休暇';
-const seedColor = Color.fromARGB(255, 0xa0, 0x70, 0x40);
+const seedColor = Color.fromARGB(255, 0xa0, 0x7d, 0x5b);
 const defaultFont = 'NotoSansJP';
 const navDrawerWidth = 256.0;
 const contentMaxWidth = 1024.0;

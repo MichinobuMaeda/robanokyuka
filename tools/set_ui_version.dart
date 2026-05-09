@@ -44,21 +44,7 @@ void main() {
   stdout.writeln('Set version to "$semver" in package.json');
 
   final envFile = File('functions/.env.local');
-  if (!envFile.existsSync()) {
-    stderr.writeln('Error: functions/.env.local not found.');
-    exitCode = 1;
-    return;
-  }
-
-  final envLines = envFile.readAsLinesSync();
-  final uiVersionIndex = envLines.indexWhere(
-    (line) => line.startsWith('APP_VERSION_URL='),
-  );
-  if (uiVersionIndex >= 0) {
-    envLines[uiVersionIndex] = 'APP_VERSION_URL=$version';
-  } else {
-    envLines.add('APP_VERSION_URL=$version');
-  }
+  final envLines = ['NODE_ENV=development', 'APP_VERSION_URL=$version'];
   envFile.writeAsStringSync('${envLines.join('\n')}\n');
   stdout.writeln('Set APP_VERSION_URL to "$version" in functions/.env.local');
 }

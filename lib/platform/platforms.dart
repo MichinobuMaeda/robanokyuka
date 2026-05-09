@@ -1,6 +1,8 @@
+import 'dart:io' show Platform;
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
+
 import 'platform_env_stub.dart'
     if (dart.library.js_interop) 'platform_env_web.dart';
 
