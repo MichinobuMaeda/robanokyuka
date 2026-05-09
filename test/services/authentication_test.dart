@@ -386,6 +386,31 @@ void main() {
     });
   });
 
+  group('signInWithMicrosoft', () {
+    test('returns right(unit) on success', () async {
+      final auth = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      );
+
+      final result = await signInWithMicrosoft(auth);
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test('returns left(message) when signInWithPopup throws', () async {
+      final auth = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      );
+      whenCalling(
+        Invocation.method(#signInWithPopup, null),
+      ).on(auth).thenThrow(FirebaseAuthException(code: 'popup-closed-by-user'));
+
+      final result = await signInWithMicrosoft(auth);
+
+      expect(result.isLeft(), isTrue);
+    });
+  });
+
   group('reauthenticateWithGoogle', () {
     test('returns left when no user is signed in', () async {
       final auth = MockFirebaseAuth();
@@ -413,6 +438,38 @@ void main() {
       // MockUser does not implement reauthenticateWithPopup; the UnimplementedError
       // is caught by the try-catch and returned as left.
       final result = await reauthenticateWithGoogle(auth);
+
+      expect(result.isLeft(), isTrue);
+    });
+  });
+
+  group('reauthenticateWithMicrosoft', () {
+    test('returns left when no user is signed in', () async {
+      final auth = MockFirebaseAuth();
+
+      final result = await reauthenticateWithMicrosoft(auth);
+
+      expect(result.isLeft(), isTrue);
+    });
+
+    test('returns right(unit) on success', () async {
+      final user = _FakeUser(uid: 'u1', email: 'user@example.com');
+      final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
+
+      final result = await reauthenticateWithMicrosoft(auth);
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test('returns left when reauthenticateWithPopup throws', () async {
+      final auth = MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      );
+
+      // MockUser does not implement reauthenticateWithPopup; the UnimplementedError
+      // is caught by the try-catch and returned as left.
+      final result = await reauthenticateWithMicrosoft(auth);
 
       expect(result.isLeft(), isTrue);
     });
