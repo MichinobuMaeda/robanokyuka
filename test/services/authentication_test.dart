@@ -365,21 +365,12 @@ void main() {
     test('google returns "Google"', () {
       expect(FederatedProvider.google.name, 'Google');
     });
-
-    test('microsoft returns "Microsoft"', () {
-      expect(FederatedProvider.microsoft.name, 'Microsoft');
-    });
   });
 
   group('getProvider', () {
     test('returns GoogleAuthProvider for FederatedProvider.google', () {
       final provider = getProvider(FederatedProvider.google);
       expect(provider, isA<GoogleAuthProvider>());
-    });
-
-    test('returns MicrosoftAuthProvider for FederatedProvider.microsoft', () {
-      final provider = getProvider(FederatedProvider.microsoft);
-      expect(provider, isA<MicrosoftAuthProvider>());
     });
   });
 
@@ -390,19 +381,6 @@ void main() {
       );
 
       final result = await signInWithProvider(auth, FederatedProvider.google);
-
-      expect(result.isRight(), isTrue);
-    });
-
-    test('returns right(unit) for microsoft on success', () async {
-      final auth = MockFirebaseAuth(
-        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
-      );
-
-      final result = await signInWithProvider(
-        auth,
-        FederatedProvider.microsoft,
-      );
 
       expect(result.isRight(), isTrue);
     });
@@ -440,18 +418,6 @@ void main() {
       final result = await reauthenticateWithProvider(
         auth,
         FederatedProvider.google,
-      );
-
-      expect(result.isRight(), isTrue);
-    });
-
-    test('returns right(unit) for microsoft on success', () async {
-      final user = _FakeUser(uid: 'u1', email: 'user@example.com');
-      final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
-
-      final result = await reauthenticateWithProvider(
-        auth,
-        FederatedProvider.microsoft,
       );
 
       expect(result.isRight(), isTrue);

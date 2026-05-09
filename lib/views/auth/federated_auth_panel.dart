@@ -15,6 +15,9 @@ class FederatedAuthPanel extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message = ref.read(snackBarMessageProvider.notifier);
+    final providers = FederatedProvider.values
+        .where((provider) => provider != FederatedProvider.google)
+        .toList();
 
     Future<void> handleSubmit(FederatedProvider provider) async {
       message.clear();
@@ -33,33 +36,34 @@ class FederatedAuthPanel extends HookConsumerWidget {
       }
     }
 
-    return BoxPanel(
-      children: [
-        Wrap(
-          spacing: 16.0,
-          runSpacing: 16.0,
-          children: FederatedProvider.values
-              .where((provider) => provider != FederatedProvider.google)
-              .map(
-                (provider) => FilledButton(
-                  onPressed: () => handleSubmit(provider),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Symbols.send),
-                      SizedBox(width: 8),
-                      Text(
-                        reauthentication
-                            ? "${provider.name}で再認証する"
-                            : "${provider.name}でログインする",
+    return providers.isEmpty
+        ? BoxPanel(showDivider: false, children: [SizedBox.shrink()])
+        : BoxPanel(
+            children: [
+              Wrap(
+                spacing: 16.0,
+                runSpacing: 16.0,
+                children: providers
+                    .map(
+                      (provider) => FilledButton(
+                        onPressed: () => handleSubmit(provider),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Symbols.send),
+                            SizedBox(width: 8),
+                            Text(
+                              reauthentication
+                                  ? "${provider.name}で再認証する"
+                                  : "${provider.name}でログインする",
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-              )
-              .toList(),
-        ),
-      ],
-    );
+                    )
+                    .toList(),
+              ),
+            ],
+          );
   }
 }

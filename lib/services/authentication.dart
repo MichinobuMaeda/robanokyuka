@@ -8,14 +8,18 @@ import 'package:robanokyuka/platform/platforms.dart';
 const keyEmailForSignIn = 'robanokyuka_email_for_sign_in';
 
 enum FederatedProvider {
-  google,
-  microsoft;
+  google;
 
   String get name => switch (this) {
     FederatedProvider.google => 'Google',
-    FederatedProvider.microsoft => 'Microsoft',
   };
 }
+
+AuthProvider getProvider(FederatedProvider provider) => switch (provider) {
+  FederatedProvider.google =>
+    GoogleAuthProvider()
+      ..addScope('https://www.googleapis.com/auth/contacts.readonly'),
+};
 
 class FirebaseAuthNotifier extends Notifier<FirebaseAuth?> {
   @override
@@ -197,13 +201,6 @@ Future<Either<String, Unit>> deleteUser(FirebaseAuth auth) async {
     return left('$error');
   }
 }
-
-AuthProvider getProvider(FederatedProvider provider) => switch (provider) {
-  FederatedProvider.google =>
-    GoogleAuthProvider()
-      ..addScope('https://www.googleapis.com/auth/contacts.readonly'),
-  FederatedProvider.microsoft => MicrosoftAuthProvider(),
-};
 
 Future<Either<String, Unit>> signInWithProvider(
   FirebaseAuth auth,
