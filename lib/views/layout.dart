@@ -19,8 +19,7 @@ import 'package:robanokyuka/views/auth/email_link_panel.dart';
 import 'package:robanokyuka/views/auth/email_password_panel.dart';
 import 'package:robanokyuka/views/auth/password_reauthenticate_panel.dart';
 import 'package:robanokyuka/views/auth/reset_password_panel.dart';
-// import 'package:robanokyuka/views/auth/google_auth_panel.dart';
-// import 'package:robanokyuka/views/auth/microsoft_auth_panel.dart';
+import 'package:robanokyuka/views/auth/federated_auth_panel.dart';
 import 'package:robanokyuka/views/auth/sign_out_panel.dart';
 import 'package:robanokyuka/views/admin/holidays_panel.dart';
 import 'package:robanokyuka/views/admin/users_panel.dart';
@@ -38,8 +37,7 @@ List<Widget> getContents(PageItem pageItem) => switch (pageItem) {
     if (getAppEnvironment() != AppEnvironment.pwa) EmailLinkPanel(),
     EmailPasswordPanel(),
     ResetPasswordPanel(),
-    // GoogleAuthPanel(),
-    // MicrosoftAuthPanel(),
+    FederatedAuthPanel(),
   ],
   PageItem.home => [RecordPanel(), SummaryPanel(), CalendarPanel()],
   PageItem.settings => [
@@ -49,8 +47,7 @@ List<Widget> getContents(PageItem pageItem) => switch (pageItem) {
     MarkdownPanel(asset: assetReauthenticateMd),
     if (getAppEnvironment() != AppEnvironment.pwa) EmailLinkPanel(),
     PasswordReauthenticatePanel(),
-    // GoogleAuthPanel(reauthentication: true),
-    // MicrosoftAuthPanel(reauthentication: true),
+    FederatedAuthPanel(reauthentication: true),
     ChangeEmailPanel(),
     DeleteUserPanel(),
   ],

@@ -361,13 +361,48 @@ void main() {
     });
   });
 
-  group('signInWithGoogle', () {
-    test('returns right(unit) on success', () async {
+  group('FederatedProvider.name', () {
+    test('google returns "Google"', () {
+      expect(FederatedProvider.google.name, 'Google');
+    });
+
+    test('microsoft returns "Microsoft"', () {
+      expect(FederatedProvider.microsoft.name, 'Microsoft');
+    });
+  });
+
+  group('getProvider', () {
+    test('returns GoogleAuthProvider for FederatedProvider.google', () {
+      final provider = getProvider(FederatedProvider.google);
+      expect(provider, isA<GoogleAuthProvider>());
+    });
+
+    test('returns MicrosoftAuthProvider for FederatedProvider.microsoft', () {
+      final provider = getProvider(FederatedProvider.microsoft);
+      expect(provider, isA<MicrosoftAuthProvider>());
+    });
+  });
+
+  group('signInWithProvider', () {
+    test('returns right(unit) for google on success', () async {
       final auth = MockFirebaseAuth(
         mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
       );
 
-      final result = await signInWithGoogle(auth);
+      final result = await signInWithProvider(auth, FederatedProvider.google);
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test('returns right(unit) for microsoft on success', () async {
+      final auth = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      );
+
+      final result = await signInWithProvider(
+        auth,
+        FederatedProvider.microsoft,
+      );
 
       expect(result.isRight(), isTrue);
     });
@@ -380,51 +415,44 @@ void main() {
         Invocation.method(#signInWithPopup, null),
       ).on(auth).thenThrow(FirebaseAuthException(code: 'popup-closed-by-user'));
 
-      final result = await signInWithGoogle(auth);
+      final result = await signInWithProvider(auth, FederatedProvider.google);
 
       expect(result.isLeft(), isTrue);
     });
   });
 
-  group('signInWithMicrosoft', () {
-    test('returns right(unit) on success', () async {
-      final auth = MockFirebaseAuth(
-        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+  group('reauthenticateWithProvider', () {
+    test('returns left when no user is signed in', () async {
+      final auth = MockFirebaseAuth();
+
+      final result = await reauthenticateWithProvider(
+        auth,
+        FederatedProvider.google,
       );
 
-      final result = await signInWithMicrosoft(auth);
+      expect(result.isLeft(), isTrue);
+    });
+
+    test('returns right(unit) for google on success', () async {
+      final user = _FakeUser(uid: 'u1', email: 'user@example.com');
+      final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
+
+      final result = await reauthenticateWithProvider(
+        auth,
+        FederatedProvider.google,
+      );
 
       expect(result.isRight(), isTrue);
     });
 
-    test('returns left(message) when signInWithPopup throws', () async {
-      final auth = MockFirebaseAuth(
-        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
-      );
-      whenCalling(
-        Invocation.method(#signInWithPopup, null),
-      ).on(auth).thenThrow(FirebaseAuthException(code: 'popup-closed-by-user'));
-
-      final result = await signInWithMicrosoft(auth);
-
-      expect(result.isLeft(), isTrue);
-    });
-  });
-
-  group('reauthenticateWithGoogle', () {
-    test('returns left when no user is signed in', () async {
-      final auth = MockFirebaseAuth();
-
-      final result = await reauthenticateWithGoogle(auth);
-
-      expect(result.isLeft(), isTrue);
-    });
-
-    test('returns right(unit) on success', () async {
+    test('returns right(unit) for microsoft on success', () async {
       final user = _FakeUser(uid: 'u1', email: 'user@example.com');
       final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
 
-      final result = await reauthenticateWithGoogle(auth);
+      final result = await reauthenticateWithProvider(
+        auth,
+        FederatedProvider.microsoft,
+      );
 
       expect(result.isRight(), isTrue);
     });
@@ -435,41 +463,10 @@ void main() {
         mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
       );
 
-      // MockUser does not implement reauthenticateWithPopup; the UnimplementedError
-      // is caught by the try-catch and returned as left.
-      final result = await reauthenticateWithGoogle(auth);
-
-      expect(result.isLeft(), isTrue);
-    });
-  });
-
-  group('reauthenticateWithMicrosoft', () {
-    test('returns left when no user is signed in', () async {
-      final auth = MockFirebaseAuth();
-
-      final result = await reauthenticateWithMicrosoft(auth);
-
-      expect(result.isLeft(), isTrue);
-    });
-
-    test('returns right(unit) on success', () async {
-      final user = _FakeUser(uid: 'u1', email: 'user@example.com');
-      final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
-
-      final result = await reauthenticateWithMicrosoft(auth);
-
-      expect(result.isRight(), isTrue);
-    });
-
-    test('returns left when reauthenticateWithPopup throws', () async {
-      final auth = MockFirebaseAuth(
-        signedIn: true,
-        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      final result = await reauthenticateWithProvider(
+        auth,
+        FederatedProvider.google,
       );
-
-      // MockUser does not implement reauthenticateWithPopup; the UnimplementedError
-      // is caught by the try-catch and returned as left.
-      final result = await reauthenticateWithMicrosoft(auth);
 
       expect(result.isLeft(), isTrue);
     });

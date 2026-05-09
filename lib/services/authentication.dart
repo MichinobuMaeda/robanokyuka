@@ -7,6 +7,16 @@ import 'package:robanokyuka/platform/platforms.dart';
 
 const keyEmailForSignIn = 'robanokyuka_email_for_sign_in';
 
+enum FederatedProvider {
+  google,
+  microsoft;
+
+  String get name => switch (this) {
+    FederatedProvider.google => 'Google',
+    FederatedProvider.microsoft => 'Microsoft',
+  };
+}
+
 class FirebaseAuthNotifier extends Notifier<FirebaseAuth?> {
   @override
   FirebaseAuth? build() => null;
@@ -120,32 +130,6 @@ Future<Either<String, Unit>> signInWithEmailAndPassword(
   }
 }
 
-Future<Either<String, Unit>> signInWithGoogle(FirebaseAuth auth) async {
-  try {
-    final googleProvider = GoogleAuthProvider();
-
-    googleProvider.addScope(
-      'https://www.googleapis.com/auth/contacts.readonly',
-    );
-    await auth.signInWithPopup(googleProvider);
-    return right(unit);
-  } catch (error, stackTrace) {
-    debugPrint('Error signing in with Google: $error\n$stackTrace');
-    return left('$error');
-  }
-}
-
-Future<Either<String, Unit>> signInWithMicrosoft(FirebaseAuth auth) async {
-  try {
-    final microsoftProvider = MicrosoftAuthProvider();
-    await auth.signInWithPopup(microsoftProvider);
-    return right(unit);
-  } catch (error, stackTrace) {
-    debugPrint('Error signing in with Microsoft: $error\n$stackTrace');
-    return left('$error');
-  }
-}
-
 Future<Either<String, Unit>> signOut(FirebaseAuth auth) async {
   try {
     await auth.signOut();
@@ -182,38 +166,6 @@ Future<Either<String, Unit>> reauthenticateWithPassword(
   }
 }
 
-Future<Either<String, Unit>> reauthenticateWithGoogle(FirebaseAuth auth) async {
-  try {
-    final user = auth.currentUser;
-    if (user == null) {
-      return left('No authenticated user.');
-    }
-    final googleProvider = GoogleAuthProvider();
-    await user.reauthenticateWithPopup(googleProvider);
-    return right(unit);
-  } catch (error, stackTrace) {
-    debugPrint('Error reauthenticating with Google: $error\n$stackTrace');
-    return left('$error');
-  }
-}
-
-Future<Either<String, Unit>> reauthenticateWithMicrosoft(
-  FirebaseAuth auth,
-) async {
-  try {
-    final user = auth.currentUser;
-    if (user == null) {
-      return left('No authenticated user.');
-    }
-    final microsoftProvider = MicrosoftAuthProvider();
-    await user.reauthenticateWithPopup(microsoftProvider);
-    return right(unit);
-  } catch (error, stackTrace) {
-    debugPrint('Error reauthenticating with Microsoft: $error\n$stackTrace');
-    return left('$error');
-  }
-}
-
 Future<Either<String, Unit>> changeEmail(
   FirebaseAuth auth,
   String email,
@@ -242,6 +194,45 @@ Future<Either<String, Unit>> deleteUser(FirebaseAuth auth) async {
     return right(unit);
   } catch (error, stackTrace) {
     debugPrint('Error deleting user: $error\n$stackTrace');
+    return left('$error');
+  }
+}
+
+AuthProvider getProvider(FederatedProvider provider) => switch (provider) {
+  FederatedProvider.google =>
+    GoogleAuthProvider()
+      ..addScope('https://www.googleapis.com/auth/contacts.readonly'),
+  FederatedProvider.microsoft => MicrosoftAuthProvider(),
+};
+
+Future<Either<String, Unit>> signInWithProvider(
+  FirebaseAuth auth,
+  FederatedProvider provider,
+) async {
+  try {
+    await auth.signInWithPopup(getProvider(provider));
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error signing in with ${provider.name}: $error\n$stackTrace');
+    return left('$error');
+  }
+}
+
+Future<Either<String, Unit>> reauthenticateWithProvider(
+  FirebaseAuth auth,
+  FederatedProvider provider,
+) async {
+  try {
+    final user = auth.currentUser;
+    if (user == null) {
+      return left('No authenticated user.');
+    }
+    await user.reauthenticateWithPopup(getProvider(provider));
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint(
+      'Error reauthenticating with ${provider.name}: $error\n$stackTrace',
+    );
     return left('$error');
   }
 }
