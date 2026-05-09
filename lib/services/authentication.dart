@@ -135,6 +135,17 @@ Future<Either<String, Unit>> signInWithGoogle(FirebaseAuth auth) async {
   }
 }
 
+Future<Either<String, Unit>> signInWithMicrosoft(FirebaseAuth auth) async {
+  try {
+    final microsoftProvider = MicrosoftAuthProvider();
+    await auth.signInWithPopup(microsoftProvider);
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error signing in with Microsoft: $error\n$stackTrace');
+    return left('$error');
+  }
+}
+
 Future<Either<String, Unit>> signOut(FirebaseAuth auth) async {
   try {
     await auth.signOut();
@@ -182,6 +193,23 @@ Future<Either<String, Unit>> reauthenticateWithGoogle(FirebaseAuth auth) async {
     return right(unit);
   } catch (error, stackTrace) {
     debugPrint('Error reauthenticating with Google: $error\n$stackTrace');
+    return left('$error');
+  }
+}
+
+Future<Either<String, Unit>> reauthenticateWithMicrosoft(
+  FirebaseAuth auth,
+) async {
+  try {
+    final user = auth.currentUser;
+    if (user == null) {
+      return left('No authenticated user.');
+    }
+    final microsoftProvider = MicrosoftAuthProvider();
+    await user.reauthenticateWithPopup(microsoftProvider);
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error reauthenticating with Microsoft: $error\n$stackTrace');
     return left('$error');
   }
 }
