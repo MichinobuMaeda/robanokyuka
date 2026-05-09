@@ -6,10 +6,12 @@ on:
     paths:
       - .github/workflows/firebase-hosting-merge.yml
       - assets/**/*
+      - docs/**/*
       - lib/**/*
       - web/**/*
       - pubspec.*
       - firebase.json
+      - codecov.yml
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest

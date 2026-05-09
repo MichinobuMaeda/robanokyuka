@@ -8,6 +8,7 @@ on:
       - functions/**
       - firebase.json
       - .nvmrc
+      - codecov.yml
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
