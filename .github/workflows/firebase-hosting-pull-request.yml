@@ -23,7 +23,7 @@ jobs:
       - name: Test Flutter
         run: flutter test
       - name: Build web
-        run: dart tools/set_ui_version.dart && flutter build web
+        run: dart tools/set_ui_version.dart && flutter build web --no-tree-shake-icons
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
