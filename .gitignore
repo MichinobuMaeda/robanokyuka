@@ -1,3 +1,6 @@
+# Firebase config - contains secrets, never commit
+android/app/google-services.json
+
 # Miscellaneous
 *.class
 *.log
