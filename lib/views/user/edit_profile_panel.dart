@@ -72,90 +72,82 @@ class EditProfilePanel extends HookConsumerWidget {
 
     return BoxPanel(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: panelSpacing,
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
           children: [
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: [
-                ToggleButton(
-                  icon: const Icon(Symbols.brightness_auto),
-                  label: '自動',
-                  active: themeMode.value == ThemeMode.system,
-                  onPressed: () => handleThemeModeChanged(ThemeMode.system),
-                ),
-                ToggleButton(
-                  icon: const Icon(Symbols.light_mode),
-                  label: 'ライト',
-                  active: themeMode.value == ThemeMode.light,
-                  onPressed: () => handleThemeModeChanged(ThemeMode.light),
-                ),
-                ToggleButton(
-                  icon: const Icon(Symbols.dark_mode),
-                  label: 'ダーク',
-                  active: themeMode.value == ThemeMode.dark,
-                  onPressed: () => handleThemeModeChanged(ThemeMode.dark),
-                ),
-              ],
+            ToggleButton(
+              icon: const Icon(Symbols.brightness_auto),
+              label: '自動',
+              active: themeMode.value == ThemeMode.system,
+              onPressed: () => handleThemeModeChanged(ThemeMode.system),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 8.0,
-              children: [
-                const Text('西暦'),
-                Switch(
-                  value: showNengo.value,
-                  onChanged: handleShowNengoChanged,
-                ),
-                const Text('年号'),
-              ],
+            ToggleButton(
+              icon: const Icon(Symbols.light_mode),
+              label: 'ライト',
+              active: themeMode.value == ThemeMode.light,
+              onPressed: () => handleThemeModeChanged(ThemeMode.light),
             ),
-            Form(
-              key: formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              onChanged: () {
-                isFormValid.value = formKey.currentState?.validate() ?? false;
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 16.0,
-                children: [
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: defaultInputWidth,
-                    ),
-                    child: TextFormField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: '名前',
-                        helperText: '必須',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) =>
-                          (value ?? '').trim().isEmpty ? '名前を入力してください' : null,
-                    ),
-                  ),
-                  FilledButton(
-                    onPressed:
-                        (isFormValid.value &&
-                            nameController.text.trim() != (user?.name ?? ''))
-                        ? handleSubmitName
-                        : null,
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Symbols.check),
-                        SizedBox(width: 8),
-                        Text('保存'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            ToggleButton(
+              icon: const Icon(Symbols.dark_mode),
+              label: 'ダーク',
+              active: themeMode.value == ThemeMode.dark,
+              onPressed: () => handleThemeModeChanged(ThemeMode.dark),
             ),
           ],
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 8.0,
+          children: [
+            const Text('西暦'),
+            Switch(value: showNengo.value, onChanged: handleShowNengoChanged),
+            const Text('年号'),
+          ],
+        ),
+        Form(
+          key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          onChanged: () {
+            isFormValid.value = formKey.currentState?.validate() ?? false;
+          },
+          child: Wrap(
+            direction: Axis.horizontal,
+            alignment: WrapAlignment.start,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: panelSpacing,
+            runSpacing: panelSpacing,
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: defaultInputWidth),
+                child: TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: '名前',
+                    helperText: '必須',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) =>
+                      (value ?? '').trim().isEmpty ? '名前を入力してください' : null,
+                ),
+              ),
+              FilledButton(
+                onPressed:
+                    (isFormValid.value &&
+                        nameController.text.trim() != (user?.name ?? ''))
+                    ? handleSubmitName
+                    : null,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Symbols.check),
+                    SizedBox(width: 8),
+                    Text('保存'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

@@ -75,6 +75,7 @@ final iconSickEmpty = Icon(Symbols.health_cross, fill: 0.0);
 final iconOtherFull = Icon(Symbols.star, fill: 1.0);
 final iconOtherHalf = Icon(Symbols.star_half);
 final iconOtherEmpty = Icon(Symbols.star, fill: 0.0);
+final iconNote = Icon(Symbols.stylus, fill: 0);
 
 const weekdayLabels = ['日', '月', '火', '水', '木', '金', '土'];
 

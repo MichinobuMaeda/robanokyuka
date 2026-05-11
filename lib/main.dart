@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -11,13 +13,17 @@ import 'package:robanokyuka/services/authentication.dart';
 import 'package:robanokyuka/views/layout.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await initializeFirebase();
   // await handleGoogleAuthRedirect();
-  final url = Uri.base.toString();
-  if (await handleEmailLink(auth(), LocalStorage(), url)) {
-    await launchUrl(Uri.parse(getBaseUrl(url)), webOnlyWindowName: '_self');
+  if (kIsWeb) {
+    final url = Uri.base.toString();
+    if (await handleEmailLink(auth(), LocalStorage(), url)) {
+      await launchUrl(Uri.parse(getBaseUrl(url)), webOnlyWindowName: '_self');
+    }
   }
+  FlutterNativeSplash.remove();
   runApp(const ProviderScope(child: MyApp()));
 }
 

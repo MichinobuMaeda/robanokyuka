@@ -99,7 +99,9 @@ class CalendarCell extends StatelessWidget {
             else if (dateRecord.companyHoliday)
               iconCompanyHoliday
             else if (isPastOrToday)
-              iconWorked,
+              iconWorked
+            else if (dateRecord.note != null && dateRecord.note!.isNotEmpty)
+              iconNote,
           ],
         ),
       ),

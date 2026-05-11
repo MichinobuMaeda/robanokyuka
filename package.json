@@ -1,6 +1,6 @@
 {
   "name": "robanokyuka",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "license": "BSD-3-Clause",
   "author": "Michinobu Maeda",
   "repository": {
@@ -17,7 +17,7 @@
     "build:functions": "npm run build:pre-commit && npm --prefix functions run build",
     "build:ui": "npm run build:pre-commit && flutter build web",
     "build": "npm run lint && npm run build:functions && flutter build web",
-    "dev:ui": "flutter run --dart-define=FLUTTER_ENV=development --web-port 8000 -d",
+    "dev:ui": "flutter run --web-port 8000 -d",
     "test:ui:unit": "flutter test test/ --coverage --coverage-path=coverage/all.info && lcov --extract coverage/all.info 'lib/models/*' 'lib/services/*' -o coverage/lcov.info && lcov --summary coverage/lcov.info",
     "test:data": "npx firebase firestore:delete -f service/version",
     "test:ci": "npm run test --prefix functions && npm run test:ui:unit",
@@ -26,7 +26,8 @@
     "dev:emulate": "npm run build:functions && cross-env METADATA_SERVER_DETECTION=none npm run test:emulate",
     "dev": "npm run dev:emulate -- \"npm run test:data && npm run dev:ui -- web-server\"",
     "dev:chrome": "npm run dev:emulate -- \"npm run test:data && npm run dev:ui -- chrome\"",
-    "dev:edge": "npm run dev:emulate -- \"npm run test:data && npm run dev:ui -- edge\""
+    "dev:edge": "npm run dev:emulate -- \"npm run test:data && npm run dev:ui -- edge\"",
+    "dev:emulator": "npm run dev:emulate -- \"npm run test:data && npm run dev:ui -- emulator\""
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

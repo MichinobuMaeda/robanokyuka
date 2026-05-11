@@ -1,12 +1,11 @@
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 const emailFrom = "noreply@robanokyuka.firebaseapp.com";
-
-const _flutterEnv = String.fromEnvironment('FLUTTER_ENV');
 
 const String functionsRegion = 'asia-northeast2';
 
@@ -24,12 +23,15 @@ Future<void> initializeFirebase() async {
   await Firebase.initializeApp(options: firebaseConfig);
   await FirebaseAuth.instance.setLanguageCode("ja");
 
-  if (_flutterEnv == 'development') {
-    await FirebaseAuth.instance.useAuthEmulator("localhost", 9099);
-    FirebaseFirestore.instance.useFirestoreEmulator("localhost", 8080);
+  if (kDebugMode) {
+    String host = defaultTargetPlatform == TargetPlatform.android
+        ? '10.0.2.2'
+        : 'localhost';
+    await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+    FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
     FirebaseFunctions.instanceFor(
       region: functionsRegion,
-    ).useFunctionsEmulator("localhost", 5001);
+    ).useFunctionsEmulator(host, 5001);
   }
 }
 

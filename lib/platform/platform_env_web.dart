@@ -5,3 +5,5 @@ bool get isStandaloneWebApp =>
     web.window.matchMedia('(display-mode: standalone)').matches ||
     web.window.navigator.vendor == 'Apple Computer Inc.' &&
         (web.window.navigator as dynamic).standalone == true;
+
+void updateAppImpl() => web.window.location.reload();

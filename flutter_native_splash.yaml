@@ -131,25 +131,25 @@ flutter_native_splash:
   # handling concept. visit https://developer.android.com/guide/topics/ui/splash-screen
 
   #! ANDROID 12+ configuration:
-  # android_12:
-  #   # background color
-  #   color: "#6AB07F"
-  #   # color_dark: "#042a49"
+  android_12:
+    # background color
+    color: "#a07d5b"
+    # color_dark: "#042a49"
 
-  #   # center-logo
-  #   # If this parameter is not specified, the app's launcher icon will be used instead.
-  #   # Please note that the splash screen will be clipped to a circle on the center of the screen.
-  #   # with background: 960×960 px (fit within circle 640px in diameter)
-  #   # without background: 1152×1152 px (fit within circle 768px in diameter)
-  #   # ensure that the most important design elements of your image are placed within a circular area
-  #   image: assets/images/logo/blank.png
-  #   # image_dark: assets/images/logo/logo-splash2.png
+    # center-logo
+    # If this parameter is not specified, the app's launcher icon will be used instead.
+    # Please note that the splash screen will be clipped to a circle on the center of the screen.
+    # with background: 960×960 px (fit within circle 640px in diameter)
+    # without background: 1152×1152 px (fit within circle 768px in diameter)
+    # ensure that the most important design elements of your image are placed within a circular area
+    image: resources/splash-android.png
+    # image_dark: assets/images/logo/logo-splash2.png
 
-  #   # center-logo background color
-  #   icon_background_color: "#111111"
-  #   # icon_background_color_dark: "#eeeeee"
+    # center-logo background color
+    icon_background_color: "#a07d5b"
+    # icon_background_color_dark: "#eeeeee"
 
-  #   # branding:
-  #   # The branding image dimensions must be 800x320 px.
-  #   #branding:      assets/dart.png
-  #   #branding_dark: assets/dart_dark.png
+    # branding:
+    # The branding image dimensions must be 800x320 px.
+    #branding:      assets/dart.png
+    #branding_dark: assets/dart_dark.png

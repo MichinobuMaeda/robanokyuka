@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "506698003908",
+    "project_id": "robanokyuka",
+    "storage_bucket": "robanokyuka.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:506698003908:android:b6c5e434e301044adf2091",
+        "android_client_info": {
+          "package_name": "jp.michinobu.robanokyuka"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "506698003908-qi519prahud62aokvm48h000bt41cfo8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKTm6-spDv3lcEjdA0qsW_n7y6Cfup1VI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "506698003908-qi519prahud62aokvm48h000bt41cfo8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

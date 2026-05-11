@@ -1,9 +1,11 @@
 {
   "cSpell.words": [
+    "allprojects",
+    "aokvm",
+    "appinvite",
     "canvaskit",
     "carryforward",
     "Eventarc",
-    "EWNJZNW",
     "firebaseapp",
     "firebaserc",
     "firebasestorage",
@@ -12,7 +14,10 @@
     "Gengo",
     "gengos",
     "genhtml",
+    "googleusercontent",
+    "jvmargs",
     "Maeda",
+    "Metaspace",
     "Michinobu",
     "mmdd",
     "Nengo",
@@ -28,23 +33,22 @@
     "Reauthentication",
     "riverpod",
     "robanokyuka",
-    "SDUMRBV",
     "subcollection",
     "subosito",
     "testutils",
     "uids",
-    "Unrecognised",
-    "Yukyu",
-    "yukyuchecker"
+    "Unrecognised"
   ],
   "cSpell.ignorePaths": [
-    ".gitignore",
-    ".metadata",
-    "pubspec.lock",
-    "build/*",
     ".dart_tool/*",
+    ".gitignore",
     ".idea/*",
-    ".vscode/*"
+    ".metadata",
+    ".vscode/*",
+    "android/**/*.json",
+    "build/*",
+    "**/package-lock.json",
+    "pubspec.lock"
   ],
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {

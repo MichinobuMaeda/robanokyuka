@@ -3,7 +3,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:web/web.dart' as web;
 
 import 'package:robanokyuka/config/firebase.dart';
 import 'package:robanokyuka/config/theme.dart';
@@ -62,6 +61,11 @@ class Layout extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final privilege = ref.watch(privilegeProvider);
     final pages = ref.watch(pagesProvider);
+
+    if (privilege == Privilege.loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final uiVersion = ref.watch(confProvider.select((conf) => conf?.uiVersion));
     final selectedIndex = useState(0);
     final selectedPage = useState(pages.first);
@@ -175,7 +179,7 @@ class _UpdateAvailable extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.all(4.0),
         child: FilledButton(
-          onPressed: () => web.window.location.reload(),
+          onPressed: updateApp,
           style: FilledButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.errorContainer,
           ),

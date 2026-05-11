@@ -6,7 +6,7 @@
   "background_color": "#faead3",
   "theme_color": "#a07d5b",
   "description": "ロバの休暇アプリ",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [
     {

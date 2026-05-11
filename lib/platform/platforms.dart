@@ -45,3 +45,5 @@ class LocalStorage {
     return test ? Future.value() : _prefs.remove(key);
   }
 }
+
+void updateApp() => updateAppImpl();
