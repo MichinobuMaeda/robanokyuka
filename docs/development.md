@@ -9,7 +9,7 @@
 - Git
 - Flutter >= 3.41.9
 - Node.js >= 24
-- Java >= JDK 11
+- Java >= JDK 17
 
 [material_symbols_icons](https://pub.dev/packages/material_symbols_icons)
 
@@ -30,7 +30,7 @@ npm test
 npm run dev
 ```
 
-- http://localhost:8000/ -- Web Server in debug mode
-- http://localhost:4000/ -- Firebase Emulator Suite UI
+- <http://localhost:8000/> -- Web Server in debug mode
+- <http://localhost:4000/> -- Firebase Emulator Suite UI
 
 [» Deployment](./deployment.md)
