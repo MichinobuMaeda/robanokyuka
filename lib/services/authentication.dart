@@ -2,8 +2,10 @@ import 'package:flutter/widgets.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:robanokyuka/config/firebase.dart';
 
 import 'package:robanokyuka/platform/platforms.dart';
+import 'package:robanokyuka/services/helpers.dart';
 
 const keyEmailForSignIn = 'robanokyuka_email_for_sign_in';
 
@@ -35,9 +37,29 @@ final firebaseAuthProvider =
       FirebaseAuthNotifier.new,
     );
 
+@visibleForTesting
+Future<void> sendEmailVerification(Ref ref, User authUser) async {
+  await authUser.sendEmailVerification();
+  final message = ref.read(snackBarMessageProvider.notifier);
+  message.show("メールアドレスの確認のためのメールを送信しました。");
+  await auth().signOut();
+}
+
+@visibleForTesting
+User? checkEmailVerification(Ref ref, User? user) {
+  if (user != null && !user.emailVerified) {
+    sendEmailVerification(ref, user);
+    return null;
+  }
+  return user;
+}
+
 final authUserProvider = StreamProvider<User?>(
   (ref) =>
-      ref.watch(firebaseAuthProvider)?.authStateChanges() ??
+      ref
+          .watch(firebaseAuthProvider)
+          ?.authStateChanges()
+          .map((user) => checkEmailVerification(ref, user)) ??
       const Stream.empty(),
 );
 
@@ -140,6 +162,20 @@ Future<Either<String, Unit>> signOut(FirebaseAuth auth) async {
     return right(unit);
   } catch (error, stackTrace) {
     debugPrint('Error signing out: $error\n$stackTrace');
+    return left('$error');
+  }
+}
+
+Future<Either<String, Unit>> registerNewUser(
+  FirebaseAuth auth,
+  String email,
+  String password,
+) async {
+  try {
+    await auth.createUserWithEmailAndPassword(email: email, password: password);
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error registering user: $error\n$stackTrace');
     return left('$error');
   }
 }

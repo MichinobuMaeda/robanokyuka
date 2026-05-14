@@ -4,7 +4,7 @@
 
 ## Create this project
 
-https://console.firebase.google.com/
+<https://console.firebase.google.com/>
 
 - Create a project: robanokyuka
 - [v] Enable Gemini in Firebase
@@ -13,57 +13,57 @@ https://console.firebase.google.com/
 - Analytics location: Japan
 - [v] Use the default settings for sharing Google Analytics data
 
-https://console.firebase.google.com/project/robanokyuka
+<https://console.firebase.google.com/project/robanokyuka>
 
 - Settings
-    - Project settings
-        - Environment
-            - Environment type: Production
-        - Your apps
-            - Web
-                - App nickname: ロバの休暇
-                - [v] Also set up Firebase Hosting for this app
-    - Usage and billing
-        - Details & settings
-            - Firebase billing plan: Blaze
+  - Project settings
+    - Environment
+      - Environment type: Production
+    - Your apps
+      - Web
+        - App nickname: ロバの休暇
+        - [v] Also set up Firebase Hosting for this app
+  - Usage and billing
+    - Details & settings
+      - Firebase billing plan: Blaze
 - Database & Storage
-    - Firestore
-        - Create database: Standard edition
-            - Location: asia-northeast2(Osaka)
-            - Configure: Start in production mode
-    - Storage
-        - Set up default bucket
-            - All locations
-                - Location: asia-northeast2
-                - Access frequency: Standard
-            - Configure: Start in production mode
+  - Firestore
+    - Create database: Standard edition
+      - Location: asia-northeast2(Osaka)
+      - Configure: Start in production mode
+  - Storage
+    - Set up default bucket
+      - All locations
+        - Location: asia-northeast2
+        - Access frequency: Standard
+      - Configure: Start in production mode
 - Security
-    - Authentication
-        - Sign-in method
-            - Email/Password: Enable
-                - Email link (passwordless sign-in): Enable
-            - Google: Enable
-                - Public-facing name for project: ロバの休暇
-                - Support email for project: my address
-        - Template
-            - Template language: Japanese
-        - Settings
-            - User account linking: Link accounts that use the same email
-            - User actions
-                - [v] Enable create (sign-up)
-                - [v] Enable delete
-                - [v] Email enumeration protection (recommended)
-            - Blocking functions: Upgrade to Firebase Auth with Identity Platform to access this feature.
-            - Password policy
-                - Enforcement mode: Require enforcement
-                - Password requirement options
-                    - [v] Require uppercase character
-                    - [v] Require lowercase character
-                    - [v] Require special character
-                    - [v] Require numeric character
-                    - [ ] Force upgrade on sign-in
-                - Password length requirements: 10
-                - Maximum password length: 4096
+  - Authentication
+    - Sign-in method
+      - Email/Password: Enable
+        - Email link (passwordless sign-in): Enable
+      - Google: Enable
+        - Public-facing name for project: ロバの休暇
+        - Support email for project: my address
+    - Template
+      - Template language: Japanese
+    - Settings
+      - User account linking: Link accounts that use the same email
+      - User actions
+        - [v] Enable create (sign-up)
+        - [v] Enable delete
+        - [v] Email enumeration protection (recommended)
+      - Blocking functions: Upgrade to Firebase Auth with Identity Platform to access this feature.
+        - Password policy
+          - Enforcement mode: Require enforcement
+          - Password requirement options
+            - [v] Require uppercase character
+            - [v] Require lowercase character
+            - [v] Require special character
+            - [v] Require numeric character
+            - [ ] Force upgrade on sign-in
+          - Password length requirements: 10
+          - Maximum password length: 4096
 
 ```JavaScript
 const firebaseConfig = {
@@ -77,10 +77,10 @@ const firebaseConfig = {
 };
 ```
 
-https://console.cloud.google.com/welcome?project=robanokyuka
+<https://console.cloud.google.com/welcome?project=robanokyuka>
 
 - APIs & Services
-    - Enable Cloud Billing API
+  - Enable Cloud Billing API
 
 ```bash
 $ brew install gh
@@ -268,28 +268,28 @@ $ npx firebase deploy --only functions
 ✔  Deploy complete!
 ```
 
-https://console.cloud.google.com/welcome?project=robanokyuka
+<https://console.cloud.google.com/welcome?project=robanokyuka>
 
 - IAM & Admin
-    - IAM
+  - IAM
         - github-action-\*: add Role "Editor"
 
-https://console.firebase.google.com/project/robanokyuka
+<https://console.firebase.google.com/project/robanokyuka>
 
 - Security
-    - Authentication
-        - Settings
-            - Blocking functions
-                - Before account creation: 'handleBeforeUserCreated'
+  - Authentication
+    - Settings
+      - Blocking functions
+        - Before account creation: 'handleBeforeUserCreated'
 - Database & Storage
-    - Firestore
+  - Firestore
         - Start collection
-            - service/version { email: "foo@bar.baz" }
+            - `service/version { email: foo@bar.baz" }`
 
 ## Create "Sleepy donkey" icon
 
-    ChatGPT: 眠そうなロバの顔の絵を描いてください。
-    ChatGPT: この絵を Cartoon 風にしてください。
-    ChatGPT: この絵はアプリのアイコンとして低解像度で使いたいです。細部を省いて簡略化してください。
-    ChatGPT: この絵をどうにかしてfavicon用の 16 x 16 のドット絵にしてください。
-    ChatGPT: 先ほど生成したこの絵に酷似する他の人の作品を探してください。
+  ChatGPT: 眠そうなロバの顔の絵を描いてください。
+  ChatGPT: この絵を Cartoon 風にしてください。
+  ChatGPT: この絵はアプリのアイコンとして低解像度で使いたいです。細部を省いて簡略化してください。
+  ChatGPT: この絵をどうにかしてfavicon用の 16 x 16 のドット絵にしてください。
+  ChatGPT: 先ほど生成したこの絵に酷似する他の人の作品を探してください。

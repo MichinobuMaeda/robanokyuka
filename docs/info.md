@@ -40,10 +40,10 @@
 8. お問い合わせ
     - 本ポリシーに関するお問い合わせ先は、<https://pages.michinobu.jp/> をご参照ください。
 
+ロバの休暇の改善の要望や、ロバの休暇のプログラムの流用等のためのサポートの要望についての連絡先は <https://pages.michinobu.jp/> をご参照ください。
+
 ### ライセンスと再配布
 
 ロバの休暇のプログラムは BSD 3-Clause License のオープンソースです。このプログラムの再配布については BSD 3-Clause License の条項を参照してください。
 
 <https://github.com/MichinobuMaeda/robanokyuka>
-
-ロバの休暇の改善の要望や、ロバの休暇のプログラムの流用等のためのサポートの要望についての連絡先は <https://pages.michinobu.jp/> をご参照ください。

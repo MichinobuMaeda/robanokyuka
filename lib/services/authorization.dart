@@ -8,7 +8,12 @@ import 'package:robanokyuka/models/service.dart';
 enum Privilege { loading, guest, admin, user }
 
 enum PageItem {
-  guest(icon: Symbols.login, label: '利用開始', privileges: [Privilege.guest]),
+  guest(icon: Symbols.login, label: 'ログイン', privileges: [Privilege.guest]),
+  register(
+    icon: Symbols.app_registration,
+    label: '新規登録',
+    privileges: [Privilege.guest],
+  ),
   home(
     icon: Symbols.calendar_month,
     label: '記録',

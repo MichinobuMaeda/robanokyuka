@@ -50,7 +50,7 @@ class EmailPasswordPanel extends HookConsumerWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: panelSpacing,
             runSpacing: panelSpacing,
-            children: <Widget>[
+            children: [
               ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: defaultInputWidth),
                 child: TextFormField(

@@ -19,6 +19,7 @@ import 'package:robanokyuka/views/auth/email_password_panel.dart';
 import 'package:robanokyuka/views/auth/password_reauthenticate_panel.dart';
 import 'package:robanokyuka/views/auth/reset_password_panel.dart';
 import 'package:robanokyuka/views/auth/federated_auth_panel.dart';
+import 'package:robanokyuka/views/auth/register_panel.dart';
 import 'package:robanokyuka/views/auth/sign_out_panel.dart';
 import 'package:robanokyuka/views/admin/holidays_panel.dart';
 import 'package:robanokyuka/views/admin/users_panel.dart';
@@ -32,11 +33,17 @@ enum MediaSize { narrow, middle, wide }
 
 List<Widget> getContents(PageItem pageItem) => switch (pageItem) {
   PageItem.guest => [
-    MarkdownPanel(asset: assetGuestMd),
+    MarkdownPanel(asset: assetGuestMd, showDivider: false),
+    FederatedAuthPanel(),
     if (getAppEnvironment() != AppEnvironment.pwa) EmailLinkPanel(),
     EmailPasswordPanel(),
     ResetPasswordPanel(),
+  ],
+  PageItem.register => [
+    MarkdownPanel(asset: assetGuestMd, showDivider: false),
     FederatedAuthPanel(),
+    if (getAppEnvironment() != AppEnvironment.pwa) EmailLinkPanel(),
+    RegisterPanel(),
   ],
   PageItem.home => [RecordPanel(), SummaryPanel(), CalendarPanel()],
   PageItem.settings => [

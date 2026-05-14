@@ -9,29 +9,38 @@ import 'package:robanokyuka/services/helpers.dart';
 import 'package:robanokyuka/services/validators.dart';
 import 'package:robanokyuka/services/authentication.dart';
 import 'package:robanokyuka/widgets/box_panel.dart';
+import 'package:robanokyuka/widgets/password_form_field.dart';
 
-class ChangeEmailPanel extends HookConsumerWidget {
-  const ChangeEmailPanel({super.key});
+class RegisterPanel extends HookConsumerWidget {
+  const RegisterPanel({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message = ref.read(snackBarMessageProvider.notifier);
     final email = useTextEditingController();
     final confirmEmail = useTextEditingController();
+    final password = useTextEditingController();
+    final confirmPassword = useTextEditingController();
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final isFormValid = useState(false);
 
     Future<void> handleSubmit() async {
-      final result = await changeEmail(auth(), email.text.trim());
+      message.clear();
+      final result = await registerNewUser(
+        auth(),
+        email.text.trim(),
+        password.text,
+      );
       result.match(
-        (error) => message.show("メールアドレスの変更に失敗しました。"),
-        (_) => message.show("メールアドレスの変更に成功しました。確認メールを送信しました。"),
+        (error) => message.show("登録に失敗しました。"),
+        (_) => message.show("登録しました。"),
       );
     }
 
     return BoxPanel(
       children: [
-        Text("メールアドレスを変更する"),
+        Text("メールアドレスとパスワードで登録する"),
+        Text("「送信」ボタンで確認のためのメールを送信します。"),
         Form(
           key: formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -68,9 +77,28 @@ class ChangeEmailPanel extends HookConsumerWidget {
                       validateConfirmation(email.text.trim(), value?.trim()),
                   decoration: InputDecoration(
                     labelText: "メールアドレス（確認）",
-                    helperText: "確認のため同じ入力必須です",
+                    helperText: "入力必須です",
                     border: OutlineInputBorder(),
                   ),
+                ),
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: defaultInputWidth),
+                child: PasswordFormField(
+                  controller: password,
+                  labelText: "パスワード",
+                  helperText: "入力必須です",
+                  validator: validateRequiredPassword,
+                ),
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: defaultInputWidth),
+                child: PasswordFormField(
+                  controller: confirmPassword,
+                  labelText: "パスワード（確認）",
+                  helperText: "入力必須です",
+                  validator: (value) =>
+                      validateConfirmation(password.text, value),
                 ),
               ),
               FilledButton(
@@ -87,7 +115,6 @@ class ChangeEmailPanel extends HookConsumerWidget {
             ],
           ),
         ),
-        Text("【注意】 $emailFrom からのメールが受信できるようにしてください。"),
       ],
     );
   }

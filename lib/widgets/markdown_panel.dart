@@ -34,9 +34,14 @@ final markdownExtensionSetWithoutAutolink = md.ExtensionSet(
 );
 
 class MarkdownPanel extends HookConsumerWidget {
-  const MarkdownPanel({super.key, required this.asset});
+  const MarkdownPanel({
+    super.key,
+    required this.asset,
+    this.showDivider = true,
+  });
 
   final String asset;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,6 +54,7 @@ class MarkdownPanel extends HookConsumerWidget {
     );
 
     return BoxPanel(
+      showDivider: showDivider,
       children: [
         switch (source.connectionState) {
           ConnectionState.done when source.hasData => MarkdownBody(

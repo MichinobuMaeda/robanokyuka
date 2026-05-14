@@ -75,5 +75,8 @@
   "[typescript]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
-  "git.addAICoAuthor": "off"
+  "git.addAICoAuthor": "off",
+  "markdownlint.config": {
+    "MD041": false
+  }
 }

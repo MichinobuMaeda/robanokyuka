@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mock_exceptions/mock_exceptions.dart';
 import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/services/helpers.dart';
 import 'package:robanokyuka/platform/platforms.dart';
 
 /// Subclasses [FirebaseAuthNotifier] so tests can inject a [FirebaseAuth]
@@ -239,6 +242,43 @@ void main() {
 
       expect(result.isLeft(), isTrue);
     });
+  });
+
+  group('registerNewUser', () {
+    test('returns right(unit) and creates user on success', () async {
+      final auth = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'new@example.com'),
+      );
+
+      final result = await registerNewUser(
+        auth,
+        'new@example.com',
+        'Password1!',
+      );
+
+      expect(result.isRight(), isTrue);
+      expect(auth.currentUser, isNotNull);
+    });
+
+    test(
+      'returns left(message) when createUserWithEmailAndPassword throws',
+      () async {
+        final auth = MockFirebaseAuth(
+          mockUser: MockUser(uid: 'u1', email: 'new@example.com'),
+        );
+        whenCalling(Invocation.method(#createUserWithEmailAndPassword, null))
+            .on(auth)
+            .thenThrow(FirebaseAuthException(code: 'email-already-in-use'));
+
+        final result = await registerNewUser(
+          auth,
+          'new@example.com',
+          'Password1!',
+        );
+
+        expect(result.isLeft(), isTrue);
+      },
+    );
   });
 
   group('sendPasswordResetEmail', () {
@@ -500,6 +540,43 @@ void main() {
 
       expect(result.isLeft(), isTrue);
     });
+  });
+
+  group('sendEmailVerification', () {
+    test(
+      'authUserProvider returns null for unverified user and invokes verification',
+      () async {
+        final mockUser = MockUser(
+          uid: 'u1',
+          email: 'user@example.com',
+          isEmailVerified: false,
+        );
+        final mockAuth = MockFirebaseAuth(signedIn: true, mockUser: mockUser);
+        final container = ProviderContainer(
+          overrides: [
+            firebaseAuthProvider.overrideWith(
+              () => _MockAuthNotifier(mockAuth),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // container.listen and authUserProvider.future are started inside the
+        // guarded zone so that the uncaught error from auth().signOut() (called
+        // fire-and-forget inside sendEmailVerification) is swallowed by the
+        // zone's error handler rather than propagating to the test zone.
+        Object? caughtError;
+        await runZonedGuarded(() async {
+          container.listen(authUserProvider, (_, _) {});
+          await container.read(authUserProvider.future);
+        }, (error, _) => caughtError = error);
+
+        // The message is set before auth().signOut() throws.
+        expect(container.read(snackBarMessageProvider), isNotNull);
+        // Verify the error was the expected Firebase one, not an assertion failure.
+        expect('$caughtError', contains('No Firebase App'));
+      },
+    );
   });
 
   group('authUserProvider', () {

@@ -5,6 +5,8 @@ import 'package:robanokyuka/models/cal_date.dart';
 import 'package:robanokyuka/models/nengo.dart';
 
 final _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+final minPasswordLength = 10;
+final maxPasswordLength = 4096;
 
 String? validateRequired(String? value) {
   if (value == null || value.trim().isEmpty) {
@@ -21,6 +23,32 @@ String? validateRequiredEmail(String? value) {
 
   if (!_emailPattern.hasMatch(value!)) {
     return "無効な形式のメールアドレスです";
+  }
+  return null;
+}
+
+String? validateRequiredPassword(String? value) {
+  final requiredError = validateRequired(value);
+  if (requiredError != null) {
+    return requiredError;
+  }
+  if (value!.length < minPasswordLength) {
+    return "$minPasswordLength 文字以上で入力してください";
+  }
+  if (value.length > maxPasswordLength) {
+    return "$maxPasswordLength 文字以下で入力してください";
+  }
+  if (!RegExp(r'[A-Z]').hasMatch(value)) {
+    return "英大文字を含めてください";
+  }
+  if (!RegExp(r'[a-z]').hasMatch(value)) {
+    return "英小文字を含めてください";
+  }
+  if (!RegExp(r'[0-9]').hasMatch(value)) {
+    return "数字を含めてください";
+  }
+  if (!RegExp(r'[^A-Za-z0-9]').hasMatch(value)) {
+    return "記号を含めてください";
   }
   return null;
 }

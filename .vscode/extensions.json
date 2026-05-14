@@ -3,6 +3,7 @@
     "bierner.markdown-mermaid",
     "dart-code.dart-code",
     "dart-code.flutter",
+    "davidanson.vscode-markdownlint",
     "dbaeumer.vscode-eslint",
     "editorconfig.editorconfig",
     "github.vscode-github-actions",

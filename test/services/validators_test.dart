@@ -25,6 +25,45 @@ void main() {
     });
   });
 
+  group('validateRequiredPassword', () {
+    test('returns error for null', () {
+      expect(validateRequiredPassword(null), requiredError);
+    });
+
+    test('returns error for empty string', () {
+      expect(validateRequiredPassword(''), requiredError);
+    });
+
+    test('returns error when too short', () {
+      expect(validateRequiredPassword('Ab1!xy'), '10 文字以上で入力してください');
+    });
+
+    test('returns error when too long', () {
+      final long = 'Aa1!' * 1025; // 4100 chars
+      expect(validateRequiredPassword(long), '4096 文字以下で入力してください');
+    });
+
+    test('returns error when missing uppercase letter', () {
+      expect(validateRequiredPassword('abcdefgh1!'), '英大文字を含めてください');
+    });
+
+    test('returns error when missing lowercase letter', () {
+      expect(validateRequiredPassword('ABCDEFGH1!'), '英小文字を含めてください');
+    });
+
+    test('returns error when missing digit', () {
+      expect(validateRequiredPassword('Abcdefgh!!'), '数字を含めてください');
+    });
+
+    test('returns error when missing symbol', () {
+      expect(validateRequiredPassword('Abcdefgh12'), '記号を含めてください');
+    });
+
+    test('returns null for valid password', () {
+      expect(validateRequiredPassword('Abcdefg1!x'), isNull);
+    });
+  });
+
   group('validateRequiredEmail', () {
     test('returns error for empty string', () {
       expect(validateRequiredEmail(''), requiredError);

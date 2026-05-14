@@ -15,9 +15,6 @@ class FederatedAuthPanel extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message = ref.read(snackBarMessageProvider.notifier);
-    final providers = FederatedProvider.values
-        .where((provider) => provider != FederatedProvider.google)
-        .toList();
 
     Future<void> handleSubmit(FederatedProvider provider) async {
       message.clear();
@@ -36,14 +33,14 @@ class FederatedAuthPanel extends HookConsumerWidget {
       }
     }
 
-    return providers.isEmpty
+    return FederatedProvider.values.isEmpty
         ? BoxPanel(showDivider: false, children: [SizedBox.shrink()])
         : BoxPanel(
             children: [
               Wrap(
                 spacing: 16.0,
                 runSpacing: 16.0,
-                children: providers
+                children: FederatedProvider.values
                     .map(
                       (provider) => FilledButton(
                         onPressed: () => handleSubmit(provider),
