@@ -18,9 +18,10 @@ enum FederatedProvider {
 }
 
 AuthProvider getProvider(FederatedProvider provider) => switch (provider) {
-  FederatedProvider.google =>
-    GoogleAuthProvider()
-      ..addScope('https://www.googleapis.com/auth/contacts.readonly'),
+  // https://www.googleapis.com/auth/userinfo.email and
+  // https://www.googleapis.com/auth/userinfo.profile are included by default,
+  // so we don't need to add them explicitly.
+  FederatedProvider.google => GoogleAuthProvider(),
 };
 
 class FirebaseAuthNotifier extends Notifier<FirebaseAuth?> {
