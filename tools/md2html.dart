@@ -74,7 +74,10 @@ void main() {
       var markdown = file.readAsStringSync();
       // Replace .md links with .html
       markdown = markdown.replaceAll(RegExp(r'\.md(?=[\)\]])'), '.html');
-      final html = md.markdownToHtml(markdown);
+      final html = md.markdownToHtml(
+        markdown,
+        blockSyntaxes: [const md.TableSyntax()],
+      );
       final htmlFileName = file.uri.pathSegments.last.replaceAll(
         '.md',
         '.html',

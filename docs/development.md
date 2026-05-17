@@ -29,6 +29,8 @@ npm i --prefix functions
 npm test
 ```
 
+Download `ios/GoogleService-Info.plist` from Firebase Console.
+
 Run Firebase Emulators
 
 ```bash
