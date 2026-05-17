@@ -842,64 +842,57 @@ void main() {
     Record record(int year) =>
         Record(id: 'r$year', from: Cal(year, 4, 1), to: Cal(year + 1, 3, 31));
 
-    test('sets state to null when records is null', () {
-      final container = makeContainer();
-      final notifier = container.read(selectedRecordIndexProvider.notifier);
-      notifier.set(0);
-
-      notifier.applyRecordsChange(null);
-
-      expect(container.read(selectedRecordIndexProvider), isNull);
+    test('returns null when records is null', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(notifier.applyRecordsChange(null, 0), isNull);
     });
 
-    test('sets state to null when records is empty', () {
-      final container = makeContainer();
-      final notifier = container.read(selectedRecordIndexProvider.notifier);
-      notifier.set(0);
-
-      notifier.applyRecordsChange([]);
-
-      expect(container.read(selectedRecordIndexProvider), isNull);
+    test('returns null when records is empty', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(notifier.applyRecordsChange([], 0), isNull);
     });
 
-    test('resets to last index when current is null', () {
-      final container = makeContainer();
-      final notifier = container.read(selectedRecordIndexProvider.notifier);
-      // state is null from build()
-
-      notifier.applyRecordsChange([record(2020), record(2021)]);
-
-      expect(container.read(selectedRecordIndexProvider), 1);
+    test('selects last past record when current is null', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      // Both records are in the past → last index returned
+      expect(
+        notifier.applyRecordsChange([record(2020), record(2021)], null),
+        1,
+      );
     });
 
-    test('resets to last index when current is negative', () {
-      final container = makeContainer();
-      final notifier = container.read(selectedRecordIndexProvider.notifier);
-      notifier.set(-1);
-
-      notifier.applyRecordsChange([record(2020), record(2021)]);
-
-      expect(container.read(selectedRecordIndexProvider), 1);
+    test('returns last index when current is negative', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(notifier.applyRecordsChange([record(2020), record(2021)], -1), 1);
     });
 
-    test('resets to last index when current is out of bounds', () {
-      final container = makeContainer();
-      final notifier = container.read(selectedRecordIndexProvider.notifier);
-      notifier.set(5);
-
-      notifier.applyRecordsChange([record(2020)]);
-
-      expect(container.read(selectedRecordIndexProvider), 0);
+    test('returns last index when current exceeds bounds', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(notifier.applyRecordsChange([record(2020)], 5), 0);
     });
 
-    test('keeps current index when it is in bounds', () {
-      final container = makeContainer();
-      final notifier = container.read(selectedRecordIndexProvider.notifier);
-      notifier.set(1);
-
-      notifier.applyRecordsChange([record(2020), record(2021), record(2022)]);
-
-      expect(container.read(selectedRecordIndexProvider), 1);
+    test('returns current index when it is in bounds', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(
+        notifier.applyRecordsChange([
+          record(2020),
+          record(2021),
+          record(2022),
+        ], 1),
+        1,
+      );
     });
   });
 
@@ -919,6 +912,157 @@ void main() {
         expect(result.isLeft(), isTrue);
       },
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  group('SelectedRecordIndexNotifier.goPrevious / goNext', () {
+    List<Record> makeRecords(int count) => List.generate(
+      count,
+      (i) => Record(
+        id: 'r$i',
+        from: Cal(2020 + i, 4, 1),
+        to: Cal(2021 + i, 3, 31),
+      ),
+    );
+
+    ProviderContainer makeContainer(List<Record> recs) {
+      final container = ProviderContainer(
+        overrides: [recordsProvider.overrideWith((_) => Stream.value(recs))],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    Future<void> prime(ProviderContainer container) async {
+      container.listen(selectedRecordIndexProvider, (_, _) {});
+      container.listen(recordsProvider, (_, _) {});
+      await container.read(recordsProvider.future);
+      await Future.microtask(() {});
+    }
+
+    test('goPrevious does nothing when records is empty', () async {
+      final container = ProviderContainer(
+        overrides: [recordsProvider.overrideWith((_) => Stream.value([]))],
+      );
+      addTearDown(container.dispose);
+      await prime(container);
+
+      container.read(selectedRecordIndexProvider.notifier).goPrevious();
+
+      expect(container.read(selectedRecordIndexProvider), isNull);
+    });
+
+    test('goPrevious does nothing when records is null', () async {
+      final container = ProviderContainer(
+        overrides: [recordsProvider.overrideWith((_) => Stream.value(null))],
+      );
+      addTearDown(container.dispose);
+      await prime(container);
+
+      container.read(selectedRecordIndexProvider.notifier).goPrevious();
+
+      expect(container.read(selectedRecordIndexProvider), isNull);
+    });
+
+    test('goPrevious sets index to 0 when current is null', () async {
+      final container = ProviderContainer(
+        overrides: [
+          recordsProvider.overrideWith((_) => Stream.value(makeRecords(3))),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(selectedRecordIndexProvider, (_, _) {});
+      container.listen(recordsProvider, (_, _) {});
+      await container.read(recordsProvider.future);
+      await Future.microtask(() {});
+      container.read(selectedRecordIndexProvider.notifier).set(null);
+
+      container.read(selectedRecordIndexProvider.notifier).goPrevious();
+
+      expect(container.read(selectedRecordIndexProvider), 0);
+    });
+
+    test('goPrevious decrements index when current > 0', () async {
+      final container = makeContainer(makeRecords(3));
+      await prime(container);
+      container.read(selectedRecordIndexProvider.notifier).set(2);
+
+      container.read(selectedRecordIndexProvider.notifier).goPrevious();
+
+      expect(container.read(selectedRecordIndexProvider), 1);
+    });
+
+    test('goPrevious does not go below 0', () async {
+      final container = makeContainer(makeRecords(3));
+      await prime(container);
+      container.read(selectedRecordIndexProvider.notifier).set(0);
+
+      container.read(selectedRecordIndexProvider.notifier).goPrevious();
+
+      expect(container.read(selectedRecordIndexProvider), 0);
+    });
+
+    test('goNext does nothing when records is empty', () async {
+      final container = ProviderContainer(
+        overrides: [recordsProvider.overrideWith((_) => Stream.value([]))],
+      );
+      addTearDown(container.dispose);
+      await prime(container);
+
+      container.read(selectedRecordIndexProvider.notifier).goNext();
+
+      expect(container.read(selectedRecordIndexProvider), isNull);
+    });
+
+    test('goNext does nothing when records is null', () async {
+      final container = ProviderContainer(
+        overrides: [recordsProvider.overrideWith((_) => Stream.value(null))],
+      );
+      addTearDown(container.dispose);
+      await prime(container);
+
+      container.read(selectedRecordIndexProvider.notifier).goNext();
+
+      expect(container.read(selectedRecordIndexProvider), isNull);
+    });
+
+    test('goNext sets index to 0 when current is null', () async {
+      final container = ProviderContainer(
+        overrides: [
+          recordsProvider.overrideWith((_) => Stream.value(makeRecords(3))),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(selectedRecordIndexProvider, (_, _) {});
+      container.listen(recordsProvider, (_, _) {});
+      await container.read(recordsProvider.future);
+      await Future.microtask(() {});
+      container.read(selectedRecordIndexProvider.notifier).set(null);
+
+      container.read(selectedRecordIndexProvider.notifier).goNext();
+
+      expect(container.read(selectedRecordIndexProvider), 0);
+    });
+
+    test('goNext increments index when current < last', () async {
+      final container = makeContainer(makeRecords(3));
+      await prime(container);
+      container.read(selectedRecordIndexProvider.notifier).set(0);
+
+      container.read(selectedRecordIndexProvider.notifier).goNext();
+
+      expect(container.read(selectedRecordIndexProvider), 1);
+    });
+
+    test('goNext does not go beyond last index', () async {
+      final container = makeContainer(makeRecords(3));
+      await prime(container);
+      container.read(selectedRecordIndexProvider.notifier).set(2);
+
+      container.read(selectedRecordIndexProvider.notifier).goNext();
+
+      expect(container.read(selectedRecordIndexProvider), 2);
+    });
   });
 
   group('recordsProvider sort order', () {

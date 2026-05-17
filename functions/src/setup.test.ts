@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from "vitest";
-import {setup, addTestData, updateUiVersion, getUiVersion} from "./setup";
+import {setup, updateUiVersion, getUiVersion} from "./setup";
 import {msg, type Context} from "./common";
 import type {
   DocumentReference,
@@ -11,12 +11,9 @@ import {
   makeContext,
   makeDocSnapshot,
   adminEmail,
-  user02Id,
   uiVersion,
-  adminId,
 } from "./testutils";
 
-const testUser01 = "user01@example.com";
 const appVersionUrl = "https://example.com/version.json";
 
 describe("setup", () => {
@@ -160,7 +157,6 @@ describe("setup", () => {
     );
   });
 
-  // eslint-disable-next-line max-len
   it("updates UI version when it differs from the deployed version", async () => {
     const {context: ctx} = makeContext({
       db: {
@@ -270,21 +266,6 @@ describe("setup", () => {
       version: 0, createdAt: expect.objectContaining({}),
     });
   });
-
-  it("calls addTestData when NODE_ENV is development", async () => {
-    const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
-    try {
-      const {context: ctx} = makeContext();
-      const data = makeDocSnapshot({version: 1});
-      await setup(ctx, {data});
-      expect(ctx.auth.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({email: testUser01})
-      );
-    } finally {
-      process.env.NODE_ENV = originalEnv;
-    }
-  });
 });
 
 describe("getUiVersion", () => {
@@ -328,84 +309,6 @@ describe("getUiVersion", () => {
     const result = await getUiVersion(ctx);
     expect(fetch).not.toHaveBeenCalled();
     expect(result).toBe(directVersion);
-  });
-});
-
-describe("addTestData", () => {
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  function makeAddTestDataContext(adminUid?: string) {
-    const confData = adminUid ? {admins: [adminUid]} : {};
-    const confRef = {
-      get: vi.fn().mockResolvedValue({data: () => confData}),
-    } as unknown as import("firebase-admin/firestore").DocumentReference;
-    const usersCollection = {
-      doc: vi.fn().mockReturnValue({
-        get: vi.fn().mockResolvedValue({exists: false}),
-        set: vi.fn().mockResolvedValue(undefined),
-      }),
-    } as unknown as import("firebase-admin/firestore").CollectionReference;
-    const db = {
-      batch: vi.fn().mockReturnValue({
-        set: vi.fn(),
-        update: vi.fn(),
-        commit: vi.fn().mockResolvedValue(undefined),
-      }),
-      collection: vi.fn((path: string) => {
-        if (path === "service") {
-          return {doc: vi.fn().mockReturnValue(confRef)};
-        }
-        return usersCollection;
-      }),
-    };
-    const auth = {
-      createUser: vi.fn().mockResolvedValue({uid: user02Id}),
-      getUserByEmail: vi.fn().mockResolvedValue({uid: user02Id}),
-      updateUser: vi.fn().mockResolvedValue(undefined),
-    };
-    const logger = {info: vi.fn(), error: vi.fn()};
-    return {logger, db, auth} as unknown as import("./common").Context;
-  }
-
-  it("sets admin password and creates user01 when admin exists", async () => {
-    const ctx = makeAddTestDataContext(adminId);
-    await addTestData(ctx);
-    expect(ctx.auth.updateUser).toHaveBeenCalledWith(adminId, {password: "password"});
-    expect(ctx.auth.createUser).toHaveBeenCalledWith({
-      email: testUser01,
-      password: "password",
-      displayName: "User 01",
-    });
-  });
-
-  it("skips updateUser when no admin in conf", async () => {
-    const ctx = makeAddTestDataContext();
-    await addTestData(ctx);
-    expect(ctx.auth.updateUser).not.toHaveBeenCalled();
-    expect(ctx.auth.createUser).toHaveBeenCalledWith(
-      expect.objectContaining({email: testUser01})
-    );
-  });
-
-  it("logs Error with stack when addTestData throws", async () => {
-    const err = new Error("createUser failed");
-    const ctx = makeAddTestDataContext(adminId);
-    (ctx.auth.createUser as ReturnType<typeof vi.fn>).mockRejectedValue(err);
-    await addTestData(ctx);
-    expect(ctx.logger.error).toHaveBeenCalledWith(
-      msg.errorAddTestData, err, err.stack
-    );
-  });
-
-  it("logs non-Error without stack when addTestData throws", async () => {
-    const ctx = makeAddTestDataContext(adminId);
-    (ctx.auth.createUser as ReturnType<typeof vi.fn>).mockRejectedValue("boom");
-    await addTestData(ctx);
-    expect(ctx.logger.error).toHaveBeenCalledWith(
-      msg.errorAddTestData, "boom", undefined
-    );
   });
 });
 

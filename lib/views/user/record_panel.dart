@@ -28,7 +28,6 @@ class RecordPanel extends HookConsumerWidget {
     final records = ref.watch(recordsProvider).asData?.value ?? [];
     final record = selectedIndex == null ? null : records[selectedIndex];
     final nengo = ref.watch(nengoProvider);
-    final currentIndex = selectedIndex ?? -1;
 
     Future<void> handleSave(Record newRecord) async {
       if (uid == null) return;
@@ -90,20 +89,20 @@ class RecordPanel extends HookConsumerWidget {
                       children: [
                         Text('${nengo.format(record.from)}〜'),
                         IconButton(
-                          onPressed: currentIndex > 0
+                          onPressed: selectedIndex != null && selectedIndex > 0
                               ? () => ref
                                     .read(selectedRecordIndexProvider.notifier)
-                                    .set(currentIndex - 1)
+                                    .goPrevious()
                               : null,
                           icon: Icon(Symbols.arrow_back_ios_new),
                         ),
                         IconButton(
                           onPressed:
-                              currentIndex >= 0 &&
-                                  currentIndex < records.length - 1
+                              selectedIndex != null &&
+                                  selectedIndex < records.length - 1
                               ? () => ref
                                     .read(selectedRecordIndexProvider.notifier)
-                                    .set(currentIndex + 1)
+                                    .goNext()
                               : null,
                           icon: Icon(Symbols.arrow_forward_ios),
                         ),

@@ -12,6 +12,7 @@ import {beforeUserCreated} from "firebase-functions/v2/identity";
 
 import {setup} from "./setup";
 import * as users from "./users";
+import {setupTestData} from "./testdata";
 
 const region = "asia-northeast2";
 setGlobalOptions({maxInstances: 10});
@@ -44,4 +45,10 @@ export const addUser = onCall(
 export const deleteUser = onCall(
   {region},
   (event) => users.handleDeleteUser(context, event),
+);
+
+export const testData = onCall(
+  {region},
+  () => (process.env.NODE_ENV === "development") ?
+    setupTestData(context) : null,
 );

@@ -16,7 +16,6 @@ void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await initializeFirebase();
-  // await handleGoogleAuthRedirect();
   if (kIsWeb) {
     final url = Uri.base.toString();
     if (await handleEmailLink(auth(), LocalStorage(), url)) {

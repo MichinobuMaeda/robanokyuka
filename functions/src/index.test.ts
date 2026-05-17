@@ -3,6 +3,7 @@ import functionsTest from "firebase-functions-test";
 import type {CloudFunction, CloudEvent} from "firebase-functions/v2";
 import * as setupModule from "./setup";
 import * as usersModule from "./users";
+import * as testdataModule from "./testdata";
 import {adminId, makeEvent} from "./testutils";
 
 import * as myFunctions from "./index";
@@ -16,6 +17,9 @@ vi.mock("./users", () => ({
   handleAddUser: vi.fn().mockResolvedValue(undefined),
   handleUserUpdated: vi.fn().mockResolvedValue(undefined),
   handleDeleteUser: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("./testdata", () => ({
+  setupTestData: vi.fn().mockResolvedValue(undefined),
 }));
 
 const tester = functionsTest();
@@ -103,5 +107,30 @@ describe("deleteUser", () => {
       expect.objectContaining({logger: expect.any(Object)}),
       event,
     );
+  });
+});
+
+describe("testData", () => {
+  it("is exported", () => {
+    expect(myFunctions.testData).toBeDefined();
+  });
+
+  it("calls setupTestData when NODE_ENV is development", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const wrapped = tester.wrap(myFunctions.testData);
+    await wrapped(makeEvent(undefined));
+    expect(testdataModule.setupTestData).toHaveBeenCalledWith(
+      expect.objectContaining({logger: expect.any(Object)}),
+    );
+    vi.unstubAllEnvs();
+  });
+
+  it("returns null when NODE_ENV is not development", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const wrapped = tester.wrap(myFunctions.testData);
+    const result = await wrapped(makeEvent(undefined));
+    expect(result).toBeNull();
+    expect(testdataModule.setupTestData).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
   });
 });

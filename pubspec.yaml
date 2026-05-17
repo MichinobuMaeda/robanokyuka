@@ -1,7 +1,7 @@
 name: robanokyuka
 description: "ロバの休暇"
 publish_to: "none"
-version: 0.4.1+1
+version: 0.4.3+1
 environment:
   sdk: ^3.11.5
 dependencies:
@@ -25,10 +25,12 @@ dependencies:
   material_symbols_icons: ^4.2928.1
   path: ^1.9.1
   flutter_svg: ^2.3.0
+  google_sign_in: ^7.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
   firebase_auth_mocks: ^0.15.1
   fake_cloud_firestore: ^4.1.0+1
   mock_exceptions: ^0.8.2

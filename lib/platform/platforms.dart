@@ -1,7 +1,8 @@
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'platform_env_stub.dart'
     if (dart.library.js_interop) 'platform_env_web.dart';
@@ -47,3 +48,12 @@ class LocalStorage {
 }
 
 void updateApp() => updateAppImpl();
+
+Future<String> getGoogleIdToken() async {
+  final googleUser = await GoogleSignIn.instance.authenticate();
+  final idToken = googleUser.authentication.idToken;
+  if (idToken == null) {
+    throw Exception('Failed to retrieve Google ID token.');
+  }
+  return idToken;
+}

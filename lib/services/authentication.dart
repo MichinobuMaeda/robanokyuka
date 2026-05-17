@@ -239,12 +239,39 @@ Future<Either<String, Unit>> deleteUser(FirebaseAuth auth) async {
   }
 }
 
+Future<OAuthCredential> signInWithGoogle(
+  FirebaseAuth auth,
+  Future<String> Function() getGoogleIdToken,
+) async {
+  final idToken = await getGoogleIdToken();
+  return GoogleAuthProvider.credential(idToken: idToken);
+}
+
 Future<Either<String, Unit>> signInWithProvider(
   FirebaseAuth auth,
   FederatedProvider provider,
-) async {
+  AppEnvironment environment, {
+  @visibleForTesting Future<String> Function()? getGoogleIdTokenFn,
+}) async {
   try {
-    await auth.signInWithPopup(getProvider(provider));
+    switch (environment) {
+      case AppEnvironment.web || AppEnvironment.pwa:
+        await auth.signInWithPopup(getProvider(provider));
+        break;
+      case AppEnvironment.android || AppEnvironment.ios:
+        switch (provider) {
+          case FederatedProvider.google:
+            final credential = await signInWithGoogle(
+              auth,
+              getGoogleIdTokenFn ?? getGoogleIdToken,
+            );
+            await auth.signInWithCredential(credential);
+            break;
+        }
+        break;
+      default:
+        throw UnsupportedError('Unsupported platform for federated sign-in');
+    }
     return right(unit);
   } catch (error, stackTrace) {
     debugPrint('Error signing in with ${provider.name}: $error\n$stackTrace');
@@ -255,13 +282,32 @@ Future<Either<String, Unit>> signInWithProvider(
 Future<Either<String, Unit>> reauthenticateWithProvider(
   FirebaseAuth auth,
   FederatedProvider provider,
-) async {
+  AppEnvironment environment, {
+  @visibleForTesting Future<String> Function()? getGoogleIdTokenFn,
+}) async {
   try {
     final user = auth.currentUser;
     if (user == null) {
       return left('No authenticated user.');
     }
-    await user.reauthenticateWithPopup(getProvider(provider));
+    switch (environment) {
+      case AppEnvironment.web || AppEnvironment.pwa:
+        await user.reauthenticateWithPopup(getProvider(provider));
+        break;
+      case AppEnvironment.android || AppEnvironment.ios:
+        switch (provider) {
+          case FederatedProvider.google:
+            final credential = await signInWithGoogle(
+              auth,
+              getGoogleIdTokenFn ?? getGoogleIdToken,
+            );
+            await user.reauthenticateWithCredential(credential);
+            break;
+        }
+        break;
+      default:
+        throw UnsupportedError('Unsupported platform for federated sign-in');
+    }
     return right(unit);
   } catch (error, stackTrace) {
     debugPrint(

@@ -27,10 +27,32 @@ flutter pug get
 npm i
 npm i --prefix functions
 npm test
-npm run dev
 ```
 
-- <http://localhost:8000/> -- Web Server in debug mode
-- <http://localhost:4000/> -- Firebase Emulator Suite UI
+Run Firebase Emulators
+
+```bash
+npm run emulators
+```
+
+Firebase Emulator Suite UI: <http://localhost:4000/>
+
+Run app on Firebase Emulators
+
+```bash
+npm run dev:web
+npm run dev:chrome
+npm run dev:edge
+npm run dev:android
+npm run dev -- -d [device-id]
+```
+
+Web Server in debug mode: <http://localhost:8000/>
+
+Update test data of Firebase Emulators saved at `test/emulators`
+
+```bash
+npm run emulators:data
+```
 
 [» Deployment](./deployment.md)

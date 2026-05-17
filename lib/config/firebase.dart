@@ -20,18 +20,22 @@ FirebaseOptions firebaseConfig = FirebaseOptions(
 );
 
 Future<void> initializeFirebase() async {
-  await Firebase.initializeApp(options: firebaseConfig);
-  await FirebaseAuth.instance.setLanguageCode("ja");
+  try {
+    await Firebase.initializeApp(options: firebaseConfig);
+    await FirebaseAuth.instance.setLanguageCode("ja");
 
-  if (kDebugMode) {
-    String host = defaultTargetPlatform == TargetPlatform.android
-        ? '10.0.2.2'
-        : 'localhost';
-    await FirebaseAuth.instance.useAuthEmulator(host, 9099);
-    FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
-    FirebaseFunctions.instanceFor(
-      region: functionsRegion,
-    ).useFunctionsEmulator(host, 5001);
+    if (kDebugMode) {
+      String host = defaultTargetPlatform == TargetPlatform.android
+          ? '10.0.2.2'
+          : 'localhost';
+      await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
+      FirebaseFunctions.instanceFor(
+        region: functionsRegion,
+      ).useFunctionsEmulator(host, 5001);
+    }
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
   }
 }
 

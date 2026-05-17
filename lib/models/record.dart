@@ -258,35 +258,59 @@ class SelectedRecordIndexNotifier extends Notifier<int?> {
   @override
   int? build() {
     ref.listen(recordsProvider, (previous, next) {
-      applyRecordsChange(next.asData?.value);
+      state = applyRecordsChange(next.asData?.value, state);
     });
-
-    final records = ref.watch(recordsProvider).asData?.value;
-    if (records == null || records.isEmpty) return null;
-    final today = Cal.fromDateTime(DateTime.now());
-    int index = 0;
-    for (int i = 0; i < records.length; i++) {
-      final record = records[i];
-      if (record.from.compareTo(today) > 0) break;
-      index = i;
-    }
-    return index;
-  }
-
-  void set(int? index) {
-    state = index;
+    return null;
   }
 
   @visibleForTesting
-  void applyRecordsChange(List<Record>? records) {
-    if (records == null || records.isEmpty) {
-      state = null;
-      return;
-    }
+  void set(int? index) => state = index;
+
+  void goPrevious() {
+    debugPrint('SelectedRecordIndexNotifier: goPrevious called');
+    final records = ref.read(recordsProvider).asData?.value;
+    if (records == null || records.isEmpty) return;
     final current = state;
-    if (current == null || current < 0 || current >= records.length) {
-      state = records.length - 1;
+    if (current == null) {
+      state = 0;
+    } else if (current > 0) {
+      state = current - 1;
     }
+  }
+
+  void goNext() {
+    debugPrint('SelectedRecordIndexNotifier: goNext called');
+    final records = ref.read(recordsProvider).asData?.value;
+    if (records == null || records.isEmpty) return;
+    final current = state;
+    if (current == null) {
+      state = 0;
+    } else if (current < records.length - 1) {
+      state = current + 1;
+    }
+  }
+
+  @visibleForTesting
+  int? applyRecordsChange(List<Record>? records, int? current) {
+    debugPrint(
+      'SelectedRecordIndexNotifier: applyRecordsChange records: ${records?.length}, current: $current',
+    );
+    if (records == null || records.isEmpty) {
+      return null;
+    }
+    if (current == null) {
+      final today = Cal.fromDateTime(DateTime.now());
+      int index = 0;
+      for (int i = 0; i < records.length; i++) {
+        final record = records[i];
+        if (record.from.compareTo(today) > 0) break;
+        index = i;
+      }
+      return index;
+    } else if (current < 0 || current >= records.length) {
+      return records.length - 1;
+    }
+    return current;
   }
 }
 

@@ -6,6 +6,7 @@
     "appinvite",
     "canvaskit",
     "carryforward",
+    "COCOAPODS",
     "Eventarc",
     "firebaseapp",
     "firebaserc",
@@ -27,6 +28,8 @@
     "Noto",
     "nvmrc",
     "passwordless",
+    "podfile",
+    "podhelper",
     "predeploy",
     "prefs",
     "pubspec",
@@ -37,9 +40,12 @@
     "subcollection",
     "subosito",
     "temurin",
+    "testdata",
     "testutils",
     "uids",
-    "Unrecognised"
+    "Unrecognised",
+    "unstub",
+    "xcconfig"
   ],
   "cSpell.ignorePaths": [
     ".dart_tool/*",
@@ -48,6 +54,7 @@
     ".metadata",
     ".vscode/*",
     "android/**/*.json",
+    "ios/**/*",
     "build/*",
     "**/package-lock.json",
     "pubspec.lock"
@@ -76,6 +83,9 @@
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },
   "git.addAICoAuthor": "off",
+  "markdownlint.ignore": [
+    ".metadata"
+  ],
   "markdownlint.config": {
     "MD041": false
   }

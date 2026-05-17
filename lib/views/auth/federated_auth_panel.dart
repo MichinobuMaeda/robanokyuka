@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import 'package:robanokyuka/platform/platforms.dart';
 import 'package:robanokyuka/config/firebase.dart';
 import 'package:robanokyuka/services/helpers.dart';
 import 'package:robanokyuka/services/authentication.dart';
@@ -15,17 +16,22 @@ class FederatedAuthPanel extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final message = ref.read(snackBarMessageProvider.notifier);
+    final environment = getAppEnvironment();
 
     Future<void> handleSubmit(FederatedProvider provider) async {
       message.clear();
       if (reauthentication) {
-        final result = await reauthenticateWithProvider(auth(), provider);
+        final result = await reauthenticateWithProvider(
+          auth(),
+          provider,
+          environment,
+        );
         result.match(
           (error) => message.show("${provider.name}での再認証に失敗しました。"),
           (_) => message.show("${provider.name}での再認証に成功しました。"),
         );
       } else {
-        final result = await signInWithProvider(auth(), provider);
+        final result = await signInWithProvider(auth(), provider, environment);
         result.match(
           (error) => message.show("${provider.name}でのログインに失敗しました。"),
           (_) => message.show("${provider.name}でのログインに成功しました。"),

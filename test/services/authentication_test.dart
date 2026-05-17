@@ -414,13 +414,47 @@ void main() {
     });
   });
 
+  group('signInWithGoogle', () {
+    test(
+      'returns OAuthCredential when getGoogleIdToken returns a token',
+      () async {
+        final auth = MockFirebaseAuth();
+
+        final result = await signInWithGoogle(
+          auth,
+          () async => 'fake-id-token',
+        );
+
+        expect(result, isA<OAuthCredential>());
+      },
+    );
+  });
+
   group('signInWithProvider', () {
-    test('returns right(unit) for google on success', () async {
+    test('returns right(unit) for web environment on success', () async {
       final auth = MockFirebaseAuth(
         mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
       );
 
-      final result = await signInWithProvider(auth, FederatedProvider.google);
+      final result = await signInWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.web,
+      );
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test('returns right(unit) for pwa environment on success', () async {
+      final auth = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      );
+
+      final result = await signInWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.pwa,
+      );
 
       expect(result.isRight(), isTrue);
     });
@@ -433,7 +467,89 @@ void main() {
         Invocation.method(#signInWithPopup, null),
       ).on(auth).thenThrow(FirebaseAuthException(code: 'popup-closed-by-user'));
 
-      final result = await signInWithProvider(auth, FederatedProvider.google);
+      final result = await signInWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.web,
+      );
+
+      expect(result.isLeft(), isTrue);
+    });
+
+    test('returns right(unit) for android environment on success', () async {
+      final auth = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      );
+
+      final result = await signInWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.android,
+        getGoogleIdTokenFn: () async => 'fake-id-token',
+      );
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test(
+      'returns left for android environment (getGoogleIdToken throws)',
+      () async {
+        final auth = MockFirebaseAuth(
+          mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+        );
+
+        final result = await signInWithProvider(
+          auth,
+          FederatedProvider.google,
+          AppEnvironment.android,
+        );
+
+        expect(result.isLeft(), isTrue);
+      },
+    );
+
+    test('returns right(unit) for ios environment on success', () async {
+      final auth = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      );
+
+      final result = await signInWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.ios,
+        getGoogleIdTokenFn: () async => 'fake-id-token',
+      );
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test(
+      'returns left for ios environment (getGoogleIdToken throws)',
+      () async {
+        final auth = MockFirebaseAuth(
+          mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+        );
+
+        final result = await signInWithProvider(
+          auth,
+          FederatedProvider.google,
+          AppEnvironment.ios,
+        );
+
+        expect(result.isLeft(), isTrue);
+      },
+    );
+
+    test('returns left for other environment', () async {
+      final auth = MockFirebaseAuth(
+        mockUser: MockUser(uid: 'u1', email: 'user@example.com'),
+      );
+
+      final result = await signInWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.other,
+      );
 
       expect(result.isLeft(), isTrue);
     });
@@ -446,18 +562,33 @@ void main() {
       final result = await reauthenticateWithProvider(
         auth,
         FederatedProvider.google,
+        AppEnvironment.web,
       );
 
       expect(result.isLeft(), isTrue);
     });
 
-    test('returns right(unit) for google on success', () async {
+    test('returns right(unit) for web environment on success', () async {
       final user = _FakeUser(uid: 'u1', email: 'user@example.com');
       final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
 
       final result = await reauthenticateWithProvider(
         auth,
         FederatedProvider.google,
+        AppEnvironment.web,
+      );
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test('returns right(unit) for pwa environment on success', () async {
+      final user = _FakeUser(uid: 'u1', email: 'user@example.com');
+      final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
+
+      final result = await reauthenticateWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.pwa,
       );
 
       expect(result.isRight(), isTrue);
@@ -472,6 +603,80 @@ void main() {
       final result = await reauthenticateWithProvider(
         auth,
         FederatedProvider.google,
+        AppEnvironment.web,
+      );
+
+      expect(result.isLeft(), isTrue);
+    });
+
+    test('returns right(unit) for android environment on success', () async {
+      final user = _FakeUser(uid: 'u1', email: 'user@example.com');
+      final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
+
+      final result = await reauthenticateWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.android,
+        getGoogleIdTokenFn: () async => 'fake-id-token',
+      );
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test(
+      'returns left for android environment (getGoogleIdToken throws)',
+      () async {
+        final user = _FakeUser(uid: 'u1', email: 'user@example.com');
+        final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
+
+        final result = await reauthenticateWithProvider(
+          auth,
+          FederatedProvider.google,
+          AppEnvironment.android,
+        );
+
+        expect(result.isLeft(), isTrue);
+      },
+    );
+
+    test('returns right(unit) for ios environment on success', () async {
+      final user = _FakeUser(uid: 'u1', email: 'user@example.com');
+      final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
+
+      final result = await reauthenticateWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.ios,
+        getGoogleIdTokenFn: () async => 'fake-id-token',
+      );
+
+      expect(result.isRight(), isTrue);
+    });
+
+    test(
+      'returns left for ios environment (getGoogleIdToken throws)',
+      () async {
+        final user = _FakeUser(uid: 'u1', email: 'user@example.com');
+        final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
+
+        final result = await reauthenticateWithProvider(
+          auth,
+          FederatedProvider.google,
+          AppEnvironment.ios,
+        );
+
+        expect(result.isLeft(), isTrue);
+      },
+    );
+
+    test('returns left for other environment', () async {
+      final user = _FakeUser(uid: 'u1', email: 'user@example.com');
+      final auth = MockFirebaseAuth(signedIn: true, mockUser: user);
+
+      final result = await reauthenticateWithProvider(
+        auth,
+        FederatedProvider.google,
+        AppEnvironment.other,
       );
 
       expect(result.isLeft(), isTrue);
