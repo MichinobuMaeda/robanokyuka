@@ -8,6 +8,7 @@
 
 [X](https://x.com/robanokyuka) ||
 [Bluesky](https://bsky.app/profile/robanokyuka.bsky.social) ||
+[Threads](https://www.threads.com/@roba_no_kyuka) ||
 <a rel="me" href="https://mastodon.social/@robanokyuka">Mastodon</a>
 
 ## 機能
