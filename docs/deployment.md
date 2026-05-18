@@ -1,8 +1,8 @@
-# ロバの休暇
+# ![ロバの休暇](logo.svg)
 
 [« 概要](./index.md) [« 開発](./development.md)
 
-## Create this project
+## Deployment
 
 <https://console.firebase.google.com/>
 
@@ -288,8 +288,10 @@ $ npx firebase deploy --only functions
 
 ## Create "Sleepy donkey" icon
 
-  ChatGPT: 眠そうなロバの顔の絵を描いてください。
-  ChatGPT: この絵を Cartoon 風にしてください。
-  ChatGPT: この絵はアプリのアイコンとして低解像度で使いたいです。細部を省いて簡略化してください。
-  ChatGPT: この絵をどうにかしてfavicon用の 16 x 16 のドット絵にしてください。
-  ChatGPT: 先ほど生成したこの絵に酷似する他の人の作品を探してください。
+On ChatGPT
+
+1. 眠そうなロバの顔の絵を描いてください。
+2. この絵を Cartoon 風にしてください。
+3. この絵はアプリのアイコンとして低解像度で使いたいです。細部を省いて簡略化してください。
+4. この絵をどうにかしてfavicon用の 16 x 16 のドット絵にしてください。
+5. 先ほど生成したこの絵に酷似する他の人の作品を探してください。

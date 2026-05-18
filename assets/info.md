@@ -1,4 +1,3 @@
-# ロバの休暇
 
 [« 概要](https://robanokyuka.firebaseapp.com/docs/index.html)
 

@@ -1,4 +1,4 @@
-# ロバの休暇
+# ![ロバの休暇](logo.svg)
 
 <https://robanokyuka.firebaseapp.com>
 

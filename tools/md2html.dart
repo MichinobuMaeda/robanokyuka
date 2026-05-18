@@ -97,6 +97,11 @@ void main() {
     final infoSource = File(p.join(inputPath, 'info.md'));
     if (infoSource.existsSync()) {
       var infoMarkdown = infoSource.readAsStringSync();
+      // Remove level 1 headings
+      infoMarkdown = infoMarkdown.replaceAll(
+        RegExp(r'^# .+\n?', multiLine: true),
+        '',
+      );
       // Replace local index.md link with external URL
       infoMarkdown = infoMarkdown.replaceAll(
         RegExp(r'./index\.md'),
