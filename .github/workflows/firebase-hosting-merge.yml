@@ -5,11 +5,12 @@ on:
       - main
     paths:
       - .github/workflows/firebase-hosting-merge.yml
+      - android/**/*
       - assets/**/*
       - docs/**/*
       - lib/**/*
+      - tools/**/*
       - web/**/*
-      - android/**/*
       - pubspec.*
       - firebase.json
       - codecov.yml
