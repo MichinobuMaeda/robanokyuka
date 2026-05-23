@@ -4,9 +4,12 @@ on:
     branches:
       - android
     paths-ignore:
+      - .vscode/**/*
       - docs/**/*
       - functions/**/*
       - web/**/*
+      - firestore.*
+      - storage.*
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
