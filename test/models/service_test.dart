@@ -142,4 +142,81 @@ void main() {
       expect(conf.gengos, isEmpty);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  group('setGengos', () {
+    Future<FakeFirebaseFirestore> makeFirestore() async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('service').doc('conf').set({
+        'uiVersion': '1',
+        'gengos': [],
+      });
+      return firestore;
+    }
+
+    test('returns right(unit) on success', () async {
+      final firestore = await makeFirestore();
+      final result = await setGengos(firestore, []);
+      expect(result.isRight(), isTrue);
+    });
+
+    test('writes gengos fields to Firestore', () async {
+      final firestore = await makeFirestore();
+      await setGengos(firestore, [
+        Gengo(date: Cal(2019, 5, 1), name: '令和', short: 'R'),
+      ]);
+
+      final snap = await firestore.collection('service').doc('conf').get();
+      final written = (snap.data()!['gengos'] as List)
+          .cast<Map<String, dynamic>>();
+      expect(written.length, 1);
+      expect(written[0]['year'], 2019);
+      expect(written[0]['month'], 5);
+      expect(written[0]['day'], 1);
+      expect(written[0]['name'], '令和');
+      expect(written[0]['short'], 'R');
+    });
+
+    test('sorts gengos ascending by date before writing', () async {
+      final firestore = await makeFirestore();
+      await setGengos(firestore, [
+        Gengo(date: Cal(2019, 5, 1), name: '令和', short: 'R'),
+        Gengo(date: Cal(1926, 12, 25), name: '昭和', short: 'S'),
+        Gengo(date: Cal(1989, 1, 8), name: '平成', short: 'H'),
+      ]);
+
+      final snap = await firestore.collection('service').doc('conf').get();
+      final names = (snap.data()!['gengos'] as List)
+          .map((g) => g['name'] as String)
+          .toList();
+      expect(names, ['昭和', '平成', '令和']);
+    });
+
+    test('overwrites existing gengos with empty list', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('service').doc('conf').set({
+        'gengos': [
+          {'year': 2019, 'month': 5, 'day': 1, 'name': '令和', 'short': 'R'},
+        ],
+      });
+
+      await setGengos(firestore, []);
+
+      final snap = await firestore.collection('service').doc('conf').get();
+      expect((snap.data()!['gengos'] as List), isEmpty);
+    });
+
+    test(
+      'returns left with error message when document does not exist',
+      () async {
+        final firestore = FakeFirebaseFirestore(); // no 'conf' doc
+        final result = await setGengos(firestore, []);
+        expect(result.isLeft(), isTrue);
+        result.match(
+          (error) => expect(error, isNotEmpty),
+          (_) => fail('expected left'),
+        );
+      },
+    );
+  });
 }

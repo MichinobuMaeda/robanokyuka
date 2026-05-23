@@ -87,3 +87,6 @@ Future<Either<String, Unit>> deleteHoliday(
     return left('$error');
   }
 }
+
+List<int> selectHolidayYears(List<Holiday> holidays) =>
+    holidays.map((h) => int.parse(h.yyyy)).toSet().toList()..sort();

@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart' show debugPrint;
+import 'package:fpdart/fpdart.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:robanokyuka/config/firebase.dart';
@@ -67,3 +69,32 @@ final confProvider = Provider<Conf?>((ref) {
         )
       : null;
 });
+
+List<String> selectAdmins(Conf? conf) => conf?.admins ?? [];
+
+Future<Either<String, Unit>> setGengos(
+  FirebaseFirestore db,
+  List<Gengo> gengos,
+) async {
+  try {
+    final data = (gengos..sort((a, b) => a.date.compareTo(b.date)))
+        .map(
+          (g) => {
+            'year': g.date.year,
+            'month': g.date.month,
+            'day': g.date.day,
+            'name': g.name,
+            'short': g.short,
+          },
+        )
+        .toList();
+    await db.collection('service').doc('conf').update({
+      'gengos': data,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error setting gengos: $error\n$stackTrace');
+    return left('$error');
+  }
+}

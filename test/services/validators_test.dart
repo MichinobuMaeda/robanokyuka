@@ -233,7 +233,7 @@ void main() {
     });
 
     test('returns error for minutes out of range', () {
-      expect(validateHhmmOptional('08:61'), '分は 00-60 で入力してください');
+      expect(validateHhmmOptional('08:60'), '分は 00-59 で入力してください');
     });
 
     test('returns null for valid "08:00"', () {
@@ -244,8 +244,8 @@ void main() {
       expect(validateHhmmOptional('00:00'), isNull);
     });
 
-    test('returns null for "23:60" (boundary)', () {
-      expect(validateHhmmOptional('23:60'), isNull);
+    test('returns null for "23:59" (boundary)', () {
+      expect(validateHhmmOptional('23:59'), isNull);
     });
   });
 }

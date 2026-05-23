@@ -7,14 +7,7 @@ import 'package:robanokyuka/services/helpers.dart';
 String pad2(int n) => n.toString().padLeft(2, '0');
 
 @visibleForTesting
-int getValidYear(int year) {
-  if (year < 100) {
-    return year + 2000;
-  } else if (year < 1900 || year >= 2100) {
-    return 2000 + (year % 100);
-  }
-  return year;
-}
+int getValidYear(int year) => (year < 100) ? year + 2000 : year;
 
 class Cal implements Comparable<Cal> {
   late int _year;

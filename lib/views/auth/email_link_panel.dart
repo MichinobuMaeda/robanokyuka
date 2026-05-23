@@ -35,10 +35,10 @@ class EmailLinkPanel extends HookConsumerWidget {
         LocalStorage(),
         email.text.trim(),
       );
-      result.match(
-        (error) => message.show("ログイン用のリンクの送信に失敗しました。"),
-        (_) => message.show("ログイン用のリンクを送信しました。"),
-      );
+      result.match((error) => message.show("ログイン用のリンクの送信に失敗しました。"), (_) {
+        email.clear();
+        message.show("ログイン用のリンクを送信しました。");
+      });
     }
 
     return BoxPanel(

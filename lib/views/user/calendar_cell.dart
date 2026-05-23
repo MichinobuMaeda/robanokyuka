@@ -94,7 +94,7 @@ class CalendarCell extends StatelessWidget {
               iconPaidFull
             else if (dateRecord.used.seconds > 0)
               iconPaidHalf
-            else if (dateRecord.plan.seconds > 0)
+            else if (dateRecord.plan.seconds > 0 || dateRecord.plan.all)
               iconPaidEmpty
             else if (dateRecord.companyHoliday)
               iconCompanyHoliday
@@ -234,10 +234,11 @@ class _DayCellSheet extends HookConsumerWidget {
                   ),
                   child: TextField(
                     controller: noteCtrl,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
                       labelText: '備考',
                     ),
+                    maxLength: maxNoteLength,
                   ),
                 ),
               ],

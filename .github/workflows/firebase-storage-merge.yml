@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - .github/workflows/firebase-storage-merge.yml
+      - .firebaserc
       - firebase.json
       - storage.rules
 jobs:

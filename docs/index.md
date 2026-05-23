@@ -42,4 +42,4 @@
 
 [中の人 #1](https://pages.michinobu.jp)
 
-[» 開発](./development.md)
+[» Development](./development.md)

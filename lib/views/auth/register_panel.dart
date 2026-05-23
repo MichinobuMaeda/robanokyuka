@@ -31,10 +31,11 @@ class RegisterPanel extends HookConsumerWidget {
         email.text.trim(),
         password.text,
       );
-      result.match(
-        (error) => message.show("登録に失敗しました。"),
-        (_) => message.show("登録しました。"),
-      );
+      result.match((error) => message.show("登録に失敗しました。"), (_) {
+        password.clear();
+        confirmPassword.clear();
+        message.show("登録しました。");
+      });
     }
 
     return BoxPanel(

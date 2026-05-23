@@ -29,10 +29,10 @@ class EmailPasswordPanel extends HookConsumerWidget {
         email.text.trim(),
         password.text,
       );
-      result.match(
-        (error) => message.show("ログインに失敗しました。"),
-        (_) => message.show("ログインしました。"),
-      );
+      result.match((error) => message.show("ログインに失敗しました。"), (_) {
+        password.clear();
+        message.show("ログインしました。");
+      });
     }
 
     return BoxPanel(

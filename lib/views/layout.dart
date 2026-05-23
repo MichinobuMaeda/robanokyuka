@@ -22,6 +22,7 @@ import 'package:robanokyuka/views/auth/federated_auth_panel.dart';
 import 'package:robanokyuka/views/auth/register_panel.dart';
 import 'package:robanokyuka/views/auth/sign_out_panel.dart';
 import 'package:robanokyuka/views/admin/holidays_panel.dart';
+import 'package:robanokyuka/views/admin/gengos_panel.dart';
 import 'package:robanokyuka/views/admin/users_panel.dart';
 import 'package:robanokyuka/views/user/calendar_panel.dart';
 import 'package:robanokyuka/views/user/edit_profile_panel.dart';
@@ -57,7 +58,7 @@ List<Widget> getContents(PageItem pageItem) => switch (pageItem) {
     ChangeEmailPanel(),
     DeleteUserPanel(),
   ],
-  PageItem.admin => [UsersPanel(), HolidaysPanel()],
+  PageItem.admin => [UsersPanel(), HolidaysPanel(), GengosPanel()],
   PageItem.info => [MarkdownPanel(asset: assetInfoMd)],
 };
 

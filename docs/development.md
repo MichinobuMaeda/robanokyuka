@@ -2,7 +2,7 @@
 
 [« 概要](./index.md)
 
-## 開発
+## Development
 
 ### Prerequisites
 
@@ -46,6 +46,7 @@ npm run dev:web
 npm run dev:chrome
 npm run dev:edge
 npm run dev:android
+flutter devices | grep ios
 npm run dev -- -d [device-id]
 ```
 
@@ -56,5 +57,51 @@ Update test data of Firebase Emulators saved at `test/emulators`
 ```bash
 npm run emulators:data
 ```
+
+### Cloud Storage
+
+- service
+    - conf
+        - admins [array]
+            - [User ID]
+        - gengos [array]
+            - [object]
+                - year [number]
+                - month [number] 1-12
+                - day [number]
+                - name [string]
+                - short [string]
+        - uiVersion [string]
+        - createdAt [timestamp]
+        - updatedAt [timestamp]
+    - version
+        - version [number]
+        - createdAt [timestamp]
+    - y[Year]
+        - [MMDD] [string] Name of a national holiday
+        - updatedAt [timestamp]
+- users
+    - [User ID]
+        - records [collection]
+            - [Record ID]
+                - from [string] YYYYMMDD
+                - to [string] YYYYMMDD
+                - holidays [array]
+                    - [boolean] Sunday (Default: true)
+                    - [boolean] Monday (Default: false)
+                    - [boolean] Tuesday (Default: false)
+                    - [boolean] Wednesday (Default: false)
+                    - [boolean] Thursday (Default: false)
+                    - [boolean] Friday (Default: false)
+                    - [boolean] Saturday (Default: true)
+                    - [boolean] National holidays (Default: true)
+                - givenLeaves [number] (Default: 10)
+                - minLeaves [number] (Default: 5)
+                - useLeaveHourly [boolean] HH:MM (Default: "08:00")
+                - createdAt [timestamp]
+                - updatedAt [timestamp]
+        - name [string]
+        - createdAt [timestamp]
+        - updatedAt [timestamp]
 
 [» Deployment](./deployment.md)

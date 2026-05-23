@@ -3,17 +3,19 @@ on:
   push:
     branches:
       - main
-    paths:
-      - .github/workflows/firebase-hosting-merge.yml
+    paths-ignore:
+      - .github/workflows/firebase-android-merge.yml
+      - .github/workflows/firebase-firestore-merge.yml
+      - .github/workflows/firebase-functions-merge.yml
+      - .github/workflows/firebase-hosting-pull-request.yml
+      - .github/workflows/firebase-storage-merge.yml
+      - .vscode/**/*
+      - functions/**/*
       - android/**/*
-      - assets/**/*
-      - docs/**/*
-      - lib/**/*
-      - tools/**/*
-      - web/**/*
-      - pubspec.*
-      - firebase.json
-      - codecov.yml
+      - ios/**/*
+      - test/**/*
+      - firestore.*
+      - storage.*
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
@@ -26,17 +28,14 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Test Flutter
-        run: flutter test --coverage
+      - run: flutter pub get
+      - run: flutter test --coverage
       - name: Install lcov
         run: sudo apt-get install -y lcov
       - name: Filter Flutter coverage
@@ -68,23 +67,3 @@ jobs:
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_ROBANOKYUKA }}' \
           > $GOOGLE_APPLICATION_CREDENTIALS
           npx firebase firestore:delete -f service/version
-
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          java-version: "17"
-          distribution: "temurin"
-      - name: Write google-services.json
-        run: |
-          echo '${{ secrets.GOOGLE_SERVICES_JSON_ROBANOKYUKA }}' \
-            > android/app/google-services.json
-      - name: Build APK
-        run: flutter build apk
-      - name: Upload to Firebase App Distribution
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
-        run: |
-          npx firebase appdistribution:distribute \
-            build/app/outputs/flutter-apk/app-release.apk \
-            --app ${{ secrets.FIREBASE_ANDROID_APP_ID_ROBANOKYUKA }} \
-            --release-notes "Build from ${{ github.sha }}"

@@ -45,7 +45,7 @@ enum PageItem {
 final privilegeProvider = Provider<Privilege>((ref) {
   final authUser = ref.watch(authUserProvider);
   final service = ref.watch(serviceProvider);
-  final admins = ref.watch(confProvider.select((conf) => conf?.admins ?? []));
+  final admins = ref.watch(confProvider.select(selectAdmins));
 
   return authUser.isLoading || service.isLoading
       ? Privilege.loading

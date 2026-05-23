@@ -5,8 +5,9 @@ on:
       - main
     paths:
       - .github/workflows/firebase-firestore-merge.yml
+      - .firebaserc
       - firebase.json
-      - firestore.rules
+      - firestore.*
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest

@@ -18,16 +18,17 @@ class HolidaysPanel extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedYear = useState(DateTime.now().year);
     final holidays = ref.watch(holidaysProvider);
+    final years = ref.watch(holidaysProvider.select(selectHolidayYears));
     final nengo = ref.watch(nengoProvider);
-
-    final years = holidays.map((h) => int.parse(h.yyyy)).toSet().toList()
-      ..sort();
-    if (!years.contains(selectedYear.value)) {
-      years.add(selectedYear.value);
-      years.sort();
-    }
+    final thisYear = DateTime.now().year;
+    final selectedYear = useState(
+      years.isEmpty
+          ? 0
+          : (thisYear < years.first
+                ? years.first
+                : (thisYear > years.last ? years.last : thisYear)),
+    );
 
     final filtered = holidays
         .where((holiday) => int.parse(holiday.yyyy) == selectedYear.value)

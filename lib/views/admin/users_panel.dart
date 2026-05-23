@@ -16,13 +16,8 @@ class UsersPanel extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final usersAsync = ref.watch(usersProvider);
-    usersAsync.whenOrNull(
-      error: (e, st) => debugPrint('usersProvider error: $e\n$st'),
-    );
-    final users = usersAsync.asData?.value ?? [];
-    debugPrint('users: ${users.length}');
-    final admins = ref.watch(confProvider.select((conf) => conf?.admins ?? []));
+    final users = ref.watch(usersProvider).asData?.value ?? [];
+    final admins = ref.watch(confProvider.select(selectAdmins));
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {

@@ -42,10 +42,10 @@ class PasswordReauthenticatePanel extends HookConsumerWidget {
         authUser!.email!,
         value,
       );
-      result.match(
-        (error) => message.show("再認証に失敗しました。"),
-        (_) => message.show("再認証に成功しました。"),
-      );
+      result.match((error) => message.show("再認証に失敗しました。"), (_) {
+        password.clear();
+        message.show("再認証に成功しました。");
+      });
     }
 
     return BoxPanel(

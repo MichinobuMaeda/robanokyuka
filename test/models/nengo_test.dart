@@ -57,15 +57,13 @@ void main() {
       expect(nengo.formatYear(Cal(1989, 1, 8), short: true), 'H1');
     });
 
-    // Cal(1800,1,1) is remapped to Cal(2000,1,1) by getValidYear, which falls
-    // inside 平成. The earliest valid era in gengos() is 大正 (1912-07-30).
-    // Use 1912-07-29 — one day before 大正 and before 明治 (remapped to 2068).
+    // 明治 starts at Cal(1868, 1, 25); use the day before.
     test('returns Gregorian year string for a date before any era', () {
-      expect(nengo.formatYear(Cal(1912, 7, 29)), '1912');
+      expect(nengo.formatYear(Cal(1868, 1, 24)), '1868');
     });
 
     test('returns Gregorian year when short: true and date before any era', () {
-      expect(nengo.formatYear(Cal(1912, 7, 29), short: true), '1912');
+      expect(nengo.formatYear(Cal(1868, 1, 24), short: true), '1868');
     });
 
     test('returns Gregorian year string when gengos is empty', () {
@@ -188,31 +186,25 @@ void main() {
       expect(nengo.parseDate('20991231'), Cal(2099, 12, 31));
     });
 
-    test(
-      '8-digit: year < 1900 → remapped by getValidYear, not null (1899 → 2099)',
-      () {
-        final cal = nengo.parseDate('18991231');
-        expect(cal?.year, 2099);
-        expect(cal?.month, 12);
-        expect(cal?.day, 31);
-      },
-    );
+    test('8-digit: year 1899 is kept as-is', () {
+      final cal = nengo.parseDate('18991231');
+      expect(cal?.year, 1899);
+      expect(cal?.month, 12);
+      expect(cal?.day, 31);
+    });
 
-    test(
-      '8-digit: year ≥ 2100 → remapped by getValidYear, not null (2100 → 2000)',
-      () {
-        expect(nengo.parseDate('21000101'), Cal(2000, 1, 1));
-      },
-    );
+    test('8-digit: year 2100 is kept as-is', () {
+      expect(nengo.parseDate('21000101'), Cal(2100, 1, 1));
+    });
 
     test('8-digit: invalid month 0 → DateTime normalization, not null', () {
-      // Cal(1900, 0, 1) → DateTime(1900,0,1) → 1899-12-01 → getValidYear(1899)=2099
-      expect(nengo.parseDate('19000001'), Cal(2099, 12, 1));
+      // Cal(1900, 0, 1) → DateTime(1900,0,1) → 1899-12-01 → getValidYear(1899)=1899
+      expect(nengo.parseDate('19000001'), Cal(1899, 12, 1));
     });
 
     test('8-digit: invalid day 0 → DateTime normalization, not null', () {
-      // Cal(1900, 1, 0) → DateTime(1900,1,0) → 1899-12-31 → getValidYear(1899)=2099
-      expect(nengo.parseDate('19000100'), Cal(2099, 12, 31));
+      // Cal(1900, 1, 0) → DateTime(1900,1,0) → 1899-12-31 → getValidYear(1899)=1899
+      expect(nengo.parseDate('19000100'), Cal(1899, 12, 31));
     });
 
     test('8-digit: Feb 29 in leap year (2000)', () {
@@ -272,23 +264,17 @@ void main() {
     });
 
     // --- Era-format strings (non-digit prefix) ---
-    // gengos() Cal(1868,1,25) is remapped to year 2068 by the Cal constructor.
-    // So 明治 baseYear = 2068.
-    // 明治45: 2068 + 45 - 1 = 2112 → getValidYear(2112) = 2000+(2112%100) = 2012
-    test(
-      "'明治45年1月1日' returns Cal(2012, 1, 1) (明治 baseYear remapped to 2068)",
-      () {
-        expect(nengo.parseDate('明治45年1月1日'), Cal(2012, 1, 1));
-      },
-    );
+    // gengos() Cal(1868, 1, 25) → year 1868 (getValidYear only remaps year < 100).
+    // So 明治 baseYear = 1868.
+    // 明治45: 1868 + 45 - 1 = 1912
+    test("'明治45年1月1日' returns Cal(1912, 1, 1)", () {
+      expect(nengo.parseDate('明治45年1月1日'), Cal(1912, 1, 1));
+    });
 
-    // 明治1: 2068 + 1 - 1 = 2068 → Cal(2068, 1, 1) (valid, not remapped)
-    test(
-      "'明治1年1月1日' returns Cal(2068, 1, 1) (明治 baseYear remapped to 2068)",
-      () {
-        expect(nengo.parseDate('明治1年1月1日'), Cal(2068, 1, 1));
-      },
-    );
+    // 明治1: 1868 + 1 - 1 = 1868
+    test("'明治1年1月1日' returns Cal(1868, 1, 1)", () {
+      expect(nengo.parseDate('明治1年1月1日'), Cal(1868, 1, 1));
+    });
 
     // 大正元年: 元→1 → 大正1: 1912 + 1 - 1 = 1912
     test("'大正元年1月1日' returns Cal(1912, 1, 1)", () {

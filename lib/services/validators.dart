@@ -7,6 +7,7 @@ import 'package:robanokyuka/models/nengo.dart';
 final _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 final minPasswordLength = 10;
 final maxPasswordLength = 4096;
+final maxNoteLength = 100;
 
 String? validateRequired(String? value) {
   if (value == null || value.trim().isEmpty) {
@@ -100,6 +101,6 @@ String? validateHhmmOptional(String? value) {
   final mm = int.tryParse(parts[1]);
   if (hh == null || mm == null) return 'H:MM の形式で入力してください';
   if (hh < 0 || hh > 23) return '時は 0-23 で入力してください';
-  if (mm < 0 || mm > 60) return '分は 00-60 で入力してください';
+  if (mm < 0 || mm > 59) return '分は 00-59 で入力してください';
   return null;
 }

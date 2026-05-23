@@ -163,4 +163,44 @@ service cloud.firestore {
       expect(result.isLeft(), isTrue);
     });
   });
+
+  // ---------------------------------------------------------------------------
+  group('selectHolidayYears', () {
+    test('returns empty list when holidays is empty', () {
+      expect(selectHolidayYears([]), isEmpty);
+    });
+
+    test('returns the single year for a one-holiday list', () {
+      final holidays = [Holiday.fromString('20240101', name: '元日')];
+      expect(selectHolidayYears(holidays), [2024]);
+    });
+
+    test('deduplicates holidays in the same year', () {
+      final holidays = [
+        Holiday.fromString('20240101', name: '元日'),
+        Holiday.fromString('20240503', name: '憲法記念日'),
+        Holiday.fromString('20241103', name: '文化の日'),
+      ];
+      expect(selectHolidayYears(holidays), [2024]);
+    });
+
+    test('returns multiple years sorted ascending', () {
+      final holidays = [
+        Holiday.fromString('20260101', name: '元日'),
+        Holiday.fromString('20240503', name: '憲法記念日'),
+        Holiday.fromString('20250101', name: '元日'),
+      ];
+      expect(selectHolidayYears(holidays), [2024, 2025, 2026]);
+    });
+
+    test('deduplicates across years', () {
+      final holidays = [
+        Holiday.fromString('20240101', name: '元日'),
+        Holiday.fromString('20240503', name: '憲法記念日'),
+        Holiday.fromString('20250101', name: '元日'),
+        Holiday.fromString('20250503', name: '憲法記念日'),
+      ];
+      expect(selectHolidayYears(holidays), [2024, 2025]);
+    });
+  });
 }

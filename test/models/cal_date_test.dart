@@ -18,22 +18,16 @@ void main() {
       expect(getValidYear(99), 2099);
     });
 
-    test('100 ≤ year < 1900 → 2000 + (year % 100)', () {
-      expect(getValidYear(100), 2000);
-      expect(getValidYear(1800), 2000);
-      expect(getValidYear(1899), 2099);
-    });
-
-    test('1900 ≤ year < 2100 → unchanged', () {
+    test('year ≥ 100 → unchanged', () {
+      expect(getValidYear(100), 100);
+      expect(getValidYear(1800), 1800);
+      expect(getValidYear(1899), 1899);
       expect(getValidYear(1900), 1900);
       expect(getValidYear(2000), 2000);
       expect(getValidYear(2099), 2099);
-    });
-
-    test('year ≥ 2100 → 2000 + (year % 100)', () {
-      expect(getValidYear(2100), 2000);
-      expect(getValidYear(2126), 2026);
-      expect(getValidYear(2999), 2099);
+      expect(getValidYear(2100), 2100);
+      expect(getValidYear(2126), 2126);
+      expect(getValidYear(2999), 2999);
     });
   });
 
@@ -70,12 +64,12 @@ void main() {
       expect(Cal(99, 1, 1).year, 2099);
     });
 
-    test('applies getValidYear: year 1899 → 2099', () {
-      expect(Cal(1899, 6, 15).year, 2099);
+    test('year ≥ 100 stays unchanged: 1899 → 1899', () {
+      expect(Cal(1899, 6, 15).year, 1899);
     });
 
-    test('applies getValidYear: year 2100 → 2000', () {
-      expect(Cal(2100, 3, 1).year, 2000);
+    test('year ≥ 100 stays unchanged: 2100 → 2100', () {
+      expect(Cal(2100, 3, 1).year, 2100);
     });
   });
 
@@ -100,16 +94,16 @@ void main() {
       expect(Cal.fromString('20991231'), Cal(2099, 12, 31));
     });
 
-    test('8-digit: year < 1900 → getValidYear remaps (1899 → 2099)', () {
+    test('8-digit: year 1899 is kept as-is', () {
       final cal = Cal.fromString('18991231');
-      expect(cal.year, 2099);
+      expect(cal.year, 1899);
       expect(cal.month, 12);
       expect(cal.day, 31);
     });
 
-    test('8-digit: year ≥ 2100 → getValidYear remaps (2100 → 2000)', () {
+    test('8-digit: year 2100 is kept as-is', () {
       final cal = Cal.fromString('21000101');
-      expect(cal.year, 2000);
+      expect(cal.year, 2100);
       expect(cal.month, 1);
       expect(cal.day, 1);
     });
@@ -225,9 +219,8 @@ void main() {
       expect(Cal.fromDateTime(DateTime(2024, 6, 15)), Cal(2024, 6, 15));
     });
 
-    test('applies getValidYear to the DateTime year', () {
-      // DateTime year 2100 → getValidYear → 2000
-      expect(Cal.fromDateTime(DateTime(2100, 1, 1)).year, 2000);
+    test('year ≥ 100 stays unchanged via fromDateTime', () {
+      expect(Cal.fromDateTime(DateTime(2100, 1, 1)).year, 2100);
     });
   });
 

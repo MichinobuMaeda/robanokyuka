@@ -86,8 +86,13 @@
   "markdownlint.ignore": [
     ".metadata"
   ],
+  "[markdown]": {
+    "editor.tabSize": 4
+  },
   "markdownlint.config": {
+    "MD007": { "indent": 4 },
     "MD033": false,
     "MD041": false
-  }
+  },
+  "dart.analysisExcludedFolders": ["build"]
 }
