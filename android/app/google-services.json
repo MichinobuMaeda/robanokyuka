@@ -1,20 +1,28 @@
 {
   "project_info": {
     "project_number": "000000000000",
-    "project_id": "appname",
-    "storage_bucket": "appname.firebasestorage.app"
+    "project_id": "robanokyuka",
+    "storage_bucket": "robanokyuka.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
         "android_client_info": {
-          "package_name": "com.example.appname"
+          "package_name": "jp.michinobu.robanokyuka"
         }
       },
       "oauth_client": [
         {
-          "client_id": "000000000000-qi519prahud62aokvm48h000bt41cfo8.apps.googleusercontent.com",
+          "client_id": "000000000000-00000000000000000000000000000001.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "jp.michinobu.robanokyuka",
+            "certificate_hash": "0000000000000000000000000000000000000000"
+          }
+        },
+        {
+          "client_id": "000000000000-00000000000000000000000000000003.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -27,8 +35,15 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "000000000000-qi519prahud62aokvm48h000bt41cfo8.apps.googleusercontent.com",
+              "client_id": "000000000000-00000000000000000000000000000003.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "000000000000-00000000000000000000000000000002.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "jp.michinobu.robanokyuka"
+              }
             }
           ]
         }
