@@ -61,6 +61,8 @@
     "ios/**/*",
     "build/*",
     "**/package-lock.json",
+    "lib/config/firebase_config.dart",
+    "lib/config/google_server_client_id.dart",
     "pubspec.lock"
   ],
   "editor.formatOnSave": true,

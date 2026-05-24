@@ -48,7 +48,10 @@ class _Header extends HookConsumerWidget {
     final message = ref.read(snackBarMessageProvider.notifier);
 
     Future<void> handleAdd(Gengo gengo) async {
-      final result = await setGengos(db(), [...gengos, gengo]);
+      final result = await setGengos(ref.read(firestoreProvider), [
+        ...gengos,
+        gengo,
+      ]);
       result.match(
         (error) => message.show('元号の追加に失敗しました: $error'),
         (_) => message.show('元号を追加しました'),
@@ -84,7 +87,7 @@ class _Item extends HookConsumerWidget {
 
     Future<void> handleDelete() async {
       final updated = gengos.where((g) => g != gengo).toList();
-      final result = await setGengos(db(), updated);
+      final result = await setGengos(ref.read(firestoreProvider), updated);
       result.match(
         (error) => message.show('元号の削除に失敗しました: $error'),
         (_) => message.show('元号を削除しました'),
@@ -101,7 +104,7 @@ class _Item extends HookConsumerWidget {
 
     Future<void> handleEdit(Gengo updated) async {
       final list = gengos.map((g) => g == gengo ? updated : g).toList();
-      final result = await setGengos(db(), list);
+      final result = await setGengos(ref.read(firestoreProvider), list);
       result.match(
         (error) => message.show('元号の更新に失敗しました: $error'),
         (_) => message.show('元号を更新しました'),

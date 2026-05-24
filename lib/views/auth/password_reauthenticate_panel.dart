@@ -38,7 +38,7 @@ class PasswordReauthenticatePanel extends HookConsumerWidget {
       final value = password.text;
       password.value = TextEditingValue.empty;
       final result = await reauthenticateWithPassword(
-        auth(),
+        ref.read(authProvider),
         authUser!.email!,
         value,
       );

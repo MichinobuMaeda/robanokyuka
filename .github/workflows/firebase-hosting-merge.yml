@@ -49,10 +49,13 @@ jobs:
 
       - name: Set firebase api key
         run: |
-          sed 's/FIREBASE_API_KEY/${{ secrets.FIREBASE_API_KEY_ROBANOKYUKA }}/' \
-            -i lib/config/firebase.dart
+          echo '${{ secrets.FIREBASE_CONFIG_ROBANOKYUKA }}' \
+          > lib/config/firebase_config.dart
       - name: Build web
-        run: dart tools/md2html.dart && dart tools/set_ui_version.dart && flutter build web --no-tree-shake-icons
+        run: |
+          dart tools/md2html.dart \
+          && dart tools/set_ui_version.dart \
+          && flutter build web --no-tree-shake-icons
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

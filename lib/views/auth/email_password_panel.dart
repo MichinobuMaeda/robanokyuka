@@ -25,7 +25,7 @@ class EmailPasswordPanel extends HookConsumerWidget {
     Future<void> handleSubmit() async {
       message.clear();
       final result = await signInWithEmailAndPassword(
-        auth(),
+        ref.read(authProvider),
         email.text.trim(),
         password.text,
       );

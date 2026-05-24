@@ -74,7 +74,7 @@ class _Header extends HookConsumerWidget {
     final message = ref.read(snackBarMessageProvider.notifier);
 
     Future<void> handleAdd(Holiday holiday) async {
-      final result = await setHoliday(db(), holiday);
+      final result = await setHoliday(ref.read(firestoreProvider), holiday);
       result.match(
         (error) => message.show('祝日の追加に失敗しました: $error'),
         (_) => message.show('祝日を追加しました'),
@@ -140,7 +140,7 @@ class _Item extends HookConsumerWidget {
     final message = ref.read(snackBarMessageProvider.notifier);
 
     Future<void> handleDelete() async {
-      final result = await deleteHoliday(db(), holiday);
+      final result = await deleteHoliday(ref.read(firestoreProvider), holiday);
       result.match(
         (error) => message.show('祝日の削除に失敗しました: $error'),
         (_) => message.show('祝日を削除しました'),
@@ -148,7 +148,10 @@ class _Item extends HookConsumerWidget {
     }
 
     Future<void> handleUpdateName(String name) async {
-      final result = await setHoliday(db(), holiday.copyWith(name: name));
+      final result = await setHoliday(
+        ref.read(firestoreProvider),
+        holiday.copyWith(name: name),
+      );
       result.match(
         (error) => message.show('祝日の更新に失敗しました: $error'),
         (_) => message.show('祝日を更新しました'),

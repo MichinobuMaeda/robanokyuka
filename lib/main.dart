@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:robanokyuka/config/firebase.dart';
@@ -18,7 +19,7 @@ void main() async {
   await initializeFirebase();
   if (kIsWeb) {
     final url = Uri.base.toString();
-    if (await handleEmailLink(auth(), LocalStorage(), url)) {
+    if (await handleEmailLink(FirebaseAuth.instance, LocalStorage(), url)) {
       await launchUrl(Uri.parse(getBaseUrl(url)), webOnlyWindowName: '_self');
     }
   }
@@ -31,7 +32,11 @@ class MyApp extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Future(() => ref.read(firebaseAuthProvider.notifier).setAuth(auth()));
+    Future(
+      () => ref
+          .read(firebaseAuthProvider.notifier)
+          .setAuth(ref.read(authProvider)),
+    );
     final themeMode = ref.watch(
       userProvider.select((user) => user?.themeMode ?? ThemeMode.system),
     );

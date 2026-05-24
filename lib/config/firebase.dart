@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,23 +7,30 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
-const emailFrom = "noreply@robanokyuka.firebaseapp.com";
+import 'firebase_config.dart';
 
+const String emailFrom = "noreply@robanokyuka.firebaseapp.com";
 const String functionsRegion = 'asia-northeast2';
-
-FirebaseOptions firebaseConfig = FirebaseOptions(
-  apiKey: "FIREBASE_API_KEY",
-  authDomain: "robanokyuka.firebaseapp.com",
-  projectId: "robanokyuka",
-  storageBucket: "robanokyuka.firebasestorage.app",
-  messagingSenderId: "506698003908",
-  appId: "1:506698003908:web:17437702a35ccbfbdf2091",
-  measurementId: "G-0YGD503CHF",
-);
+final String emulatorHost = kIsWeb
+    ? 'localhost'
+    : (Platform.isAndroid ? '10.0.2.2' : 'localhost');
+const int emulatorAuthPort = 9099;
+const int emulatorFirestorePort = 8080;
+const int emulatorFunctionsPort = 5001;
 
 Future<void> initializeFirebase() async {
   try {
-    await Firebase.initializeApp(options: firebaseConfig);
+    await Firebase.initializeApp(
+      options: FirebaseOptions(
+        apiKey: firebaseConfig['apiKey']!,
+        authDomain: firebaseConfig['authDomain']!,
+        projectId: firebaseConfig['projectId']!,
+        storageBucket: firebaseConfig['storageBucket']!,
+        messagingSenderId: firebaseConfig['messagingSenderId']!,
+        appId: firebaseConfig['appId']!,
+        measurementId: firebaseConfig['measurementId']!,
+      ),
+    );
   } on FirebaseException catch (e) {
     if (e.code != 'duplicate-app') rethrow;
   }
@@ -29,21 +38,23 @@ Future<void> initializeFirebase() async {
   await FirebaseAuth.instance.setLanguageCode("ja");
 
   if (kDebugMode) {
-    String host = defaultTargetPlatform == TargetPlatform.android
-        ? '10.0.2.2'
-        : 'localhost';
     try {
-      await FirebaseAuth.instance.useAuthEmulator(host, 9099);
-      FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
+      await FirebaseAuth.instance.useAuthEmulator(
+        emulatorHost,
+        emulatorAuthPort,
+      );
+      FirebaseFirestore.instance.useFirestoreEmulator(
+        emulatorHost,
+        emulatorFirestorePort,
+      );
       FirebaseFunctions.instanceFor(
         region: functionsRegion,
-      ).useFunctionsEmulator(host, 5001);
+      ).useFunctionsEmulator(emulatorHost, emulatorFunctionsPort);
     } catch (_) {}
   }
 }
 
-FirebaseAuth auth() => FirebaseAuth.instance;
-FirebaseFirestore db() => FirebaseFirestore.instance;
+final authProvider = Provider<FirebaseAuth>((ref) => FirebaseAuth.instance);
 
 final firestoreProvider = Provider<FirebaseFirestore>(
   (ref) => FirebaseFirestore.instance,
@@ -54,6 +65,7 @@ typedef CallFunction =
       String name,
       Map<String, dynamic> data,
     );
+
 Future<Map<String, dynamic>> callFunction(
   String name,
   Map<String, dynamic> data,

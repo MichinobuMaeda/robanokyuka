@@ -7,3 +7,5 @@ bool get isStandaloneWebApp =>
         (web.window.navigator as dynamic).standalone == true;
 
 void updateAppImpl() => web.window.location.reload();
+
+Future<String> getGoogleIdTokenImpl() async => '';

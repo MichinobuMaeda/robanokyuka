@@ -80,7 +80,7 @@ class Layout extends HookConsumerWidget {
 
     if (ref.watch(serviceProvider).hasError) {
       debugPrint('Error loading service: ${ref.watch(serviceProvider).error}');
-      signOut(auth());
+      signOut(ref.read(authProvider));
     }
 
     ref.listen<String?>(snackBarMessageProvider, (previous, next) {
