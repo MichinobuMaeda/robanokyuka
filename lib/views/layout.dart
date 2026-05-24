@@ -74,7 +74,7 @@ class Layout extends HookConsumerWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final uiVersion = ref.watch(confProvider.select((conf) => conf?.uiVersion));
+    final uiVersion = ref.watch(confProvider.select(selectUiVersion));
     final selectedIndex = useState(0);
     final selectedPage = useState(pages.first);
 
@@ -141,7 +141,7 @@ class Layout extends HookConsumerWidget {
                   child: CustomScrollView(
                     slivers: [
                       if (media() != MediaSize.wide) const _Header(),
-                      if (uiVersion != null && uiVersion != packageVersion)
+                      if (isUpdateAvailable(packageVersion, uiVersion))
                         const _UpdateAvailable(),
                       ...getContents(selectedPage.value),
                       const _Footer(),

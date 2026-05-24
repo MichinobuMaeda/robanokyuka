@@ -71,6 +71,7 @@ final confProvider = Provider<Conf?>((ref) {
 });
 
 List<String> selectAdmins(Conf? conf) => conf?.admins ?? [];
+String? selectUiVersion(Conf? conf) => conf?.uiVersion;
 
 Future<Either<String, Unit>> setGengos(
   FirebaseFirestore db,

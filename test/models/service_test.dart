@@ -219,4 +219,21 @@ void main() {
       },
     );
   });
+
+  // ---------------------------------------------------------------------------
+  group('selectUiVersion', () {
+    test('returns null when conf is null', () {
+      expect(selectUiVersion(null), isNull);
+    });
+
+    test('returns uiVersion from conf', () {
+      final conf = Conf(admins: [], gengos: [], uiVersion: '1.2.3+4');
+      expect(selectUiVersion(conf), '1.2.3+4');
+    });
+
+    test('returns empty string when uiVersion is empty', () {
+      final conf = Conf(admins: [], gengos: [], uiVersion: '');
+      expect(selectUiVersion(conf), '');
+    });
+  });
 }
