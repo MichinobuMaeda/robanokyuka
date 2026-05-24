@@ -36,10 +36,10 @@ jobs:
 
       - run: flutter pub get
       - run: dart tools/set_ui_version.dart
-      - name: Set firebase api key
-        run: |
-          echo '${{ secrets.FIREBASE_CONFIG_ROBANOKYUKA }}' \
-          > lib/config/firebase_config.dart
+      - name: Set firebase config
+        env:
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG_ROBANOKYUKA }}
+        run: echo "$FIREBASE_CONFIG" > lib/config/firebase_config.dart
       - run: flutter test --coverage
       - name: Filter Flutter coverage
         run: |
