@@ -35,11 +35,16 @@ jobs:
           channel: stable
 
       - run: flutter pub get
+      - run: dart tools/set_ui_version.dart
+      - name: Set firebase api key
+        run: |
+          echo '${{ secrets.FIREBASE_CONFIG_ROBANOKYUKA }}' \
+          > lib/config/firebase_config.dart
       - run: flutter test --coverage
-      - name: Install lcov
-        run: sudo apt-get install -y lcov
       - name: Filter Flutter coverage
-        run: lcov --extract coverage/lcov.info 'lib/models/*' 'lib/services/*' --output-file coverage/lcov.info
+        run: |
+          sudo apt-get install -y lcov && \
+          lcov --extract coverage/lcov.info 'lib/models/*' 'lib/services/*' --output-file coverage/lcov.info
       - name: Upload Flutter coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -47,15 +52,8 @@ jobs:
           files: coverage/lcov.info
           flags: flutter
 
-      - name: Set firebase api key
-        run: |
-          echo '${{ secrets.FIREBASE_CONFIG_ROBANOKYUKA }}' \
-          > lib/config/firebase_config.dart
-      - name: Build web
-        run: |
-          dart tools/md2html.dart \
-          && dart tools/set_ui_version.dart \
-          && flutter build web --no-tree-shake-icons
+      - run: flutter build web --no-tree-shake-icons
+      - run: dart tools/md2html.dart
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
