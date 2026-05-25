@@ -27,7 +27,15 @@ ProviderContainer _makeContainer({
       ),
       serviceProvider.overrideWith((_) => Stream.value(service.asData?.value)),
       confProvider.overrideWithValue(
-        admins.isEmpty ? null : Conf(admins: admins, gengos: [], uiVersion: ''),
+        admins.isEmpty
+            ? null
+            : Conf(
+                admins: admins,
+                gengos: [],
+                uiVersion: '',
+                androidVersion: '0.0.0+0',
+                iosVersion: '0.0.0+0',
+              ),
       ),
     ],
   );

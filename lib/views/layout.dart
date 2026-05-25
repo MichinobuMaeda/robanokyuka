@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import 'package:robanokyuka/config/firebase.dart';
 import 'package:robanokyuka/config/theme.dart';
@@ -23,11 +22,13 @@ import 'package:robanokyuka/views/auth/register_panel.dart';
 import 'package:robanokyuka/views/auth/sign_out_panel.dart';
 import 'package:robanokyuka/views/admin/holidays_panel.dart';
 import 'package:robanokyuka/views/admin/gengos_panel.dart';
+import 'package:robanokyuka/views/admin/ui_versions.dart';
 import 'package:robanokyuka/views/admin/users_panel.dart';
 import 'package:robanokyuka/views/user/calendar_panel.dart';
 import 'package:robanokyuka/views/user/edit_profile_panel.dart';
 import 'package:robanokyuka/views/user/record_panel.dart';
 import 'package:robanokyuka/views/user/summary_panel.dart';
+import 'package:robanokyuka/views/update_available_panel.dart';
 import 'package:robanokyuka/widgets/markdown_panel.dart';
 
 enum MediaSize { narrow, middle, wide }
@@ -58,7 +59,12 @@ List<Widget> getContents(PageItem pageItem) => switch (pageItem) {
     ChangeEmailPanel(),
     DeleteUserPanel(),
   ],
-  PageItem.admin => [UsersPanel(), HolidaysPanel(), GengosPanel()],
+  PageItem.admin => [
+    UiVersionsPanel(),
+    UsersPanel(),
+    HolidaysPanel(),
+    GengosPanel(),
+  ],
   PageItem.info => [MarkdownPanel(asset: assetInfoMd)],
 };
 
@@ -74,7 +80,6 @@ class Layout extends HookConsumerWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final uiVersion = ref.watch(confProvider.select(selectUiVersion));
     final selectedIndex = useState(0);
     final selectedPage = useState(pages.first);
 
@@ -141,8 +146,7 @@ class Layout extends HookConsumerWidget {
                   child: CustomScrollView(
                     slivers: [
                       if (media() != MediaSize.wide) const _Header(),
-                      if (isUpdateAvailable(packageVersion, uiVersion))
-                        const _UpdateAvailable(),
+                      const UpdateAvailablePanel(),
                       ...getContents(selectedPage.value),
                       const _Footer(),
                     ],
@@ -173,42 +177,6 @@ class _Header extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.all(8.0),
         child: SvgPicture.asset(assetAppLogo, height: 48.0),
-      ),
-    );
-  }
-}
-
-class _UpdateAvailable extends StatelessWidget {
-  const _UpdateAvailable();
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: EdgeInsets.all(4.0),
-        child: FilledButton(
-          onPressed: updateApp,
-          style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.errorContainer,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            spacing: 4.0,
-            children: [
-              Icon(
-                Symbols.sync,
-                color: Theme.of(context).colorScheme.onErrorContainer,
-              ),
-              Text(
-                'アプリをアップデートしてください',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
