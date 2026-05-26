@@ -91,7 +91,12 @@ class _Item extends HookConsumerWidget {
     final message = ref.read(snackBarMessageProvider.notifier);
 
     Future<void> handleUpdate(String name, bool isDisabled) async {
-      final result = await updateUserByAdmin(db(), user.id, name, isDisabled);
+      final result = await updateUserByAdmin(
+        ref.read(firestoreProvider),
+        user.id,
+        name,
+        isDisabled,
+      );
       result.match(
         (error) => message.show('利用者の更新に失敗しました: $error'),
         (_) => message.show('利用者を更新しました'),

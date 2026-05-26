@@ -27,7 +27,7 @@ class RegisterPanel extends HookConsumerWidget {
     Future<void> handleSubmit() async {
       message.clear();
       final result = await registerNewUser(
-        auth(),
+        ref.read(authProvider),
         email.text.trim(),
         password.text,
       );

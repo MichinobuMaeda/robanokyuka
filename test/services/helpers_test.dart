@@ -67,4 +67,79 @@ void main() {
       expect(container.read(snackBarMessageProvider), 'second');
     });
   });
+
+  group('isUpdateAvailable', () {
+    test('returns false when currentVersion is null', () {
+      expect(isUpdateAvailable(null, '1.0.0+1'), isFalse);
+    });
+
+    test('returns false when latestVersion is null', () {
+      expect(isUpdateAvailable('1.0.0+1', null), isFalse);
+    });
+
+    test('returns false when both are null', () {
+      expect(isUpdateAvailable(null, null), isFalse);
+    });
+
+    test('returns false when versions are equal', () {
+      expect(isUpdateAvailable('1.0.0+1', '1.0.0+1'), isFalse);
+    });
+
+    test('returns true when patch is newer (same major and minor)', () {
+      expect(isUpdateAvailable('1.0.0+1', '1.0.1+1'), isTrue);
+      expect(isUpdateAvailable('1.0.1+1', '1.0.2+1'), isTrue);
+      expect(isUpdateAvailable('1.0.9+1', '1.0.10+1'), isTrue);
+    });
+
+    test('returns false when patch is older (same major and minor)', () {
+      expect(isUpdateAvailable('1.0.1+1', '1.0.0+1'), isFalse);
+      expect(isUpdateAvailable('1.0.10+1', '1.0.9+1'), isFalse);
+    });
+
+    test('returns false when patch is equal (same major and minor)', () {
+      expect(isUpdateAvailable('1.0.1+1', '1.0.1+1'), isFalse);
+    });
+
+    test('returns true when minor is newer (same major)', () {
+      expect(isUpdateAvailable('1.0.0+1', '1.1.0+1'), isTrue);
+      expect(isUpdateAvailable('1.1.0+1', '1.2.0+1'), isTrue);
+      expect(isUpdateAvailable('1.9.0+1', '1.10.0+1'), isTrue);
+    });
+
+    test('returns false when minor is older (same major)', () {
+      expect(isUpdateAvailable('1.1.0+1', '1.0.0+1'), isFalse);
+      expect(isUpdateAvailable('1.10.0+1', '1.9.0+1'), isFalse);
+    });
+
+    test('returns false when minor is equal (same major)', () {
+      expect(isUpdateAvailable('1.1.0+1', '1.1.0+1'), isFalse);
+    });
+
+    test('returns true when major is newer', () {
+      expect(isUpdateAvailable('1.0.0+1', '2.0.0+1'), isTrue);
+    });
+
+    test('returns true when build number is newer', () {
+      expect(isUpdateAvailable('1.0.0+1', '1.0.0+2'), isTrue);
+    });
+
+    test('returns false when current is newer than latest', () {
+      expect(isUpdateAvailable('2.0.0+1', '1.0.0+1'), isFalse);
+    });
+
+    test('major takes precedence over minor and patch', () {
+      expect(isUpdateAvailable('2.9.9+9', '3.0.0+1'), isTrue);
+      expect(isUpdateAvailable('3.0.0+1', '2.9.9+9'), isFalse);
+      expect(isUpdateAvailable('10.0.0+1', '9.9.9+9'), isFalse);
+    });
+
+    test(
+      'handles versions with fewer than 3 parts (missing parts default to 0)',
+      () {
+        expect(isUpdateAvailable('1.0', '1.0.1+1'), isTrue);
+        expect(isUpdateAvailable('1', '1.0.0+1'), isTrue);
+        expect(isUpdateAvailable('1.0', '1.0'), isFalse);
+      },
+    );
+  });
 }

@@ -41,6 +41,26 @@ void main() {
       expect(conf.uiVersion, '');
     });
 
+    test('parses androidVersion', () async {
+      final conf = await makeConf({'androidVersion': '1.2.3+4'});
+      expect(conf.androidVersion, '1.2.3+4');
+    });
+
+    test('defaults androidVersion to 0.0.0+0 when field is missing', () async {
+      final conf = await makeConf({'admins': []});
+      expect(conf.androidVersion, '0.0.0+0');
+    });
+
+    test('parses iosVersion', () async {
+      final conf = await makeConf({'iosVersion': '2.3.4+5'});
+      expect(conf.iosVersion, '2.3.4+5');
+    });
+
+    test('defaults iosVersion to 0.0.0+0 when field is missing', () async {
+      final conf = await makeConf({'admins': []});
+      expect(conf.iosVersion, '0.0.0+0');
+    });
+
     test('parses gengos sorted ascending by date', () async {
       final conf = await makeConf({
         'gengos': [
@@ -211,6 +231,84 @@ void main() {
       () async {
         final firestore = FakeFirebaseFirestore(); // no 'conf' doc
         final result = await setGengos(firestore, []);
+        expect(result.isLeft(), isTrue);
+        result.match(
+          (error) => expect(error, isNotEmpty),
+          (_) => fail('expected left'),
+        );
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  group('setVersions', () {
+    Future<FakeFirebaseFirestore> makeFirestore() async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('service').doc('conf').set({
+        'uiVersion': '0.0.0+0',
+        'androidVersion': '0.0.0+0',
+        'iosVersion': '0.0.0+0',
+      });
+      return firestore;
+    }
+
+    test('returns right(unit) on success', () async {
+      final firestore = await makeFirestore();
+      final result = await setVersions(
+        firestore,
+        uiVersion: '1.0.0+1',
+        androidVersion: '1.0.0+1',
+        iosVersion: '1.0.0+1',
+      );
+      expect(result.isRight(), isTrue);
+    });
+
+    test('writes all three version fields to Firestore', () async {
+      final firestore = await makeFirestore();
+      await setVersions(
+        firestore,
+        uiVersion: '1.2.3+4',
+        androidVersion: '2.3.4+5',
+        iosVersion: '3.4.5+6',
+      );
+
+      final snap = await firestore.collection('service').doc('conf').get();
+      expect(snap.data()!['uiVersion'], '1.2.3+4');
+      expect(snap.data()!['androidVersion'], '2.3.4+5');
+      expect(snap.data()!['iosVersion'], '3.4.5+6');
+    });
+
+    test('overwrites existing version values', () async {
+      final firestore = await makeFirestore();
+      await setVersions(
+        firestore,
+        uiVersion: '9.9.9+9',
+        androidVersion: '9.9.9+9',
+        iosVersion: '9.9.9+9',
+      );
+      await setVersions(
+        firestore,
+        uiVersion: '1.0.0+1',
+        androidVersion: '1.0.0+2',
+        iosVersion: '1.0.0+3',
+      );
+
+      final snap = await firestore.collection('service').doc('conf').get();
+      expect(snap.data()!['uiVersion'], '1.0.0+1');
+      expect(snap.data()!['androidVersion'], '1.0.0+2');
+      expect(snap.data()!['iosVersion'], '1.0.0+3');
+    });
+
+    test(
+      'returns left with error message when document does not exist',
+      () async {
+        final firestore = FakeFirebaseFirestore(); // no 'conf' doc
+        final result = await setVersions(
+          firestore,
+          uiVersion: '1.0.0+1',
+          androidVersion: '1.0.0+1',
+          iosVersion: '1.0.0+1',
+        );
         expect(result.isLeft(), isTrue);
         result.match(
           (error) => expect(error, isNotEmpty),

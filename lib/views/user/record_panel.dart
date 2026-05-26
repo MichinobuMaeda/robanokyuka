@@ -31,7 +31,11 @@ class RecordPanel extends HookConsumerWidget {
 
     Future<void> handleSave(Record newRecord) async {
       if (uid == null) return;
-      final result = await saveRecord(db(), uid, newRecord);
+      final result = await saveRecord(
+        ref.read(firestoreProvider),
+        uid,
+        newRecord,
+      );
       result.match(
         (error) => message.show('期間の保存に失敗しました: $error'),
         (_) => message.show('期間を保存しました'),

@@ -337,6 +337,8 @@ void main() {
           Gengo(date: Cal(2019, 5, 1), name: '令和', short: 'R'),
         ],
         uiVersion: '',
+        androidVersion: '0.0.0+0',
+        iosVersion: '0.0.0+0',
       );
       final container = ProviderContainer(
         overrides: [
@@ -353,7 +355,13 @@ void main() {
     });
 
     test('showNengo is false when user is null', () {
-      final conf = Conf(admins: [], gengos: [], uiVersion: '');
+      final conf = Conf(
+        admins: [],
+        gengos: [],
+        uiVersion: '',
+        androidVersion: '0.0.0+0',
+        iosVersion: '0.0.0+0',
+      );
       final container = ProviderContainer(
         overrides: [
           confProvider.overrideWithValue(conf),
@@ -366,7 +374,13 @@ void main() {
     });
 
     test('showNengo is true when user.showNengo is true', () {
-      final conf = Conf(admins: [], gengos: [], uiVersion: '');
+      final conf = Conf(
+        admins: [],
+        gengos: [],
+        uiVersion: '',
+        androidVersion: '0.0.0+0',
+        iosVersion: '0.0.0+0',
+      );
       final user = User(id: 'u1', name: 'Alice', showNengo: true);
       final container = ProviderContainer(
         overrides: [
@@ -380,7 +394,13 @@ void main() {
     });
 
     test('showNengo is false when user.showNengo is false', () {
-      final conf = Conf(admins: [], gengos: [], uiVersion: '');
+      final conf = Conf(
+        admins: [],
+        gengos: [],
+        uiVersion: '',
+        androidVersion: '0.0.0+0',
+        iosVersion: '0.0.0+0',
+      );
       final user = User(id: 'u1', name: 'Alice', showNengo: false);
       final container = ProviderContainer(
         overrides: [

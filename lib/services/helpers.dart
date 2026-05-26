@@ -49,3 +49,31 @@ String toHankaku(String str) {
       })
       .join('');
 }
+
+bool isUpdateAvailable(String? currentVersion, String? latestVersion) {
+  if (currentVersion == null || latestVersion == null) {
+    return false;
+  }
+
+  List<int> parse(String version) {
+    final parts = version.split('+');
+    final build = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    final versionParts = parts[0]
+        .split('.')
+        .map((p) => int.tryParse(p) ?? 0)
+        .toList();
+    while (versionParts.length < 3) {
+      versionParts.add(0);
+    }
+    return [...versionParts, build];
+  }
+
+  final current = parse(currentVersion);
+  final latest = parse(latestVersion);
+
+  for (var i = 0; i < current.length; i++) {
+    if (current[i] < latest[i]) return true;
+    if (current[i] > latest[i]) return false;
+  }
+  return false;
+}

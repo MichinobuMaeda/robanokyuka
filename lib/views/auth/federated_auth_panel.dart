@@ -22,7 +22,7 @@ class FederatedAuthPanel extends HookConsumerWidget {
       message.clear();
       if (reauthentication) {
         final result = await reauthenticateWithProvider(
-          auth(),
+          ref.read(authProvider),
           provider,
           environment,
         );
@@ -31,7 +31,11 @@ class FederatedAuthPanel extends HookConsumerWidget {
           (_) => message.show("${provider.name}での再認証に成功しました。"),
         );
       } else {
-        final result = await signInWithProvider(auth(), provider, environment);
+        final result = await signInWithProvider(
+          ref.read(authProvider),
+          provider,
+          environment,
+        );
         result.match(
           (error) => message.show("${provider.name}でのログインに失敗しました。"),
           (_) => message.show("${provider.name}でのログインに成功しました。"),

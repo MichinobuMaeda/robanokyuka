@@ -65,17 +65,7 @@
                 - Password length requirements: 10
                 - Maximum password length: 4096
 
-```JavaScript
-const firebaseConfig = {
-  apiKey: "******************************",
-  authDomain: "robanokyuka.firebaseapp.com",
-  projectId: "robanokyuka",
-  storageBucket: "robanokyuka.firebasestorage.app",
-  messagingSenderId: "506698003908",
-  appId: "1:506698003908:web:17437702a35ccbfbdf2091",
-  measurementId: "G-0YGD503CHF"
-};
-```
+Download `lib/config/firebase_config.dart`
 
 <https://console.cloud.google.com/welcome?project=robanokyuka>
 
@@ -245,14 +235,13 @@ $ gh secret list
 NAME                                  UPDATED
 FIREBASE_SERVICE_ACCOUNT_ROBANOKYUKA  about 36 minutes ago
 
-$ gh secret set FIREBASE_API_KEY_ROBANOKYUKA
-? Paste your secret: ***************************************
+$ gh secret set FIREBASE_CONFIG_ROBANOKYUKA < lib/config/firebase_config.dart
 
-✓ Set Actions secret FIREBASE_API_KEY_ROBANOKYUKA for MichinobuMaeda/robanokyuka
+✓ Set Actions secret FIREBASE_CONFIG_ROBANOKYUKA for MichinobuMaeda/robanokyuka
 
 $ gh secret list
 NAME                                  UPDATED
-FIREBASE_API_KEY_ROBANOKYUKA          less than a minute ago
+FIREBASE_CONFIG_ROBANOKYUKA           less than a minute ago
 FIREBASE_SERVICE_ACCOUNT_ROBANOKYUKA  about 39 minutes ago
 ```
 

@@ -32,8 +32,16 @@ class Conf {
   final List<String> admins;
   final List<Gengo> gengos;
   final String uiVersion;
+  final String androidVersion;
+  final String iosVersion;
 
-  Conf({required this.admins, required this.gengos, required this.uiVersion});
+  Conf({
+    required this.admins,
+    required this.gengos,
+    required this.uiVersion,
+    required this.androidVersion,
+    required this.iosVersion,
+  });
 
   factory Conf.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data()!;
@@ -57,6 +65,8 @@ class Conf {
               .toList()
             ..sort((a, b) => a.date.compareTo(b.date)),
       uiVersion: data['uiVersion'] ?? '',
+      androidVersion: data['androidVersion'] ?? '0.0.0+0',
+      iosVersion: data['iosVersion'] ?? '0.0.0+0',
     );
   }
 }
@@ -71,6 +81,26 @@ final confProvider = Provider<Conf?>((ref) {
 });
 
 List<String> selectAdmins(Conf? conf) => conf?.admins ?? [];
+
+Future<Either<String, Unit>> setVersions(
+  FirebaseFirestore db, {
+  required String uiVersion,
+  required String androidVersion,
+  required String iosVersion,
+}) async {
+  try {
+    await db.collection('service').doc('conf').update({
+      'uiVersion': uiVersion,
+      'androidVersion': androidVersion,
+      'iosVersion': iosVersion,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return right(unit);
+  } catch (error, stackTrace) {
+    debugPrint('Error setting versions: $error\n$stackTrace');
+    return left('$error');
+  }
+}
 
 Future<Either<String, Unit>> setGengos(
   FirebaseFirestore db,

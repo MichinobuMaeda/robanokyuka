@@ -28,7 +28,11 @@ class EditProfilePanel extends HookConsumerWidget {
     Future<void> handleThemeModeChanged(ThemeMode value) async {
       themeMode.value = value;
       if (user?.id == null) return;
-      final result = await updateUserThemeMode(db(), user!.id, value);
+      final result = await updateUserThemeMode(
+        ref.read(firestoreProvider),
+        user!.id,
+        value,
+      );
       result.match(
         (error) => message.show('テーマモードの更新に失敗しました: $error'),
         (_) => message.show('テーマモードを更新しました'),
@@ -38,7 +42,11 @@ class EditProfilePanel extends HookConsumerWidget {
     Future<void> handleShowNengoChanged(bool value) async {
       showNengo.value = value;
       if (user?.id == null) return;
-      final result = await updateUserShowNengo(db(), user!.id, value);
+      final result = await updateUserShowNengo(
+        ref.read(firestoreProvider),
+        user!.id,
+        value,
+      );
       result.match(
         (error) => message.show('元号表示の更新に失敗しました: $error'),
         (_) => message.show('元号表示を更新しました'),
@@ -48,7 +56,7 @@ class EditProfilePanel extends HookConsumerWidget {
     Future<void> handleSubmitName() async {
       if (user?.id == null) return;
       final result = await updateUserName(
-        db(),
+        ref.read(firestoreProvider),
         user!.id,
         nameController.text.trim(),
       );

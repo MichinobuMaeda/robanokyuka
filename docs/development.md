@@ -29,6 +29,14 @@ npm i --prefix functions
 npm test
 ```
 
+```bash
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+```
+
+Set SHA1 and SHA256 fingerprint to Firebase Console.
+
+Download `android/app/google-services.json` from Firebase Console.
+
 Download `ios/GoogleService-Info.plist` from Firebase Console.
 
 Run Firebase Emulators
@@ -46,7 +54,8 @@ npm run dev:web
 npm run dev:chrome
 npm run dev:edge
 npm run dev:android
-flutter devices | grep ios
+npm run dev:ios
+flutter devices
 npm run dev -- -d [device-id]
 ```
 

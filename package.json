@@ -1,6 +1,6 @@
 {
   "name": "robanokyuka",
-  "version": "0.4.5",
+  "version": "0.4.9",
   "license": "BSD-3-Clause",
   "author": "Michinobu Maeda",
   "repository": {
@@ -8,29 +8,30 @@
     "url": "https://github.com/MichinobuMaeda/robanokyuka.git"
   },
   "scripts": {
-    "lint:functions": "npm --prefix functions run lint",
-    "lint:ui": "flutter analyze",
-    "lint": "npm run lint:functions && npm run lint:ui",
     "build:docs": "dart tools/md2html.dart",
     "build:ui:splash": "dart run flutter_native_splash:create",
     "build:ui:launcher_icons": "dart run flutter_launcher_icons",
     "build:ui:version": "dart tools/set_ui_version.dart",
-    "build:pre-commit": "npm run build:ui:version && npm run build:docs",
+    "build:ui:google_id": "dart tools/set_google_server_client_id.dart",
+    "build:pre-commit": "npm run build:docs && npm run build:ui:version && npm run build:ui:google_id",
     "build:functions": "npm run build:pre-commit && npm --prefix functions run build",
     "build:ui": "npm run build:pre-commit && flutter build web",
-    "build": "npm run lint && npm run build:functions && flutter build web",
+    "build:apk": "npm run build:pre-commit && flutter build apk",
+    "build": "npm run build:functions && flutter build web",
     "emulators:data:create": "curl -X POST http://127.0.0.1:5001/robanokyuka/asia-northeast2/testData -H \"Content-Type: application/json\" -d '{\"data\":{}}'",
     "emulators:data:save": "npx firebase emulators:export test/emulators --force",
     "emulators:data": "npm run build:functions && npx firebase emulators:exec --only auth,functions,firestore,storage -- \"npm run emulators:data:create && npm run emulators:data:save\"",
     "emulators": "npm run build:functions && npx firebase emulators:start --only auth,functions,firestore,storage --import test/emulators",
+    "lint": "npm --prefix functions run lint && flutter analyze",
     "test:ui:unit": "flutter test test/ --coverage --coverage-path=coverage/all.info && lcov --extract coverage/all.info 'lib/models/*' 'lib/services/*' -o coverage/lcov.info && lcov --summary coverage/lcov.info",
-    "test:ci": "npm run test --prefix functions && npm run test:ui:unit",
-    "test": "npm run test:ci && lcov --summary coverage/lcov.info && genhtml coverage/lcov.info -o coverage/html",
+    "test:functions": "npm run test --prefix functions",
+    "test": "npm run test:functions && npm run test:ui:unit && lcov --summary coverage/lcov.info && genhtml coverage/lcov.info -o coverage/html",
     "dev": "flutter run",
     "dev:web": "echo http://127.0.0.1:8000/ && npm run dev -- --web-port 8000 -d web-server",
     "dev:chrome": "npm run dev -- -d chrome",
     "dev:edge": "npm run dev -- -d edge",
-    "dev:android": "npm run dev -- -d emulator"
+    "dev:android": "npm run dev -- -d emulator",
+    "dev:ios": "npm run dev -- -d iPhone"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

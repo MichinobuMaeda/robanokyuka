@@ -43,7 +43,7 @@ Future<void> sendEmailVerification(Ref ref, User authUser) async {
   await authUser.sendEmailVerification();
   final message = ref.read(snackBarMessageProvider.notifier);
   message.show("メールアドレスの確認のためのメールを送信しました。");
-  await auth().signOut();
+  await ref.read(authProvider).signOut();
 }
 
 @visibleForTesting

@@ -29,14 +29,14 @@ class DeleteUserPanel extends HookConsumerWidget {
           message.show("認証されたユーザーが見つかりません。");
           return;
         }
-        final result = await deleteUserData(db(), uid);
+        final result = await deleteUserData(ref.read(firestoreProvider), uid);
         result.match(
           (error) => message.show("ユーザーデータの削除に失敗しました。"),
           (_) => debugPrint("User data deleted successfully."),
         );
       }
       {
-        final result = await deleteUser(auth());
+        final result = await deleteUser(ref.read(authProvider));
         result.match(
           (error) => message.show("アカウントの削除に失敗しました。"),
           (_) => message.show("アカウントを削除しました。"),

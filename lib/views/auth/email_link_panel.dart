@@ -31,7 +31,7 @@ class EmailLinkPanel extends HookConsumerWidget {
     Future<void> handleSubmit() async {
       message.clear();
       final result = await sendSignInLinkToEmail(
-        auth(),
+        ref.read(authProvider),
         LocalStorage(),
         email.text.trim(),
       );

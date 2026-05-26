@@ -18,7 +18,7 @@ class SignOutPanel extends HookConsumerWidget {
     final confirm = useState(false);
 
     Future<void> handleSubmit() async {
-      final result = await signOut(auth());
+      final result = await signOut(ref.read(authProvider));
       result.match(
         (error) => message.show("ログアウトに失敗しました。"),
         (_) => message.show("ログアウトに成功しました。"),
