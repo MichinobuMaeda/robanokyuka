@@ -21,7 +21,7 @@ jobs:
           FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG_ROBANOKYUKA }}
         run: echo "$FIREBASE_CONFIG" > lib/config/firebase_config.dart
       - run: flutter test
-      - run: flutter build web --web-renderer canvaskit --no-tree-shake-icons
+      - run: flutter build web --no-tree-shake-icons
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

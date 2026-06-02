@@ -2,7 +2,7 @@
   "name": "ロバの休暇",
   "short_name": "ロバの休暇",
   "start_url": ".",
-  "display": "standalone",
+  "display": "minimal-ui",
   "background_color": "#faead3",
   "theme_color": "#a07d5b",
   "description": "ロバの休暇アプリ",

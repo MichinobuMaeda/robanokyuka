@@ -52,7 +52,7 @@ jobs:
           files: coverage/lcov.info
           flags: flutter
 
-      - run: flutter build web --web-renderer canvaskit --no-tree-shake-icons
+      - run: flutter build web --no-tree-shake-icons
       - run: dart tools/md2html.dart
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
