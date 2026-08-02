@@ -1,7 +1,7 @@
 import * as logger from "firebase-functions/logger";
-import {Firestore} from "firebase-admin/firestore";
-import {Auth} from "firebase-admin/auth";
-import {type CallableRequest} from "firebase-functions/https";
+import { Firestore } from "firebase-admin/firestore";
+import { Auth } from "firebase-admin/auth";
+import { type CallableRequest } from "firebase-functions/https";
 
 export const msg = {
   nodeEnv: (env: string | undefined) => `Node environment: ${env}`,
@@ -59,7 +59,7 @@ export async function isAdminUid(
   context: Context,
   event: CallableRequest,
 ): Promise<boolean> {
-  const {logger, db} = context;
+  const { logger, db } = context;
   const uid = event.auth?.uid;
 
   if (!uid) {

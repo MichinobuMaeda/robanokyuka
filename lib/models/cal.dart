@@ -1,10 +1,7 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import 'package:robanokyuka/config/theme.dart';
 import 'package:robanokyuka/services/helpers.dart';
-
-@visibleForTesting
-String pad2(int n) => n.toString().padLeft(2, '0');
 
 @visibleForTesting
 int getValidYear(int year) => (year < 100) ? year + 2000 : year;
@@ -32,19 +29,13 @@ class Cal implements Comparable<Cal> {
     return day.compareTo(other.day);
   }
 
-  @override
-  bool operator ==(Object other) =>
-      other is Cal &&
-      year == other.year &&
-      month == other.month &&
-      day == other.day;
-
-  @override
-  int get hashCode => Object.hash(year, month, day);
-
   String get yyyy => '$year';
-  String get mmdd => '${pad2(month)}${pad2(day)}';
+  String get mmdd =>
+      '${month.toString().padLeft(2, '0')}${day.toString().padLeft(2, '0')}';
   String get yyyymmdd => '$yyyy$mmdd';
+
+  factory Cal.today() =>
+      Cal(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
   factory Cal.fromString(String date) {
     final str = toHankaku(date).toUpperCase().trim();
@@ -97,5 +88,18 @@ class Cal implements Comparable<Cal> {
 
   factory Cal.fromDateTime(DateTime dt) => Cal(dt.year, dt.month, dt.day);
 
+  factory Cal.next(Cal cal) =>
+      Cal.fromDateTime(cal.dateTime.add(Duration(days: 1)));
+
   String get weekDayLabel => weekdayLabels[dateTime.weekday % 7];
+
+  @override
+  bool operator ==(Object other) =>
+      other is Cal &&
+      year == other.year &&
+      month == other.month &&
+      day == other.day;
+
+  @override
+  int get hashCode => Object.hash(year, month, day);
 }

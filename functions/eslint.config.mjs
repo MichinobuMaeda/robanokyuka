@@ -1,6 +1,6 @@
 import tseslint from "typescript-eslint";
 import importX from "eslint-plugin-import-x";
-import {fileURLToPath} from "url";
+import { fileURLToPath } from "url";
 import path from "path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -24,8 +24,9 @@ export default tseslint.config(
     rules: {
       "quotes": ["error", "double"],
       "indent": ["error", 2],
-      "max-len": ["error", {"code": 80, "ignoreComments": true}],
+      "max-len": ["error", { "code": 80, "ignoreComments": true }],
       "import-x/no-unresolved": "off",
+      "object-curly-spacing": ["error", "always"],
     },
   },
   {

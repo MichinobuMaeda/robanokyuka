@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
 
 // Asserts that [cal] matches today's year/month/day.
 void expectToday(Cal cal) {
@@ -211,6 +211,18 @@ void main() {
         expectToday(Cal.fromString('2024x'));
       },
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  group('Cal.today', () {
+    test('matches today\'s year, month and day', () {
+      expectToday(Cal.today());
+    });
+
+    test('equals Cal constructed from current date', () {
+      final now = DateTime.now();
+      expect(Cal.today(), Cal(now.year, now.month, now.day));
+    });
   });
 
   // ---------------------------------------------------------------------------

@@ -1,69 +1,18 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+
+// import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fpdart/fpdart.dart';
+// import 'package:path/path.dart';
 
 import 'package:robanokyuka/config/firebase.dart';
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
+import 'package:robanokyuka/models/holidays.dart';
 import 'package:robanokyuka/services/authentication.dart';
+import 'package:robanokyuka/services/helpers.dart';
 
-int parseTime(String hhmm) {
-  final parts = hhmm.split(':');
-  if (parts.length != 2) throw FormatException('Invalid time format');
-  final hours = int.tryParse(parts[0]) ?? 0;
-  final minutes = int.tryParse(parts[1]) ?? 0;
-  return hours * 3600 + minutes * 60;
-}
-
-String formatTime(int seconds, {bool short = false}) {
-  final hours = seconds ~/ 3600;
-  final minutes = (seconds % 3600) ~/ 60;
-  return '${short ? hours : hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
-}
-
-String formatTimeShort(int seconds) {
-  return formatTime(seconds, short: true);
-}
-
-class WorkTime {
-  static const allString = 'all';
-
-  WorkTime(this.seconds, [this.all = false]);
-
-  final int seconds;
-  final bool all;
-
-  factory WorkTime.parse(String? value) {
-    final str = value?.trim().toLowerCase();
-    if (str == null || str.isEmpty) return WorkTime(0, false);
-    if (str == allString) return WorkTime(0, true);
-
-    final parts = str.split(':');
-    if (parts.length != 2) return WorkTime(0, false);
-    final hours = int.tryParse(parts[0]) ?? 0;
-    final minutes = int.tryParse(parts[1]) ?? 0;
-    return WorkTime(hours * 3600 + minutes * 60, false);
-  }
-
-  String? toRecord() {
-    if (all) return allString;
-    if (seconds == 0) return null;
-    return formatTime(seconds);
-  }
-
-  @override
-  String toString() => toRecord() ?? '';
-
-  @override
-  bool operator ==(Object other) {
-    return other is WorkTime && seconds == other.seconds && all == other.all;
-  }
-
-  @override
-  int get hashCode => Object.hash(seconds, all);
-}
-
-const defaultPublicHolidays = [
+const defaultHolidays = [
   true, // Sunday
   false, // Monday
   false, // Tuesday
@@ -71,180 +20,365 @@ const defaultPublicHolidays = [
   false, // Thursday
   false, // Friday
   true, // Saturday
-  true, // Holiday
+  true, // Public Holidays
 ];
 
 const defaultGivenLeaves = 10;
 const defaultMinLeaves = 5;
-final defaultWorkingHours = 3600 * 8;
+ScheduleList getDefauiltSchedule() => ScheduleList.fromMapList([
+  {"time": "9:00", "status": "w"},
+  {"time": "12:00", "status": "r"},
+  {"time": "13:00", "status": "w"},
+  {"time": "18:00", "status": "e"},
+]);
 
-class DateRecord {
-  final Cal date;
-  final bool companyHoliday;
-  final WorkTime plan;
-  final WorkTime used;
-  final WorkTime sick;
-  final WorkTime other;
-  final String? note;
+enum WorkStatus {
+  w(label: "勤務", short: "勤"),
+  h(label: "休日", short: "休"),
+  c(label: "非営", short: "非"),
+  p(label: "有休", short: "有"),
+  s(label: "病欠", short: "病"),
+  o(label: "他休", short: "他"),
+  f(label: "休出", short: "出"),
+  r(label: "休憩", short: "憩"),
+  e(label: "退勤", short: "退");
 
-  DateRecord(
-    this.date,
-    this.companyHoliday,
-    this.note, {
-    required this.plan,
-    required this.used,
-    required this.sick,
-    required this.other,
-  });
+  const WorkStatus({required this.label, required this.short});
+
+  final String label;
+  final String short;
+
+  static WorkStatus? fromString(String? str) =>
+      str == null || str.trim().isEmpty
+      ? null
+      : WorkStatus.values
+            .where((e) => e.name == str.trim().substring(0, 1).toLowerCase())
+            .singleOrNull;
+
+  static Map<WorkStatus, int> toSumMap() => Map.fromEntries(
+    WorkStatus.values
+        .where((e) => e != WorkStatus.e)
+        .map((e) => MapEntry(e, 0)),
+  );
 }
 
-class Record implements Comparable<Record> {
-  final String id;
-  final Cal from;
-  final Cal to;
-  final List<bool> publicHolidays;
-  final int givenLeaves;
-  final int minLeaves;
-  final bool useLeavesHourly;
-  final int workingHours;
-  final List<DateRecord> dates;
+int? parseTime(String? str) {
+  final match = RegExp(r'^-?(\d+):(\d+)$').firstMatch(str ?? '');
+  return (match == null)
+      ? null
+      : (str!.startsWith('-') ? -1 : 1) *
+            (int.tryParse(match.group(1)!)! * 3600 +
+                int.tryParse(match.group(2)!)! * 60);
+}
 
+String formatTime(int sec, [int? workingSeconds]) =>
+    workingSeconds == null || workingSeconds == 0
+    ? '${sec < 0 ? '-' : ''}'
+          '${(sec.abs() ~/ 3600)}'
+          ':${((sec.abs() % 3600) ~/ 60).toString().padLeft(2, '0')}'
+    : (sec.abs() % workingSeconds > 0
+          ? '${sec < 0 ? '-' : ''}'
+                '${(sec.abs() ~/ workingSeconds)} ${((sec.abs() % workingSeconds) ~/ 3600)}'
+                ':${((sec.abs() % 3600) ~/ 60).toString().padLeft(2, '0')}'
+          : '${sec < 0 ? '-' : ''}'
+                '${(sec.abs() ~/ workingSeconds)}');
+
+class ScheduleItem {
+  const ScheduleItem(this.time, this.status);
+
+  final int time;
+  final WorkStatus status;
+
+  static ScheduleItem? fromMap(dynamic item) =>
+      (item is! Map ||
+          !item.keys.contains("time") ||
+          !item.keys.contains("status"))
+      ? null
+      : () {
+          final time = parseTime(item["time"]);
+          final status = WorkStatus.fromString(item["status"]);
+          return (time == null || status == null)
+              ? null
+              : ScheduleItem(time, status);
+        }();
+
+  Map<String, String> toMap() =>
+      ({"time": formatTime(time).padLeft(5, '0'), "status": status.name});
+}
+
+class ScheduleList {
+  const ScheduleList([this.sch = const []]);
+
+  final List<ScheduleItem> sch;
+
+  factory ScheduleList.sorted([List<ScheduleItem> sch = const []]) =>
+      ScheduleList([...sch]..sort((a, b) => a.time - b.time));
+
+  static ScheduleList fromMapList(dynamic sch) => ScheduleList.sorted(
+    (sch is List ? sch : [])
+        .map((item) => ScheduleItem.fromMap(item))
+        .nonNulls
+        .toList(),
+  );
+
+  List<Map<String, String>> toMapList() =>
+      sch.map((item) => item.toMap()).toList();
+
+  Map<WorkStatus, int> sum() => sch.foldLeftWithIndex(
+    WorkStatus.toSumMap(),
+    (ret, cur, i) => (i < (sch.length - 1) && cur.status != WorkStatus.e)
+        ? {
+            ...ret,
+            cur.status: (ret[cur.status] ?? 0) + sch[i + 1].time - cur.time,
+          }
+        : ret,
+  );
+}
+
+class DateRecord extends ScheduleList {
+  DateRecord(this.status, super.sch, [this.note]);
+
+  WorkStatus? status;
+  String? note;
+
+  static DateRecord fromMap(Map val) => DateRecord(
+    WorkStatus.fromString(val["status"]),
+    ScheduleList.fromMapList(val["sch"]).sch,
+    val["note"],
+  );
+
+  Map<String, dynamic> toMap() => Map.fromEntries([
+    MapEntry("status", status?.name),
+    MapEntry("sch", toMapList()),
+    if (note != null) MapEntry("note", note),
+  ]);
+}
+
+Map<WorkStatus, int> sumDateRecord(DateRecord dateRecord, int workingSeconds) =>
+    [WorkStatus.p, WorkStatus.s, WorkStatus.o].contains(dateRecord.status)
+    ? {...WorkStatus.toSumMap(), dateRecord.status!: workingSeconds}
+    : dateRecord.sum();
+
+List<bool> mergeBoolList(List<bool> base, dynamic val) => val is List
+    ? [...base]
+          .mapWithIndex<bool>(
+            (item, i) => (i < val.length && val[i] is bool) ? val[i] : item,
+          )
+          .toList()
+    : [...base];
+
+int? getIntValue(dynamic val) => val is int
+    ? val
+    : (val is double
+          ? val.round()
+          : (val is String ? double.tryParse(val)?.round() : null));
+
+class Record {
   Record({
     required this.id,
     required this.from,
     required this.to,
-    this.publicHolidays = defaultPublicHolidays,
+    List<bool>? holidays,
     this.givenLeaves = defaultGivenLeaves,
     this.minLeaves = defaultMinLeaves,
     this.useLeavesHourly = false,
-    int? stdSeconds,
-    this.dates = const [],
-  }) : workingHours = stdSeconds ?? defaultWorkingHours;
+    ScheduleList? sch,
+    this.dates = const {},
+  }) : holidays = mergeBoolList(defaultHolidays, holidays),
+       sch = sch ?? getDefauiltSchedule();
+
+  final String id;
+  final Cal from;
+  final Cal to;
+  final List<bool> holidays;
+  final int givenLeaves;
+  final int minLeaves;
+  final bool useLeavesHourly;
+  final ScheduleList sch;
+  final Map<Cal, DateRecord> dates;
 
   factory Record.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!;
-    final whString = (data['workingHours'] as String?);
-    final workingHours = whString != null
-        ? parseTime(whString)
-        : defaultWorkingHours;
+    final data = doc.data() ?? {};
     return Record(
       id: doc.id,
-      from: Cal.fromString(data['from'] as String),
-      to: Cal.fromString(data['to'] as String),
-      publicHolidays: List<bool>.from(
-        data['holidays'] ?? defaultPublicHolidays,
+      from: Cal.fromString("${data['from']}"),
+      to: Cal.fromString("${data['to']}"),
+      holidays: mergeBoolList(defaultHolidays, data['holidays']),
+      givenLeaves: getIntValue(data['givenLeaves']) ?? defaultGivenLeaves,
+      minLeaves: getIntValue(data['minLeaves']) ?? defaultMinLeaves,
+      useLeavesHourly: data['useLeavesHourly'] == true,
+      sch: data['sch'] is List
+          ? ScheduleList.fromMapList(data['sch'])
+          : getDefauiltSchedule(),
+      dates: Map.fromEntries(
+        (data['dates'] is Map
+            ? (data['dates'] as Map).entries.map(
+                (etntry) => MapEntry(
+                  Cal.fromString(etntry.key),
+                  DateRecord.fromMap(etntry.value),
+                ),
+              )
+            : []),
       ),
-      givenLeaves: data['givenLeaves'] ?? defaultGivenLeaves,
-      minLeaves: data['minLeaves'] ?? defaultMinLeaves,
-      useLeavesHourly: data['useLeavesHourly'] ?? false,
-      stdSeconds: workingHours,
-      dates: () {
-        return (data['dates'] as Map<String, dynamic>?)?.entries
-                .map(
-                  (entry) => DateRecord(
-                    Cal.fromString(entry.key),
-                    entry.value['c'] ?? false,
-                    entry.value['n'] as String?,
-                    plan: WorkTime.parse(entry.value['p'] as String?),
-                    used: WorkTime.parse(entry.value['u'] as String?),
-                    sick: WorkTime.parse(entry.value['s'] as String?),
-                    other: WorkTime.parse(entry.value['o'] as String?),
-                  ),
-                )
-                .toList() ??
-            [];
-      }(),
     );
   }
 
-  List<(int, int)>? get months {
-    final months = <(int, int)>[];
-    var year = from.year;
-    var month = from.month;
-    while (year < to.year || (year == to.year && month <= to.month)) {
-      months.add((year, month));
-      month++;
-      if (month > 12) {
-        month = 1;
-        year++;
-      }
-    }
-    return months;
-  }
+  Map<String, dynamic> toMap() => ({
+    "id": id,
+    "data": {
+      "from": from.yyyymmdd,
+      "to": to.yyyymmdd,
+      "holidays": mergeBoolList(defaultHolidays, holidays),
+      "givenLeaves": givenLeaves,
+      "minLeaves": minLeaves,
+      "useLeavesHourly": useLeavesHourly,
+      "sch": sch.toMapList(),
+      "dates": Map.fromEntries(
+        dates.entries.map(
+          (etntry) => MapEntry(etntry.key.yyyymmdd, etntry.value.toMap()),
+        ),
+      ),
+    },
+  });
 
   factory Record.next(List<Record> records) {
-    final Cal from;
-    final Cal to;
-
     if (records.isEmpty) {
       final year = DateTime.now().year;
-      from = Cal(year, 4, 1);
-      to = Cal(year + 1, 3, 31);
+      return Record(id: '', from: Cal(year, 4, 1), to: Cal(year + 1, 3, 31));
     } else {
-      // find the record with the latest `to` date
-      final maxTo = records
-          .map((r) => r.to)
-          .reduce((a, b) => a.compareTo(b) >= 0 ? a : b)
-          .dateTime;
-      from = Cal.fromDateTime(maxTo.add(const Duration(days: 1)));
-      to = Cal(maxTo.year + 1, maxTo.month, maxTo.day);
+      records.sort((a, b) => a.to.dateTime.compareTo(b.to.dateTime));
+      final last = records.last;
+      return Record(
+        id: '',
+        from: Cal.fromDateTime(last.to.dateTime.add(const Duration(days: 1))),
+        to: Cal(last.to.year + 1, last.to.month, last.to.day),
+        holidays: last.holidays,
+        givenLeaves: last.givenLeaves,
+        minLeaves: last.minLeaves,
+        useLeavesHourly: last.useLeavesHourly,
+        sch: ScheduleList.sorted(last.sch.sch),
+      );
+    }
+  }
+
+  int get workingSeconds => sch.sum()[WorkStatus.w] ?? 0;
+
+  Map<Cal, Map<WorkStatus, int>> sum([Cal? today]) => Map.fromEntries(
+    generateMonthList(from, to).map(
+      (first) => MapEntry(
+        first,
+        [
+          for (
+            Cal date = first;
+            date.year == first.year && date.month == first.month;
+            date = Cal.next(date)
+          )
+            date,
+        ].fold(
+          WorkStatus.toSumMap(),
+          (ret, date) =>
+              ((today != null && !date.dateTime.isBefore(today.dateTime)) ||
+                  dates[date] == null)
+              ? ret
+              : Map.fromEntries(
+                  ret.entries.map(
+                    (entry) => MapEntry(
+                      entry.key,
+                      entry.value +
+                          (sumDateRecord(
+                                dates[date]!,
+                                workingSeconds,
+                              )[entry.key] ??
+                              0),
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    ),
+  );
+
+  bool fill(Cal today, List<Holiday> holidays) {
+    bool changed = false;
+
+    for (
+      Cal date = Cal.fromDateTime(from.dateTime);
+      !date.dateTime.isAfter(to.dateTime);
+      date = Cal.next(date)
+    ) {
+      final status = this.holidays[date.dateTime.weekday % 7]
+          ? WorkStatus.h
+          : (this.holidays.last &&
+                    holidays.where((h) => h.date == date).isNotEmpty
+                ? WorkStatus.h
+                : WorkStatus.w);
+      if (!dates.keys.contains(date)) {
+        dates[date] = DateRecord(status, []);
+        changed = true;
+      } else {
+        if (dates[date]!.status != status) {
+          if (status == WorkStatus.h) {
+            dates[date] = DateRecord(
+              status,
+              dates[date]!.sch
+                  .map(
+                    (item) => ScheduleItem(
+                      item.time,
+                      item.status == WorkStatus.w ? WorkStatus.f : item.status,
+                    ),
+                  )
+                  .toList(),
+            );
+            changed = true;
+          } else if (dates[date]!.status == WorkStatus.h &&
+              status == WorkStatus.w) {
+            dates[date] = DateRecord(
+              status,
+              dates[date]!.sch
+                  .map(
+                    (item) => ScheduleItem(
+                      item.time,
+                      item.status == WorkStatus.f ? WorkStatus.w : item.status,
+                    ),
+                  )
+                  .toList(),
+            );
+            changed = true;
+          }
+        }
+      }
+
+      if (date.dateTime.isBefore(today.dateTime)) {
+        if (dates[date]!.status == WorkStatus.w && dates[date]!.sch.isEmpty) {
+          dates[date] = DateRecord(
+            dates[date]!.status,
+            [...sch.sch]..sort((a, b) => a.time - b.time),
+          );
+          changed = true;
+        }
+      }
     }
 
-    return Record(
-      id: '',
-      from: from,
-      to: to,
-      publicHolidays: List<bool>.from(defaultPublicHolidays),
-      givenLeaves: defaultGivenLeaves,
-      minLeaves: defaultMinLeaves,
-      useLeavesHourly: false,
-      stdSeconds: defaultWorkingHours,
-    );
+    return changed;
   }
-
-  bool isHolidayWeekDay(Cal date) => publicHolidays[date.dateTime.weekday % 7];
-
-  @visibleForTesting
-  String summary(List<WorkTime> wt) {
-    final seconds = wt.fold<int>(
-      0,
-      (v, w) => v + (w.all ? workingHours : w.seconds),
-    );
-    final days = workingHours > 0 ? seconds ~/ workingHours : 0;
-    final remaining = workingHours > 0 ? seconds % workingHours : seconds;
-    final hours = remaining ~/ 3600;
-    final minutes = (remaining % 3600) ~/ 60;
-    return remaining == 0
-        ? '$days'
-        : '$days($hours:${minutes.toString().padLeft(2, '0')})';
-  }
-
-  String get plannedLeaves => summary(dates.map((d) => d.plan).toList());
-  String get usedLeaves => summary(dates.map((d) => d.used).toList());
-  String get sickLeaves => summary(dates.map((d) => d.sick).toList());
-  String get otherLeaves => summary(dates.map((d) => d.other).toList());
-
-  @override
-  int compareTo(Record other) => from.compareTo(other.from);
 }
 
 Stream<List<Record>?> recordsStream(Ref ref) {
   final uid = ref.watch(
     authUserProvider.select((authUser) => authUser.asData?.value?.uid),
   );
+  if (uid == null) return Stream.value(null);
   final userRef = ref.watch(firestoreProvider).collection('users').doc(uid);
-  return (uid == null)
-      ? Stream.value(null)
-      : userRef
-            .collection('records')
-            .snapshots()
-            .map(
-              (snapshot) =>
-                  snapshot.docs
-                      .map((doc) => Record.fromDocument(doc))
-                      .toList(growable: true)
-                    ..sort(),
-            );
+  return userRef
+      .collection('records')
+      .snapshots()
+      .map(
+        (snapshot) =>
+            snapshot.docs
+                .map((doc) => Record.fromDocument(doc))
+                .toList(growable: true)
+              ..sort((a, b) => a.from.dateTime.compareTo(b.from.dateTime)),
+      );
 }
 
 final recordsProvider = StreamProvider<List<Record>?>(recordsStream);
@@ -258,7 +392,8 @@ class SelectedRecordIndexNotifier extends Notifier<int?> {
   @override
   int? build() {
     ref.listen(recordsProvider, (previous, next) {
-      state = applyRecordsChange(next.asData?.value, state);
+      if (next.asData == null) return;
+      state = applyRecordsChange(next.asData!.value, state);
     });
     return null;
   }
@@ -267,27 +402,19 @@ class SelectedRecordIndexNotifier extends Notifier<int?> {
   void set(int? index) => state = index;
 
   void goPrevious() {
-    debugPrint('SelectedRecordIndexNotifier: goPrevious called');
     final records = ref.read(recordsProvider).asData?.value;
-    if (records == null || records.isEmpty) return;
-    final current = state;
-    if (current == null) {
-      state = 0;
-    } else if (current > 0) {
-      state = current - 1;
-    }
+    state = (records == null || records.isEmpty)
+        ? state
+        : ((state != null && 0 < state!) ? state! - 1 : 0);
   }
 
   void goNext() {
-    debugPrint('SelectedRecordIndexNotifier: goNext called');
     final records = ref.read(recordsProvider).asData?.value;
-    if (records == null || records.isEmpty) return;
-    final current = state;
-    if (current == null) {
-      state = 0;
-    } else if (current < records.length - 1) {
-      state = current + 1;
-    }
+    state = (records == null || records.isEmpty)
+        ? state
+        : ((state != null && state! < records.length - 1)
+              ? state! + 1
+              : records.length - 1);
   }
 
   @visibleForTesting
@@ -314,31 +441,61 @@ class SelectedRecordIndexNotifier extends Notifier<int?> {
   }
 }
 
+final editingRecordProvider = NotifierProvider<EditingRecordNotifier, Record?>(
+  EditingRecordNotifier.new,
+);
+
+class EditingRecordNotifier extends Notifier<Record?> {
+  @override
+  Record? build() => null;
+
+  void edit(Record record) => state = record;
+
+  void close() => state = null;
+}
+
+class EditingDate {
+  final Record record;
+  final Cal date;
+  final List<Holiday> holidays;
+
+  EditingDate({
+    required this.record,
+    required this.date,
+    required this.holidays,
+  });
+}
+
+final editingDateProvider = NotifierProvider<EditingDateNotifier, EditingDate?>(
+  EditingDateNotifier.new,
+);
+
+class EditingDateNotifier extends Notifier<EditingDate?> {
+  @override
+  EditingDate? build() => null;
+
+  void edit(EditingDate editing) => state = editing;
+
+  void close() => state = null;
+}
+
 Future<Either<String, Unit>> saveRecord(
   FirebaseFirestore db,
   String uid,
   Record record,
 ) async {
   try {
-    final userRef = db.collection('users').doc(uid);
-    final data = {
-      'from': record.from.yyyymmdd,
-      'to': record.to.yyyymmdd,
-      'holidays': record.publicHolidays,
-      'givenLeaves': record.givenLeaves,
-      'minLeaves': record.minLeaves,
-      'useLeavesHourly': record.useLeavesHourly,
-      'workingHours': formatTime(record.workingHours),
-    };
-    final recordsRef = userRef.collection('records');
+    final recordsRef = db.collection('users').doc(uid).collection('records');
+    final val = record.toMap();
+
     if (record.id.isEmpty) {
       await recordsRef.add({
-        ...data,
+        ...val['data'],
         'createdAt': FieldValue.serverTimestamp(),
       });
     } else {
-      await recordsRef.doc(record.id).update({
-        ...data,
+      await recordsRef.doc(val['id']).update({
+        ...val['data'],
         'updatedAt': FieldValue.serverTimestamp(),
       });
     }
@@ -352,27 +509,15 @@ Future<Either<String, Unit>> saveRecord(
 Future<Either<String, Unit>> saveDateRecord(
   FirebaseFirestore db,
   String uid,
-  String recordId,
+  String id,
+  Cal date,
   DateRecord dateRecord,
 ) async {
   try {
-    final key = dateRecord.date.yyyymmdd;
-    await db
-        .collection('users')
-        .doc(uid)
-        .collection('records')
-        .doc(recordId)
-        .update({
-          'dates.$key': {
-            'c': dateRecord.companyHoliday,
-            'p': dateRecord.plan.toRecord(),
-            'u': dateRecord.used.toRecord(),
-            's': dateRecord.sick.toRecord(),
-            'o': dateRecord.other.toRecord(),
-            'n': dateRecord.note,
-          },
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+    await db.collection('users').doc(uid).collection('records').doc(id).update({
+      'dates.${date.yyyymmdd}': dateRecord.toMap(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
     return right(unit);
   } catch (error, stackTrace) {
     debugPrint('Error saving date record: $error\n$stackTrace');

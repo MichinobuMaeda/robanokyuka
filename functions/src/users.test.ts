@@ -1,10 +1,10 @@
-import {describe, it, expect, vi, beforeEach} from "vitest";
-import {onUserCreating, addUserWithEmailAndName, handleAddUser, handleDeleteUser, handleUserUpdated} from "./users";
-import type {AuthBlockingEvent} from "firebase-functions/identity";
-import type {CallableRequest} from "firebase-functions/v2/https";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { onUserCreating, addUserWithEmailAndName, handleAddUser, handleDeleteUser, handleUserUpdated } from "./users";
+import type { AuthBlockingEvent } from "firebase-functions/identity";
+import type { CallableRequest } from "firebase-functions/v2/https";
 
-import {msg, type Context} from "./common";
-import {makeContext, adminId, user01Id} from "./testutils";
+import { msg, type Context } from "./common";
+import { makeContext, adminId, user01Id } from "./testutils";
 
 describe("onUserCreating", () => {
   beforeEach(() => {
@@ -12,8 +12,8 @@ describe("onUserCreating", () => {
   });
 
   it("logs error and returns when uid is missing", async () => {
-    const {context, logger, collection} = makeContext();
-    const event = {data: {uid: undefined}} as unknown as AuthBlockingEvent;
+    const { context, logger, collection } = makeContext();
+    const event = { data: { uid: undefined } } as unknown as AuthBlockingEvent;
 
     await onUserCreating(context, event);
 
@@ -24,8 +24,8 @@ describe("onUserCreating", () => {
   });
 
   it("creates user document when uid is present", async () => {
-    const {context, logger, collection, usersDoc, set} = makeContext();
-    const event = {data: {uid: user01Id}} as unknown as AuthBlockingEvent;
+    const { context, logger, collection, usersDoc, set } = makeContext();
+    const event = { data: { uid: user01Id } } as unknown as AuthBlockingEvent;
 
     await onUserCreating(context, event);
 
@@ -34,12 +34,12 @@ describe("onUserCreating", () => {
     expect(usersDoc).toHaveBeenCalledWith(user01Id);
     expect(set).toHaveBeenCalledTimes(1);
     expect(set).toHaveBeenCalledWith(
-      expect.objectContaining({createdAt: expect.any(Date)})
+      expect.objectContaining({ createdAt: expect.any(Date) })
     );
   });
 
   it("uses displayName as name when provided", async () => {
-    const {context, set} = makeContext();
+    const { context, set } = makeContext();
     const event = {
       data: {
         uid: user01Id,
@@ -59,7 +59,7 @@ describe("onUserCreating", () => {
   });
 
   it("uses email local part as name when displayName is missing", async () => {
-    const {context, set} = makeContext();
+    const { context, set } = makeContext();
     const event = {
       data: {
         uid: user01Id,
@@ -84,55 +84,55 @@ describe("addUserWithEmailAndName", () => {
   });
 
   it("creates auth user and Firestore doc when email is new", async () => {
-    const {context, auth, set, usersGet} = makeContext();
+    const { context, auth, set, usersGet } = makeContext();
     auth.getUserByEmail.mockRejectedValue(new Error("not found"));
-    usersGet.mockResolvedValue({exists: false});
+    usersGet.mockResolvedValue({ exists: false });
 
     await addUserWithEmailAndName(
       context,
-      {email: "new@example.com", name: "New User"},
+      { email: "new@example.com", name: "New User" },
     );
 
     expect(auth.createUser).toHaveBeenCalledWith(
-      {email: "new@example.com", displayName: "New User"},
+      { email: "new@example.com", displayName: "New User" },
     );
     expect(set).toHaveBeenCalledWith(
-      expect.objectContaining({name: "New User", createdAt: expect.any(Date)})
+      expect.objectContaining({ name: "New User", createdAt: expect.any(Date) })
     );
   });
 
   it("creates auth user without displayName when email is new and name is omitted", async () => {
-    const {context, auth, set, usersGet} = makeContext();
+    const { context, auth, set, usersGet } = makeContext();
     auth.getUserByEmail.mockRejectedValue(new Error("not found"));
-    usersGet.mockResolvedValue({exists: false});
+    usersGet.mockResolvedValue({ exists: false });
 
-    await addUserWithEmailAndName(context, {email: "new@example.com"});
+    await addUserWithEmailAndName(context, { email: "new@example.com" });
 
-    expect(auth.createUser).toHaveBeenCalledWith({email: "new@example.com"});
+    expect(auth.createUser).toHaveBeenCalledWith({ email: "new@example.com" });
     expect(set).toHaveBeenCalledWith(
-      expect.objectContaining({name: "new", createdAt: expect.any(Date)})
+      expect.objectContaining({ name: "new", createdAt: expect.any(Date) })
     );
   });
 
   it("reuses existing auth user when email already exists", async () => {
-    const {context, auth, set, usersGet} = makeContext();
-    auth.getUserByEmail.mockResolvedValue({uid: "existing-uid"});
-    usersGet.mockResolvedValue({exists: false});
+    const { context, auth, set, usersGet } = makeContext();
+    auth.getUserByEmail.mockResolvedValue({ uid: "existing-uid" });
+    usersGet.mockResolvedValue({ exists: false });
 
-    await addUserWithEmailAndName(context, {email: "old@example.com"});
+    await addUserWithEmailAndName(context, { email: "old@example.com" });
 
     expect(auth.createUser).not.toHaveBeenCalled();
     expect(set).toHaveBeenCalledWith(
-      expect.objectContaining({name: "old", createdAt: expect.any(Date)})
+      expect.objectContaining({ name: "old", createdAt: expect.any(Date) })
     );
   });
 
   it("skips Firestore set when user doc already exists", async () => {
-    const {context, auth, set, usersGet} = makeContext();
-    auth.getUserByEmail.mockResolvedValue({uid: "existing-uid"});
-    usersGet.mockResolvedValue({exists: true});
+    const { context, auth, set, usersGet } = makeContext();
+    auth.getUserByEmail.mockResolvedValue({ uid: "existing-uid" });
+    usersGet.mockResolvedValue({ exists: true });
 
-    await addUserWithEmailAndName(context, {email: "old@example.com"});
+    await addUserWithEmailAndName(context, { email: "old@example.com" });
 
     expect(set).not.toHaveBeenCalled();
   });
@@ -144,9 +144,9 @@ describe("handleAddUser", () => {
   });
 
   it("throws Email is required when email is missing", async () => {
-    const {context, logger} = makeContext();
+    const { context, logger } = makeContext();
     const event = {
-      auth: {uid: adminId},
+      auth: { uid: adminId },
       data: {},
     } as unknown as CallableRequest;
 
@@ -157,10 +157,10 @@ describe("handleAddUser", () => {
   });
 
   it("throws Unauthorized when uid is missing", async () => {
-    const {context, logger} = makeContext();
+    const { context, logger } = makeContext();
     const event = {
       auth: undefined,
-      data: {email: "foo@example.com"},
+      data: { email: "foo@example.com" },
     } as unknown as CallableRequest;
 
     await expect(handleAddUser(context, event)).rejects.toThrow(msg.unauthorized);
@@ -170,10 +170,10 @@ describe("handleAddUser", () => {
   });
 
   it("throws Unauthorized when uid is not in admins", async () => {
-    const {context, logger} = makeContext();
+    const { context, logger } = makeContext();
     const event = {
-      auth: {uid: "non-admin"},
-      data: {email: "foo@example.com"},
+      auth: { uid: "non-admin" },
+      data: { email: "foo@example.com" },
     } as unknown as CallableRequest;
 
     await expect(handleAddUser(context, event)).rejects.toThrow(msg.unauthorized);
@@ -181,10 +181,10 @@ describe("handleAddUser", () => {
   });
 
   it("calls addUserWithEmailAndName when uid is admin and email is present", async () => {
-    const {context, auth} = makeContext();
+    const { context, auth } = makeContext();
     const event = {
-      auth: {uid: adminId},
-      data: {email: "foo@example.com", name: "Foo"},
+      auth: { uid: adminId },
+      data: { email: "foo@example.com", name: "Foo" },
     } as unknown as CallableRequest;
 
     await handleAddUser(context, event);
@@ -197,41 +197,41 @@ describe("handleDeleteUser", () => {
   function makeDeleteContext(admins = [adminId]) {
     const batchDelete = vi.fn();
     const batchCommit = vi.fn().mockResolvedValue(undefined);
-    const batch = {delete: batchDelete, commit: batchCommit};
+    const batch = { delete: batchDelete, commit: batchCommit };
 
-    const recordDoc1 = {ref: {id: "rec-1"}};
-    const recordDoc2 = {ref: {id: "rec-2"}};
-    const recordsGet = vi.fn().mockResolvedValue({docs: [recordDoc1, recordDoc2]});
-    const recordsCollection = vi.fn().mockReturnValue({get: recordsGet});
+    const recordDoc1 = { ref: { id: "rec-1" } };
+    const recordDoc2 = { ref: { id: "rec-2" } };
+    const recordsGet = vi.fn().mockResolvedValue({ docs: [recordDoc1, recordDoc2] });
+    const recordsCollection = vi.fn().mockReturnValue({ get: recordsGet });
 
-    const userDocRef = {collection: recordsCollection};
+    const userDocRef = { collection: recordsCollection };
     const usersDoc = vi.fn().mockReturnValue(userDocRef);
 
-    const confGet = vi.fn().mockResolvedValue({data: () => ({admins})});
-    const serviceDoc = vi.fn().mockReturnValue({get: confGet});
+    const confGet = vi.fn().mockResolvedValue({ data: () => ({ admins }) });
+    const serviceDoc = vi.fn().mockReturnValue({ get: confGet });
 
     const collection = vi.fn((name: string) => {
-      if (name === "users") return {doc: usersDoc};
-      if (name === "service") return {doc: serviceDoc};
-      return {doc: vi.fn()};
+      if (name === "users") return { doc: usersDoc };
+      if (name === "service") return { doc: serviceDoc };
+      return { doc: vi.fn() };
     });
 
-    const db = {collection, batch: vi.fn().mockReturnValue(batch)};
+    const db = { collection, batch: vi.fn().mockReturnValue(batch) };
     const auth = {
       deleteUser: vi.fn().mockResolvedValue(undefined),
     };
-    const logger = {info: vi.fn(), error: vi.fn()};
-    const context = {logger, db, auth} as unknown as Context;
+    const logger = { info: vi.fn(), error: vi.fn() };
+    const context = { logger, db, auth } as unknown as Context;
 
-    return {context, logger, auth, collection, usersDoc, recordsCollection, recordsGet, batchDelete, batchCommit};
+    return { context, logger, auth, collection, usersDoc, recordsCollection, recordsGet, batchDelete, batchCommit };
   }
 
   beforeEach(() => vi.clearAllMocks());
 
   it("throws UID is required when target uid is missing", async () => {
-    const {context, logger} = makeDeleteContext();
+    const { context, logger } = makeDeleteContext();
     const event = {
-      auth: {uid: adminId},
+      auth: { uid: adminId },
       data: {},
     } as unknown as CallableRequest;
 
@@ -242,10 +242,10 @@ describe("handleDeleteUser", () => {
   });
 
   it("throws Unauthorized when caller is not admin", async () => {
-    const {context, logger} = makeDeleteContext([adminId]);
+    const { context, logger } = makeDeleteContext([adminId]);
     const event = {
-      auth: {uid: "non-admin"},
-      data: {uid: "target-uid"},
+      auth: { uid: "non-admin" },
+      data: { uid: "target-uid" },
     } as unknown as CallableRequest;
 
     await expect(handleDeleteUser(context, event)).rejects.toThrow(msg.unauthorized);
@@ -253,10 +253,10 @@ describe("handleDeleteUser", () => {
   });
 
   it("deletes records, user doc, and auth user", async () => {
-    const {context, logger, auth, usersDoc, batchDelete, batchCommit} = makeDeleteContext();
+    const { context, logger, auth, usersDoc, batchDelete, batchCommit } = makeDeleteContext();
     const event = {
-      auth: {uid: adminId},
-      data: {uid: user01Id},
+      auth: { uid: adminId },
+      data: { uid: user01Id },
     } as unknown as CallableRequest;
 
     await handleDeleteUser(context, event);
@@ -269,11 +269,11 @@ describe("handleDeleteUser", () => {
   });
 
   it("deletes user doc and auth user when no records exist", async () => {
-    const {context, auth, recordsGet, batchDelete, batchCommit} = makeDeleteContext();
-    recordsGet.mockResolvedValue({docs: []});
+    const { context, auth, recordsGet, batchDelete, batchCommit } = makeDeleteContext();
+    recordsGet.mockResolvedValue({ docs: [] });
     const event = {
-      auth: {uid: adminId},
-      data: {uid: user01Id},
+      auth: { uid: adminId },
+      data: { uid: user01Id },
     } as unknown as CallableRequest;
 
     await handleDeleteUser(context, event);
@@ -293,7 +293,7 @@ describe("handleUserUpdated", () => {
     return {
       params: {},
       data: {
-        before: {get: (f: string) => f === "name" ? nameBefore : undefined},
+        before: { get: (f: string) => f === "name" ? nameBefore : undefined },
         after: {
           id: uid,
           get: (f: string) => f === "name" ? nameAfter : undefined,
@@ -305,9 +305,9 @@ describe("handleUserUpdated", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("skips auth update when name is unchanged", async () => {
-    const auth = {updateUser: vi.fn()};
-    const logger = {info: vi.fn(), error: vi.fn()};
-    const context = {logger, auth} as unknown as Context;
+    const auth = { updateUser: vi.fn() };
+    const logger = { info: vi.fn(), error: vi.fn() };
+    const context = { logger, auth } as unknown as Context;
     const event = makeEvent(user01Id, "Alice", "Alice");
 
     await handleUserUpdated(context, event as never);
@@ -316,9 +316,9 @@ describe("handleUserUpdated", () => {
   });
 
   it("skips auth update when uid is missing", async () => {
-    const auth = {updateUser: vi.fn()};
-    const logger = {info: vi.fn(), error: vi.fn()};
-    const context = {logger, auth} as unknown as Context;
+    const auth = { updateUser: vi.fn() };
+    const logger = { info: vi.fn(), error: vi.fn() };
+    const context = { logger, auth } as unknown as Context;
     const event = makeEvent(undefined, "Alice", "Bob");
 
     await handleUserUpdated(context, event as never);
@@ -327,28 +327,28 @@ describe("handleUserUpdated", () => {
   });
 
   it("updates displayName when name changes", async () => {
-    const auth = {updateUser: vi.fn().mockResolvedValue(undefined)};
-    const logger = {info: vi.fn(), error: vi.fn()};
-    const context = {logger, auth} as unknown as Context;
+    const auth = { updateUser: vi.fn().mockResolvedValue(undefined) };
+    const logger = { info: vi.fn(), error: vi.fn() };
+    const context = { logger, auth } as unknown as Context;
     const event = makeEvent(user01Id, "Alice", "Bob");
 
     await handleUserUpdated(context, event as never);
 
     expect(auth.updateUser).toHaveBeenCalledWith(
-      user01Id, {displayName: "Bob"}
+      user01Id, { displayName: "Bob" }
     );
   });
 
   it("uses empty string when nameAfter is undefined", async () => {
-    const auth = {updateUser: vi.fn().mockResolvedValue(undefined)};
-    const logger = {info: vi.fn(), error: vi.fn()};
-    const context = {logger, auth} as unknown as Context;
+    const auth = { updateUser: vi.fn().mockResolvedValue(undefined) };
+    const logger = { info: vi.fn(), error: vi.fn() };
+    const context = { logger, auth } as unknown as Context;
     const event = makeEvent(user01Id, "Alice", undefined);
 
     await handleUserUpdated(context, event as never);
 
     expect(auth.updateUser).toHaveBeenCalledWith(
-      user01Id, {displayName: ""}
+      user01Id, { displayName: "" }
     );
   });
 });

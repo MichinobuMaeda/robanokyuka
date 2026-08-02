@@ -6,6 +6,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:robanokyuka/config/firebase.dart';
 import 'package:robanokyuka/config/theme.dart';
 import 'package:robanokyuka/config/version.dart';
+import 'package:robanokyuka/models/record.dart';
 import 'package:robanokyuka/models/service.dart';
 import 'package:robanokyuka/platform/platforms.dart';
 import 'package:robanokyuka/services/authentication.dart';
@@ -25,7 +26,9 @@ import 'package:robanokyuka/views/admin/gengos_panel.dart';
 import 'package:robanokyuka/views/admin/ui_versions.dart';
 import 'package:robanokyuka/views/admin/users_panel.dart';
 import 'package:robanokyuka/views/user/calendar_panel.dart';
+import 'package:robanokyuka/views/user/edit_day_panel.dart';
 import 'package:robanokyuka/views/user/edit_profile_panel.dart';
+import 'package:robanokyuka/views/user/edit_record_panel.dart';
 import 'package:robanokyuka/views/user/record_panel.dart';
 import 'package:robanokyuka/views/user/summary_panel.dart';
 import 'package:robanokyuka/views/update_available_panel.dart';
@@ -33,7 +36,11 @@ import 'package:robanokyuka/widgets/markdown_panel.dart';
 
 enum MediaSize { narrow, middle, wide }
 
-List<Widget> getContents(PageItem pageItem) => switch (pageItem) {
+List<Widget> getContents(
+  PageItem pageItem,
+  bool isRecordEditing,
+  bool isDateEditing,
+) => switch (pageItem) {
   PageItem.guest => [
     MarkdownPanel(asset: assetGuestMd, showDivider: false),
     FederatedAuthPanel(),
@@ -47,7 +54,12 @@ List<Widget> getContents(PageItem pageItem) => switch (pageItem) {
     if (getAppEnvironment() == AppEnvironment.web) EmailLinkPanel(),
     RegisterPanel(),
   ],
-  PageItem.home => [RecordPanel(), SummaryPanel(), CalendarPanel()],
+  PageItem.home =>
+    isRecordEditing
+        ? [EditRecordPanel()]
+        : isDateEditing
+        ? [EditDayPanel()]
+        : [RecordPanel(), SummaryPanel(), CalendarPanel()],
   PageItem.settings => [
     EditProfilePanel(),
     ResetPasswordPanel(),
@@ -121,6 +133,9 @@ class Layout extends HookConsumerWidget {
               ? MediaSize.middle
               : MediaSize.wide);
 
+    final isRecordEditing = ref.watch(editingRecordProvider) != null;
+    final isDateEditing = ref.watch(editingDateProvider) != null;
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: SafeArea(
@@ -147,7 +162,11 @@ class Layout extends HookConsumerWidget {
                     slivers: [
                       if (media() != MediaSize.wide) const _Header(),
                       const UpdateAvailablePanel(),
-                      ...getContents(selectedPage.value),
+                      ...getContents(
+                        selectedPage.value,
+                        isRecordEditing,
+                        isDateEditing,
+                      ),
                       const _Footer(),
                     ],
                   ),

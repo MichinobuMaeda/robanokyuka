@@ -1,11 +1,11 @@
-import {type AuthBlockingEvent} from "firebase-functions/identity";
-import {type CallableRequest} from "firebase-functions/v2/https";
+import { type AuthBlockingEvent } from "firebase-functions/identity";
+import { type CallableRequest } from "firebase-functions/v2/https";
 import {
   type FirestoreEvent, type Change,
 } from "firebase-functions/v2/firestore";
-import {type QueryDocumentSnapshot} from "firebase-admin/firestore";
+import { type QueryDocumentSnapshot } from "firebase-admin/firestore";
 
-import {msg, Context, isAdminUid} from "./common";
+import { msg, Context, isAdminUid } from "./common";
 
 /**
  * Handles the beforeUserCreated event by creating a Firestore user document.
@@ -14,7 +14,7 @@ import {msg, Context, isAdminUid} from "./common";
  * @return {Promise<void>}
  */
 export async function onUserCreating(
-  {logger, db}: Context,
+  { logger, db }: Context,
   event: AuthBlockingEvent,
 ): Promise<void> {
   const uid = event.data?.uid;
@@ -43,10 +43,10 @@ export async function onUserCreating(
  * @return {Promise<void>}
  */
 export async function addUserWithEmailAndName(
-  {logger, auth, db}: Context,
-  {email, name}: {email: string, name?: string},
+  { logger, auth, db }: Context,
+  { email, name }: {email: string, name?: string},
 ): Promise<void> {
-  logger.info(msg.addingUser, {email, name});
+  logger.info(msg.addingUser, { email, name });
 
   let uid: string;
   try {
@@ -55,7 +55,7 @@ export async function addUserWithEmailAndName(
     uid = existing.uid;
   } catch {
     const created = await auth.createUser(
-      name ? {email, displayName: name} : {email},
+      name ? { email, displayName: name } : { email },
     );
     uid = created.uid;
     logger.info(msg.authUserCreated(email));
@@ -82,7 +82,7 @@ export async function addUserWithEmailAndName(
  * @return {Promise<void>}
  */
 export async function handleAddUser(
-  {logger, auth, db}: Context,
+  { logger, auth, db }: Context,
   event: CallableRequest,
 ): Promise<void> {
   const email = event.data?.email;
@@ -93,11 +93,11 @@ export async function handleAddUser(
     throw new Error("Email is required");
   }
 
-  if (!(await isAdminUid({logger, auth, db}, event))) {
+  if (!(await isAdminUid({ logger, auth, db }, event))) {
     throw new Error(msg.unauthorized);
   }
 
-  await addUserWithEmailAndName({logger, auth, db}, {email, name});
+  await addUserWithEmailAndName({ logger, auth, db }, { email, name });
 }
 
 
@@ -109,7 +109,7 @@ export async function handleAddUser(
  * @return {Promise<void>}
  */
 export async function handleUserUpdated(
-  {logger, auth}: Context,
+  { logger, auth }: Context,
   event: FirestoreEvent<
     Change<QueryDocumentSnapshot> | undefined, {uid: string}
   >,
@@ -122,7 +122,7 @@ export async function handleUserUpdated(
   if (nameBefore === nameAfter) return;
 
   logger.info(msg.updatingDisplayName(uid, nameAfter));
-  await auth.updateUser(uid, {displayName: nameAfter ?? ""});
+  await auth.updateUser(uid, { displayName: nameAfter ?? "" });
 }
 
 /**
@@ -133,7 +133,7 @@ export async function handleUserUpdated(
  * @return {Promise<void>}
  */
 export async function handleDeleteUser(
-  {logger, auth, db}: Context,
+  { logger, auth, db }: Context,
   event: CallableRequest,
 ): Promise<void> {
   const uid = event.data?.uid;
@@ -143,7 +143,7 @@ export async function handleDeleteUser(
     throw new Error("UID is required");
   }
 
-  if (!(await isAdminUid({logger, auth, db}, event))) {
+  if (!(await isAdminUid({ logger, auth, db }, event))) {
     throw new Error(msg.unauthorized);
   }
 

@@ -7,7 +7,7 @@ import 'package:robanokyuka/config/firebase.dart';
 import 'package:robanokyuka/config/theme.dart';
 import 'package:robanokyuka/services/helpers.dart';
 import 'package:robanokyuka/services/validators.dart';
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/nengo.dart';
 import 'package:robanokyuka/models/holidays.dart';
 import 'package:robanokyuka/widgets/bordered_list_item.dart';
@@ -31,7 +31,7 @@ class HolidaysPanel extends HookConsumerWidget {
     );
 
     final filtered = holidays
-        .where((holiday) => int.parse(holiday.yyyy) == selectedYear.value)
+        .where((holiday) => int.parse(holiday.date.yyyy) == selectedYear.value)
         .toList();
 
     return SliverList(
@@ -215,10 +215,7 @@ class _Item extends HookConsumerWidget {
   }
 }
 
-final defaultHoliday = Holiday(
-  date: Cal(DateTime.now().year + 1, 1, 1),
-  name: '',
-);
+final defaultHoliday = Holiday(Cal(DateTime.now().year + 1, 1, 1), '');
 
 class _DeleteSheet extends HookConsumerWidget {
   const _DeleteSheet(this.holiday, this.nengo, this.onConfirm);
@@ -300,8 +297,8 @@ class _AddSheet extends HookConsumerWidget {
       }
 
       final holiday = Holiday(
-        date: nengo.parseDate(dateController.text)!,
-        name: nameController.text.trim(),
+        nengo.parseDate(dateController.text)!,
+        nameController.text.trim(),
       );
       Navigator.pop(context);
       onConfirm(holiday);

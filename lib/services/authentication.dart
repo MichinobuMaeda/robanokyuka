@@ -10,10 +10,12 @@ import 'package:robanokyuka/services/helpers.dart';
 const keyEmailForSignIn = 'robanokyuka_email_for_sign_in';
 
 enum FederatedProvider {
-  google;
+  google,
+  apple;
 
   String get name => switch (this) {
     FederatedProvider.google => 'Google',
+    FederatedProvider.apple => 'Apple',
   };
 }
 
@@ -22,6 +24,7 @@ AuthProvider getProvider(FederatedProvider provider) => switch (provider) {
   // https://www.googleapis.com/auth/userinfo.profile are included by default,
   // so we don't need to add them explicitly.
   FederatedProvider.google => GoogleAuthProvider(),
+  FederatedProvider.apple => AppleAuthProvider(),
 };
 
 class FirebaseAuthNotifier extends Notifier<FirebaseAuth?> {
@@ -29,6 +32,7 @@ class FirebaseAuthNotifier extends Notifier<FirebaseAuth?> {
   FirebaseAuth? build() => null;
 
   void setAuth(FirebaseAuth? auth) {
+    debugPrint("FirebaseAuthNotifier ${auth != null ? "set" : "reset"}");
     state = auth;
   }
 }
@@ -48,6 +52,7 @@ Future<void> sendEmailVerification(Ref ref, User authUser) async {
 
 @visibleForTesting
 User? checkEmailVerification(Ref ref, User? user) {
+  debugPrint("checkEmailVerification: user=${user?.uid}");
   if (user != null && !user.emailVerified) {
     sendEmailVerification(ref, user);
     return null;
@@ -267,6 +272,9 @@ Future<Either<String, Unit>> signInWithProvider(
             );
             await auth.signInWithCredential(credential);
             break;
+          case FederatedProvider.apple:
+            await FirebaseAuth.instance.signInWithProvider(getProvider(provider));
+            break;
         }
         break;
       default:
@@ -302,6 +310,14 @@ Future<Either<String, Unit>> reauthenticateWithProvider(
               getGoogleIdTokenFn ?? getGoogleIdToken,
             );
             await user.reauthenticateWithCredential(credential);
+            break;
+          case FederatedProvider.apple:
+            final credential = await FirebaseAuth.instance.signInWithProvider(
+              getProvider(provider),
+            );
+            if (credential.credential != null) {
+              await user.reauthenticateWithCredential(credential.credential!);
+            }
             break;
         }
         break;

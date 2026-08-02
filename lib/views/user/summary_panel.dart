@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:robanokyuka/config/theme.dart';
 
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/record.dart';
 
 class SummaryItem {
@@ -22,19 +23,41 @@ class SummaryPanel extends ConsumerWidget {
         ? records[selectedIndex]
         : null;
 
+    final plan = (record?.sum() ?? {}).values
+        .map(((v) => v))
+        .fold(
+          WorkStatus.toSumMap(),
+          (ret, v) => Map.fromEntries(
+            ret.entries.map((entry) => MapEntry(entry.key, entry.value)),
+          ),
+        );
+    final actual = (record?.sum(Cal.today()) ?? {}).values
+        .map(((v) => v))
+        .fold(
+          WorkStatus.toSumMap(),
+          (ret, v) => Map.fromEntries(
+            ret.entries.map((entry) => MapEntry(entry.key, entry.value)),
+          ),
+        );
+
     final summaryItems = record == null
         ? []
         : [
             SummaryItem(
-              label: '有給休暇取得予定: ',
-              value: '${record.plannedLeaves} / ${record.givenLeaves}',
+              label: '有休実績/予定/付与: ',
+              value:
+                  '${formatTime(plan[WorkStatus.p] ?? 0, record.workingSeconds)} / '
+                  '${formatTime(actual[WorkStatus.p] ?? 0, record.workingSeconds)} / '
+                  '${record.givenLeaves}',
             ),
             SummaryItem(
-              label: '有給休暇取得実績: ',
-              value: '${record.usedLeaves} / ${record.givenLeaves}',
+              label: '病欠: ',
+              value: formatTime(plan[WorkStatus.s] ?? 0, record.workingSeconds),
             ),
-            SummaryItem(label: '病欠: ', value: record.sickLeaves),
-            SummaryItem(label: 'その他: ', value: record.otherLeaves),
+            SummaryItem(
+              label: 'その他: ',
+              value: formatTime(plan[WorkStatus.o] ?? 0, record.workingSeconds),
+            ),
           ];
 
     return SliverToBoxAdapter(

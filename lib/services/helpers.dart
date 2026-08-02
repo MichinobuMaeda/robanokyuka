@@ -1,4 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import 'package:robanokyuka/models/cal.dart';
+import 'package:robanokyuka/models/record.dart';
 
 const assetAppLogo = 'assets/logo.svg';
 const assetGuestMd = 'assets/guest.md';
@@ -77,3 +81,12 @@ bool isUpdateAvailable(String? currentVersion, String? latestVersion) {
   }
   return false;
 }
+
+List<Cal> generateMonthList(Cal from, Cal to) => [
+  for (
+    var m = Cal(from.year, from.month, 1);
+    m.year < to.year || (m.year <= to.year && m.month <= to.month);
+    m = m.month < 12 ? Cal(m.year, m.month + 1, 1) : Cal(m.year + 1, 1, 1)
+  )
+    m,
+];

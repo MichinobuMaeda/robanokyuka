@@ -2,6 +2,7 @@ android/app/google-services.json
 ios/GoogleService-Info.plist
 lib/config/firebase_config.dart
 lib/config/google_server_client_id.dart
+note.txt
 
 # Miscellaneous
 *.class
@@ -195,3 +196,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# FVM Version Cache
+.fvm/

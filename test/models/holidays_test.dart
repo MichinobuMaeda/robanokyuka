@@ -1,41 +1,25 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/service.dart';
 import 'package:robanokyuka/models/holidays.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Holiday.compareTo', () {
-    test('orders earlier date before later date', () {
-      final jan1 = Holiday.fromString('20240101', name: '元日');
-      final may3 = Holiday.fromString('20240503', name: '憲法記念日');
-      expect(jan1.compareTo(may3), isNegative);
-      expect(may3.compareTo(jan1), isPositive);
-    });
-
-    test('returns 0 for equal dates', () {
-      final a = Holiday.fromString('20240101', name: '元日');
-      final b = Holiday.fromString('20240101', name: '元日');
-      expect(a.compareTo(b), 0);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
   group('Holiday.copyWith', () {
-    final base = Holiday.fromString('20240503', name: '憲法記念日');
+    final base = Holiday(Cal.fromString('20240503'), '憲法記念日');
 
     test('returns an equal holiday when nothing is overridden', () {
       final copy = base.copyWith();
-      expect(copy.yyyymmdd, base.yyyymmdd);
+      expect(copy.date.yyyymmdd, base.date.yyyymmdd);
       expect(copy.name, base.name);
     });
 
     test('overrides name only', () {
       final copy = base.copyWith(name: '祝日');
-      expect(copy.yyyymmdd, '20240503');
+      expect(copy.date.yyyymmdd, '20240503');
       expect(copy.name, '祝日');
     });
 
@@ -51,13 +35,13 @@ void main() {
 
     test('overrides month and day', () {
       final copy = base.copyWith(date: Cal(base.date.year, 1, 1));
-      expect(copy.yyyymmdd, '20240101');
+      expect(copy.date.yyyymmdd, '20240101');
       expect(copy.name, base.name);
     });
 
     test('overrides all fields', () {
       final copy = base.copyWith(date: Cal(2025, 1, 1), name: '元日');
-      expect(copy.yyyymmdd, '20250101');
+      expect(copy.date.yyyymmdd, '20250101');
       expect(copy.name, '元日');
     });
 
@@ -66,7 +50,7 @@ void main() {
         date: Cal(2099, base.date.month, base.date.day),
         name: 'other',
       );
-      expect(base.yyyymmdd, '20240503');
+      expect(base.date.yyyymmdd, '20240503');
       expect(base.name, '憲法記念日');
     });
   });
@@ -103,16 +87,16 @@ void main() {
       final holidays = container.read(holidaysProvider);
       expect(holidays.length, 2);
       expect(holidays[0].name, '元日');
-      expect(holidays[0].yyyymmdd, '20240101');
+      expect(holidays[0].date.yyyymmdd, '20240101');
       expect(holidays[1].name, '憲法記念日');
-      expect(holidays[1].yyyymmdd, '20240503');
+      expect(holidays[1].date.yyyymmdd, '20240503');
     });
   });
 
   group('setHoliday', () {
     test('writes holiday to service collection', () async {
       final firestore = FakeFirebaseFirestore();
-      final holiday = Holiday.fromString('20240101', name: '元日');
+      final holiday = Holiday(Cal.fromString('20240101'), '元日');
 
       final result = await setHoliday(firestore, holiday);
 
@@ -132,7 +116,7 @@ service cloud.firestore {
   }
 }''',
       );
-      final holiday = Holiday.fromString('20240101', name: '元日');
+      final holiday = Holiday(Cal.fromString('20240101'), '元日');
 
       final result = await setHoliday(firestore, holiday);
 
@@ -144,7 +128,7 @@ service cloud.firestore {
     test('removes the holiday field from the service document', () async {
       final firestore = FakeFirebaseFirestore();
       await firestore.collection('service').doc('y2024').set({'0101': '元日'});
-      final holiday = Holiday.fromString('20240101', name: '元日');
+      final holiday = Holiday(Cal.fromString('20240101'), '元日');
 
       final result = await deleteHoliday(firestore, holiday);
 
@@ -156,7 +140,7 @@ service cloud.firestore {
     test('returns left when Firestore update fails', () async {
       final firestore = FakeFirebaseFirestore();
       // No document exists — update will throw
-      final holiday = Holiday.fromString('20240101', name: '元日');
+      final holiday = Holiday(Cal.fromString('20240101'), '元日');
 
       final result = await deleteHoliday(firestore, holiday);
 
@@ -171,34 +155,34 @@ service cloud.firestore {
     });
 
     test('returns the single year for a one-holiday list', () {
-      final holidays = [Holiday.fromString('20240101', name: '元日')];
+      final holidays = [Holiday(Cal.fromString('20240101'), '元日')];
       expect(selectHolidayYears(holidays), [2024]);
     });
 
     test('deduplicates holidays in the same year', () {
       final holidays = [
-        Holiday.fromString('20240101', name: '元日'),
-        Holiday.fromString('20240503', name: '憲法記念日'),
-        Holiday.fromString('20241103', name: '文化の日'),
+        Holiday(Cal.fromString('20240101'), '元日'),
+        Holiday(Cal.fromString('20240503'), '憲法記念日'),
+        Holiday(Cal.fromString('20241103'), '文化の日'),
       ];
       expect(selectHolidayYears(holidays), [2024]);
     });
 
     test('returns multiple years sorted ascending', () {
       final holidays = [
-        Holiday.fromString('20260101', name: '元日'),
-        Holiday.fromString('20240503', name: '憲法記念日'),
-        Holiday.fromString('20250101', name: '元日'),
+        Holiday(Cal.fromString('20260101'), '元日'),
+        Holiday(Cal.fromString('20240503'), '憲法記念日'),
+        Holiday(Cal.fromString('20250101'), '元日'),
       ];
       expect(selectHolidayYears(holidays), [2024, 2025, 2026]);
     });
 
     test('deduplicates across years', () {
       final holidays = [
-        Holiday.fromString('20240101', name: '元日'),
-        Holiday.fromString('20240503', name: '憲法記念日'),
-        Holiday.fromString('20250101', name: '元日'),
-        Holiday.fromString('20250503', name: '憲法記念日'),
+        Holiday(Cal.fromString('20240101'), '元日'),
+        Holiday(Cal.fromString('20240503'), '憲法記念日'),
+        Holiday(Cal.fromString('20250101'), '元日'),
+        Holiday(Cal.fromString('20250503'), '憲法記念日'),
       ];
       expect(selectHolidayYears(holidays), [2024, 2025]);
     });

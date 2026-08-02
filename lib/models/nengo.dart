@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:robanokyuka/services/helpers.dart';
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/service.dart';
 import 'package:robanokyuka/models/users.dart';
 

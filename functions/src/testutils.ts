@@ -1,11 +1,11 @@
-import {vi} from "vitest";
-import type {CallableRequest} from "firebase-functions/https";
+import { vi } from "vitest";
+import type { CallableRequest } from "firebase-functions/https";
 import type {
   DocumentSnapshot,
   DocumentReference,
 } from "firebase-admin/firestore";
 
-import type {Context} from "./common";
+import type { Context } from "./common";
 
 const testEmail = (uid: string) => `${uid}@example.com`;
 
@@ -67,7 +67,7 @@ export function makeContext(overrides?: Partial<Context>) {
   const set = vi.fn().mockResolvedValue(undefined);
   const update = vi.fn().mockResolvedValue(undefined);
   const get = vi.fn().mockResolvedValue({
-    data: () => ({admins: [adminId], uiVersion}),
+    data: () => ({ admins: [adminId], uiVersion }),
   });
 
   const batch = {
@@ -76,32 +76,34 @@ export function makeContext(overrides?: Partial<Context>) {
     commit: vi.fn().mockResolvedValue(undefined),
   };
 
-  const usersGet = vi.fn().mockResolvedValue({exists: false});
-  const usersDoc = vi.fn().mockReturnValue({set, get: usersGet});
+  const usersGet = vi.fn().mockResolvedValue({ exists: false });
+  const usersDoc = vi.fn().mockReturnValue({ set, get: usersGet });
   const serviceDoc = vi.fn((id: string) => {
     if (id === "conf") {
-      return {id: "conf", get, update};
+      return { id: "conf", get, update };
     }
     if (id === "version") {
-      return {id: "version"};
+      return { id: "version" };
     }
-    return {id, set, get, update};
+    return { id, set, get, update };
   });
 
   const collection = vi.fn((name: string) => {
     if (name === "users") {
-      return {doc: usersDoc};
+      return { doc: usersDoc };
     }
     if (name === "service") {
-      return {doc: serviceDoc};
+      return { doc: serviceDoc };
     }
-    return {doc: vi.fn()};
+    return { doc: vi.fn() };
   });
 
   const auth = {
-    getUserByEmail: vi.fn().mockResolvedValue({uid: user01Id}),
-    getUser: vi.fn(async (uid: string) => ({uid, email: `${uid}@example.com`})),
-    createUser: vi.fn().mockResolvedValue({uid: user02Id}),
+    getUserByEmail: vi.fn().mockResolvedValue({ uid: user01Id }),
+    getUser: vi.fn(async (uid: string) => (
+      { uid, email: `${uid}@example.com` })
+    ),
+    createUser: vi.fn().mockResolvedValue({ uid: user02Id }),
     deleteUser: vi.fn().mockResolvedValue(undefined),
     updateUser: vi.fn().mockResolvedValue(undefined),
   };
@@ -115,7 +117,7 @@ export function makeContext(overrides?: Partial<Context>) {
     error: vi.fn(),
   };
 
-  const context = {logger, db, auth, ...overrides} as unknown as Context;
+  const context = { logger, db, auth, ...overrides } as unknown as Context;
 
   return {
     context,
@@ -148,7 +150,7 @@ export function makeEvent(
   return {
     data,
     auth: uid !== undefined ?
-      {uid, token: {} as never, rawToken: ""} :
+      { uid, token: {} as never, rawToken: "" } :
       undefined,
     rawRequest: {} as never,
     acceptsStreaming: false,

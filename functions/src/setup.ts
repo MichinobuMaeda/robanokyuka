@@ -1,16 +1,18 @@
-import {DocumentSnapshot, FieldValue} from "firebase-admin/firestore";
+import { DocumentSnapshot, FieldValue } from "firebase-admin/firestore";
 
-import {holidays} from "./holidays.json";
-import {gengos} from "./gengos.json";
-import {msg, Context} from "./common";
-import {addUserWithEmailAndName} from "./users";
+import { holidays } from "./holidays.json";
+import { gengos } from "./gengos.json";
+import { msg, Context } from "./common";
+import { addUserWithEmailAndName } from "./users";
 
 /**
  * Fetches the UI version from the specified URL or environment variable.
  * @param {Context} context - The function context containing logger.
  * @return {String | null} The UI version string or null if the APP_VERSION_URL environment variable is not set.
  */
-export async function getUiVersion({logger}: Context,): Promise<string | null> {
+export async function getUiVersion(
+  { logger }: Context,
+): Promise<string | null> {
   const appVersionUrl = process.env.APP_VERSION_URL;
   if (!appVersionUrl) {
     logger.error(msg.noAppVersionUrl);
@@ -19,7 +21,7 @@ export async function getUiVersion({logger}: Context,): Promise<string | null> {
   let uiVersion: string;
   if (appVersionUrl.startsWith("https://")) {
     const res = await fetch(appVersionUrl);
-    const json = await res.json() as {version: string, build_number: string};
+    const json = await res.json() as { version: string, build_number: string };
     uiVersion = `${json.version}+${json.build_number}`;
   } else {
     uiVersion = appVersionUrl;
@@ -37,7 +39,7 @@ async function setupV1(
   context: Context,
   data: DocumentSnapshot,
 ): Promise<number | undefined> {
-  const {logger, db, auth} = context;
+  const { logger, db, auth } = context;
   try {
     logger.info(msg.performingSetupV1);
 
@@ -50,7 +52,7 @@ async function setupV1(
     }
 
     logger.info(msg.adminEmailProvided(email));
-    const user = await auth.createUser({email, displayName});
+    const user = await auth.createUser({ email, displayName });
     const uiVersion = await getUiVersion(context);
     const batch = db.batch();
     batch.set(
@@ -63,7 +65,7 @@ async function setupV1(
       }
     );
 
-    await addUserWithEmailAndName(context, {email});
+    await addUserWithEmailAndName(context, { email });
 
     const pad2 = (num: number) => String(num).padStart(2, "0");
     const mmdd = (month: number, day: number) => `${pad2(month)}${pad2(day)}`;
@@ -71,8 +73,8 @@ async function setupV1(
 
     Object.entries(holidays.reduce(
       (
-        prev: {[yyyy: string]: { [mmdd: string]: string }},
-        {year, month, day, name}
+        prev: { [yyyy: string]: { [mmdd: string]: string } },
+        { year, month, day, name }
       ) => {
         prev[yearId(year)] = {
           ...prev[yearId(year)] ?? {},
@@ -84,7 +86,7 @@ async function setupV1(
     ).forEach(([id, item]) => {
       batch.set(
         db.collection("service").doc(id),
-        {...item, updatedAt: FieldValue.serverTimestamp()},
+        { ...item, updatedAt: FieldValue.serverTimestamp() },
       );
     });
 
@@ -105,7 +107,7 @@ async function setupV1(
 export async function updateUiVersion(
   context: Context,
 ): Promise<void> {
-  const {logger, db} = context;
+  const { logger, db } = context;
   const confRef = db.collection("service").doc("conf");
   const curUiVersion = (await confRef.get()).data()?.uiVersion as string | "";
   const uiVersion = await getUiVersion(context);
@@ -120,7 +122,7 @@ export async function updateUiVersion(
     return;
   } else {
     logger.info(msg.updatingUiVersion(uiVersion));
-    await confRef.update({uiVersion, updatedAt});
+    await confRef.update({ uiVersion, updatedAt });
   }
 }
 
@@ -132,9 +134,9 @@ export async function updateUiVersion(
  */
 export async function setup(
   context: Context,
-  {data}: { data: DocumentSnapshot | undefined },
+  { data }: { data: DocumentSnapshot | undefined },
 ): Promise<void> {
-  const {logger} = context;
+  const { logger } = context;
   logger.info(msg.nodeEnv(process.env.NODE_ENV));
 
   try {
@@ -144,7 +146,7 @@ export async function setup(
     }
 
     let version: number | undefined = (data.get("version") as number) ?? 0;
-    await data.ref.set({version, createdAt: FieldValue.serverTimestamp()});
+    await data.ref.set({ version, createdAt: FieldValue.serverTimestamp() });
     logger.info(msg.settingUpDataVersion, version);
 
     if (version < 1) {
@@ -153,7 +155,7 @@ export async function setup(
         logger.error(msg.setupFailed("1"));
         return;
       }
-      await data.ref.set({version, createdAt: FieldValue.serverTimestamp()});
+      await data.ref.set({ version, createdAt: FieldValue.serverTimestamp() });
     }
 
     await updateUiVersion(context);

@@ -6,10 +6,11 @@
 
 ### Prerequisites
 
-- Git
-- Flutter >= 3.41.9
-- Node.js >= 24
-- Java >= JDK 17
+- `git`
+- `fvm`
+- `nvm` or `fnm`
+- `java` >= JDK 17 for Firebase Local Emulator
+- IDE: VS Code / Zed
 
 [material_symbols_icons](https://pub.dev/packages/material_symbols_icons)
 
@@ -23,9 +24,12 @@ install_material_symbols_icons_fonts
 ```bash
 git clone git@github.com:MichinobuMaeda/robanokyuka.git
 cd robanokyuka
-flutter pug get
+fvm use
+fvm flutter doctor
+fvm flutter pug get
 npm i
 npm i --prefix functions
+npm run lint
 npm test
 ```
 

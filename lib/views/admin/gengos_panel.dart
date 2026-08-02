@@ -6,7 +6,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:robanokyuka/config/firebase.dart';
 import 'package:robanokyuka/config/theme.dart';
 import 'package:robanokyuka/services/helpers.dart';
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/service.dart';
 import 'package:robanokyuka/widgets/bordered_list_item.dart';
 

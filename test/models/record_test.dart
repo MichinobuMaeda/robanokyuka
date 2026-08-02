@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter_test/flutter_test.dart';
+// import 'package:markdown/markdown.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:robanokyuka/config/firebase.dart';
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
+import 'package:robanokyuka/models/holidays.dart';
 import 'package:robanokyuka/models/record.dart';
 
 import 'package:robanokyuka/services/authentication.dart';
@@ -13,631 +16,659 @@ import 'package:robanokyuka/services/authentication.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('WorkTime', () {
-    test(
-      'toString returns empty string when seconds is 0 and all is false',
-      () {
-        expect(WorkTime(0).toString(), '');
-      },
-    );
-
-    test('toString returns allString when all is true', () {
-      expect(WorkTime(0, true).toString(), WorkTime.allString);
+  group('WorkStatus', () {
+    test('fromString parse String to emum WorkStatus', () {
+      expect(WorkStatus.fromString('w'), WorkStatus.w);
+      expect(WorkStatus.fromString('h'), WorkStatus.h);
+      expect(WorkStatus.fromString('c'), WorkStatus.c);
+      expect(WorkStatus.fromString('p'), WorkStatus.p);
+      expect(WorkStatus.fromString('s'), WorkStatus.s);
+      expect(WorkStatus.fromString('o'), WorkStatus.o);
+      expect(WorkStatus.fromString('f'), WorkStatus.f);
+      expect(WorkStatus.fromString('r'), WorkStatus.r);
+      expect(WorkStatus.fromString('e'), WorkStatus.e);
     });
 
-    test('toString returns HH:MM string for non-zero seconds', () {
-      expect(WorkTime(3600 * 8).toString(), '08:00');
+    test('fromString parse the lowercase of first char', () {
+      expect(WorkStatus.fromString('Wx'), WorkStatus.w);
+      expect(WorkStatus.fromString('Hx'), WorkStatus.h);
+      expect(WorkStatus.fromString('Cx'), WorkStatus.c);
+      expect(WorkStatus.fromString('Px'), WorkStatus.p);
+      expect(WorkStatus.fromString('Sx'), WorkStatus.s);
+      expect(WorkStatus.fromString('Ox'), WorkStatus.o);
+      expect(WorkStatus.fromString('Fx'), WorkStatus.f);
+      expect(WorkStatus.fromString('Rx'), WorkStatus.r);
+      expect(WorkStatus.fromString('Ex'), WorkStatus.e);
     });
 
-    test('hashCode is equal for equal WorkTime instances', () {
-      expect(WorkTime(3600).hashCode, WorkTime(3600).hashCode);
+    test('fromString ignore spaces', () {
+      expect(WorkStatus.fromString('  w'), WorkStatus.w);
+      expect(WorkStatus.fromString('h  '), WorkStatus.h);
+      expect(WorkStatus.fromString(' c '), WorkStatus.c);
     });
 
-    test('hashCode differs for different WorkTime instances', () {
-      expect(WorkTime(3600).hashCode, isNot(WorkTime(7200).hashCode));
+    test('fromString return null for invalid param', () {
+      expect(WorkStatus.fromString(''), null);
+      expect(WorkStatus.fromString(' '), null);
+      expect(WorkStatus.fromString(null), null);
+      expect(WorkStatus.fromString('1'), null);
+    });
+  });
+
+  group('parseTime', () {
+    test('parseTime parses H:MM', () {
+      expect(parseTime('-9:00'), -9 * 3600);
+      expect(parseTime('0:00'), 0);
+      expect(parseTime('9:00'), 9 * 3600);
+    });
+
+    test('parseTime parses HH:MM with minutes', () {
+      expect(parseTime('-00:01'), -1 * 60);
+      expect(parseTime('00:00'), 0);
+      expect(parseTime('08:30'), 8 * 3600 + 30 * 60);
+      expect(parseTime('24:01'), 24 * 3600 + 1 * 60);
+    });
+
+    test('parseTime returns null for null', () {
+      expect(parseTime(null), isNull);
+    });
+
+    test('parseTime returns null for string without colon', () {
+      expect(parseTime('900'), isNull);
     });
   });
 
   group('formatTime', () {
-    test('returns HH:MM with leading zero for single-digit hours', () {
-      expect(formatTime(8 * 3600), '08:00');
+    test('formatTime format zero', () {
+      expect(formatTime(0), '0:00');
     });
 
-    test('returns HH:MM for double-digit hours', () {
-      expect(formatTime(10 * 3600 + 30 * 60), '10:30');
+    test('formatTime format positive number', () {
+      expect(formatTime(60), '0:01');
+      expect(formatTime(9 * 3600 + 0 * 60), '9:00');
+      expect(formatTime(24 * 3600 + 1 * 60), '24:01');
     });
 
-    test('short: true returns H:MM without leading zero', () {
-      expect(formatTime(8 * 3600, short: true), '8:00');
+    test('formatTime format nagative number', () {
+      expect(formatTime(-60), '-0:01');
+      expect(formatTime(-(9 * 3600 + 0 * 60)), '-9:00');
+      expect(formatTime(-(24 * 3600 + 1 * 60)), '-24:01');
     });
   });
 
-  group('formatTimeShort', () {
-    test('returns H:MM without leading zero for single-digit hours', () {
-      expect(formatTimeShort(8 * 3600), '8:00');
+  group('ScheduleItem', () {
+    test('fromMap return null for invalid data', () {
+      expect(ScheduleItem.fromMap({}), null);
+      expect(ScheduleItem.fromMap({"time": "9:00"}), null);
+      expect(ScheduleItem.fromMap({"status": "w"}), null);
+      expect(ScheduleItem.fromMap({"time": "", "status": "w"}), null);
+      expect(ScheduleItem.fromMap({"time": "9:00", "status": ""}), null);
     });
 
-    test('returns H:MM for zero hours', () {
-      expect(formatTimeShort(30 * 60), '0:30');
+    test('fromMap return ScheduleItem from valid data', () {
+      final i1 = ScheduleItem.fromMap({"time": "9:00", "status": "w"});
+      expect(i1!.time, 9 * 3600);
+      expect(i1.status, WorkStatus.w);
+
+      final i2 = ScheduleItem.fromMap({"time": "-0:01", "status": "e"});
+      expect(i2!.time, -60);
+      expect(i2.status, WorkStatus.e);
     });
 
-    test('returns H:MM for double-digit hours', () {
-      expect(formatTimeShort(10 * 3600 + 30 * 60), '10:30');
+    test('toMap return {"time": "h:mm", "status": "s"}', () {
+      expect(ScheduleItem(9 * 3600, WorkStatus.w).toMap(), {
+        "time": "09:00",
+        "status": "w",
+      });
+      expect(ScheduleItem(-60, WorkStatus.e).toMap(), {
+        "time": "-0:01",
+        "status": "e",
+      });
+    });
+  });
+
+  group('ScheduleList', () {
+    test('default has empty', () {
+      expect(ScheduleList().sch, []);
+    });
+
+    test('sorted create sorted List of ScheculeItem', () {
+      expect(
+        ScheduleList.sorted([
+          ScheduleItem(10 * 3600, WorkStatus.e),
+          ScheduleItem(9 * 3600, WorkStatus.w),
+        ]).toMapList(),
+        [
+          {"time": "09:00", "status": "w"},
+          {"time": "10:00", "status": "e"},
+        ],
+      );
+    });
+
+    test('fromMapList create sorted List of ScheculeItem', () {
+      expect(
+        ScheduleList.fromMapList([
+          {"time": "10:00", "status": "e"},
+          {"time": "9:00", "status": "w"},
+        ]).toMapList(),
+        [
+          {"time": "09:00", "status": "w"},
+          {"time": "10:00", "status": "e"},
+        ],
+      );
+    });
+
+    test('sum retun calculated time in seconds of each WorkStats', () {
+      expect(
+        ScheduleList.fromMapList([
+          {"time": "9:00", "status": "w"},
+          {"time": "12:00", "status": "r"},
+          {"time": "13:00", "status": "w"},
+          {"time": "16:00", "status": "s"},
+          {"time": "18:00", "status": "e"},
+        ]).sum(),
+        {
+          WorkStatus.w: 6 * 3600,
+          WorkStatus.h: 0,
+          WorkStatus.c: 0,
+          WorkStatus.p: 0,
+          WorkStatus.s: 2 * 3600,
+          WorkStatus.o: 0,
+          WorkStatus.f: 0,
+          WorkStatus.r: 1 * 3600,
+        },
+      );
     });
   });
 
   group('DateRecord', () {
-    test('stores date, companyHoliday and note', () {
-      final dr = DateRecord(
-        Cal.fromString('20240101'),
-        false,
-        null,
-        plan: WorkTime(0),
-        used: WorkTime(0),
-        sick: WorkTime(0),
-        other: WorkTime(0),
+    test('fromMap initialize with map data', () {
+      expect(DateRecord.fromMap({}).toMap(), {"status": null, "sch": []});
+      expect(
+        DateRecord.fromMap({
+          "status": "w",
+          "sch": [
+            {"time": "9:00", "status": "w"},
+            {"time": "10:00", "status": "e"},
+          ],
+        }).toMap(),
+        {
+          "status": "w",
+          "sch": [
+            {"time": "09:00", "status": "w"},
+            {"time": "10:00", "status": "e"},
+          ],
+        },
       );
-      expect(dr.companyHoliday, isFalse);
-      expect(dr.plan, WorkTime(0));
-      expect(dr.used, WorkTime(0));
-      expect(dr.sick, WorkTime(0));
-      expect(dr.other, WorkTime(0));
-      expect(dr.note, isNull);
+      expect(
+        DateRecord.fromMap({
+          "status": "w",
+          "sch": [
+            {"time": "9:00", "status": "w"},
+            {"time": "10:00", "status": "e"},
+          ],
+          "note": "Test",
+        }).toMap(),
+        {
+          "status": "w",
+          "sch": [
+            {"time": "09:00", "status": "w"},
+            {"time": "10:00", "status": "e"},
+          ],
+          "note": "Test",
+        },
+      );
     });
+  });
 
-    test('stores all explicitly provided fields', () {
-      final dr = DateRecord(
-        Cal.fromString('20240615'),
-        true,
-        'memo',
-        plan: WorkTime.parse('08:00'),
-        used: WorkTime.parse('04:00'),
-        sick: WorkTime.parse('02:00'),
-        other: WorkTime.parse('01:00'),
-      );
-      expect(dr.date.yyyymmdd, '20240615');
-      expect(dr.companyHoliday, isTrue);
-      expect(dr.plan, WorkTime.parse('08:00'));
-      expect(dr.used, WorkTime.parse('04:00'));
-      expect(dr.sick, WorkTime.parse('02:00'));
-      expect(dr.other, WorkTime.parse('01:00'));
-      expect(dr.note, 'memo');
-    });
+  test('mergeBoolList', () {
+    expect(mergeBoolList([], null), []);
+    expect(mergeBoolList([], []), []);
+    expect(mergeBoolList([true, false], null), [true, false]);
+    expect(mergeBoolList([true, false], []), [true, false]);
+    expect(mergeBoolList([true, false], [false]), [false, false]);
+    expect(mergeBoolList([true, false], [false, null]), [false, false]);
+    expect(mergeBoolList([true, false], [null, true]), [true, true]);
+    expect(mergeBoolList([true, false], [false, true]), [false, true]);
+  });
+
+  test('getIntValue', () {
+    expect(getIntValue(null), null);
+    expect(getIntValue(''), null);
+    expect(getIntValue(1), 1);
+    expect(getIntValue(1.0), 1);
+    expect(getIntValue(1.01), 1);
+    expect(getIntValue("1"), 1);
+    expect(getIntValue("1.0"), 1);
+    expect(getIntValue("1.01"), 1);
   });
 
   group('Record', () {
-    test('defaults all optional fields', () {
-      final r = Record(
-        id: 'r1',
-        from: Cal.fromString('20240401'),
-        to: Cal.fromString('20250331'),
+    final firestore = FakeFirebaseFirestore();
+    final ref = firestore
+        .collection('users')
+        .doc('u1')
+        .collection('records')
+        .doc('r1');
+
+    test('default has empty dates', () async {
+      expect(
+        Record(
+          id: 'record_id',
+          from: Cal.fromString('20250401'),
+          to: Cal.fromString('20260331'),
+        ).toMap(),
+        {
+          "id": 'record_id',
+          "data": {
+            "from": '20250401',
+            "to": '20260331',
+            "holidays": defaultHolidays,
+            "givenLeaves": defaultGivenLeaves,
+            "minLeaves": defaultMinLeaves,
+            "useLeavesHourly": false,
+            "sch": getDefauiltSchedule().toMapList(),
+            "dates": {},
+          },
+        },
       );
-      expect(r.publicHolidays, defaultPublicHolidays);
-      expect(r.givenLeaves, defaultGivenLeaves);
-      expect(r.minLeaves, defaultMinLeaves);
-      expect(r.useLeavesHourly, isFalse);
-      expect(r.workingHours, defaultWorkingHours);
-      expect(r.dates, isEmpty);
     });
 
-    test('stores all explicitly provided fields', () {
-      final customHolidays = [
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        false,
-        false,
-      ];
-      final dr = DateRecord(
-        Cal.fromString('20240615'),
-        false,
-        null,
-        plan: WorkTime.parse('08:00'),
-        used: WorkTime(0),
-        sick: WorkTime(0),
-        other: WorkTime(0),
-      );
-      final r = Record(
-        id: 'custom',
-        from: Cal.fromString('20240101'),
-        to: Cal.fromString('20241231'),
-        publicHolidays: customHolidays,
-        givenLeaves: 20,
-        minLeaves: 10,
-        useLeavesHourly: true,
-        stdSeconds: parseTime('09:00'),
-        dates: [dr],
-      );
-      expect(r.id, 'custom');
-      expect(r.publicHolidays, customHolidays);
-      expect(r.givenLeaves, 20);
-      expect(r.minLeaves, 10);
-      expect(r.useLeavesHourly, isTrue);
-      expect(r.workingHours, parseTime('09:00'));
+    test('fromDocument create instance from Firestore Document', () async {
+      await ref.set({'from': '20250401', 'to': '20260331'});
+      final doc1 = await ref.get();
+      expect(Record.fromDocument(doc1).toMap(), {
+        "id": 'r1',
+        "data": {
+          "from": '20250401',
+          "to": '20260331',
+          "holidays": defaultHolidays,
+          "givenLeaves": defaultGivenLeaves,
+          "minLeaves": defaultMinLeaves,
+          "useLeavesHourly": false,
+          "sch": getDefauiltSchedule().toMapList(),
+          "dates": {},
+        },
+      });
+
+      await ref.set({
+        'from': '20240401',
+        'to': '20250331',
+        'holidays': [true, false, false, false, false, false, true, false],
+        "givenLeaves": 11,
+        "minLeaves": 6,
+        "useLeavesHourly": true,
+        "sch": [
+          {"time": "17:00", "status": "e"},
+          {"time": "10:00", "status": "w"},
+        ],
+        "dates": {
+          '20240403': {'status': null},
+          '20240402': {'status': 'h', "sch": []},
+          '20240401': {
+            'status': 'w',
+            "sch": [
+              {"time": "18:00", "status": "e"},
+              {"time": "09:00", "status": "w"},
+            ],
+          },
+        },
+      });
+      final doc2 = await ref.get();
+      expect(Record.fromDocument(doc2).toMap(), {
+        "id": 'r1',
+        "data": {
+          "from": '20240401',
+          "to": '20250331',
+          "holidays": [true, false, false, false, false, false, true, false],
+          "givenLeaves": 11,
+          "minLeaves": 6,
+          "useLeavesHourly": true,
+          "sch": [
+            {"time": "10:00", "status": "w"},
+            {"time": "17:00", "status": "e"},
+          ],
+          "dates": {
+            '20240401': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "18:00", "status": "e"},
+              ],
+            },
+            '20240402': {'status': 'h', "sch": []},
+            '20240403': {'status': null, "sch": []},
+          },
+        },
+      });
     });
-  });
 
-  group('Record.fromDefault', () {
-    test(
-      'with empty list: from = current year/04/01, to = next year/03/31',
-      () {
-        final result = Record.next([]);
-        final now = DateTime.now();
-        expect(result.id, '');
-        expect(result.from.yyyymmdd, '${now.year}0401');
-        expect(result.to.yyyymmdd, '${now.year + 1}0331');
-      },
-    );
-
-    test(
-      'with one record: from = day after its to, to = one year after its to',
-      () {
-        final existing = Record(
-          id: 'r1',
-          from: Cal.fromString('20240401'),
-          to: Cal.fromString('20250331'),
-        );
-        final result = Record.next([existing]);
-        expect(result.from.yyyymmdd, '20250401');
-        expect(result.to.yyyymmdd, '20260331');
-      },
-    );
-
-    test('picks the record with the latest to date when multiple exist', () {
+    test('next create copy of the last record with next period', () async {
       final records = [
         Record(
-          id: 'r1',
-          from: Cal.fromString('20230401'),
-          to: Cal.fromString('20240331'),
+          id: 'record_id',
+          from: Cal.fromString('20250401'),
+          to: Cal.fromString('20260331'),
+          holidays: [true, false, false, false, false, false, true, false],
+          givenLeaves: 11,
+          minLeaves: 6,
+          useLeavesHourly: true,
+          sch: ScheduleList.fromMapList([
+            {"time": "17:00", "status": "e"},
+            {"time": "10:00", "status": "w"},
+          ]),
+          dates: {
+            Cal(2024, 4, 3): DateRecord(null, []),
+            Cal(2024, 4, 2): DateRecord(WorkStatus.h, []),
+            Cal(2024, 4, 1): DateRecord(WorkStatus.w, [
+              ScheduleItem.fromMap({"time": "18:00", "status": "e"})!,
+              ScheduleItem.fromMap({"time": "09:00", "status": "w"})!,
+            ]),
+          },
         ),
         Record(
-          id: 'r2',
+          id: 'record_id',
           from: Cal.fromString('20240401'),
           to: Cal.fromString('20250331'),
         ),
       ];
-      final result = Record.next(records);
-      expect(result.from.yyyymmdd, '20250401');
+      expect(Record.next(records).toMap(), {
+        'id': '',
+        'data': {
+          'from': '20260401',
+          'to': '20270331',
+          'holidays': [true, false, false, false, false, false, true, false],
+          "givenLeaves": 11,
+          "minLeaves": 6,
+          "useLeavesHourly": true,
+          "sch": [
+            {"time": "10:00", "status": "w"},
+            {"time": "17:00", "status": "e"},
+          ],
+          "dates": {},
+        },
+      });
+
+      final year = DateTime.now().year;
+      expect(Record.next([]).toMap(), {
+        'id': '',
+        'data': {
+          'from': Cal(year, 4, 1).yyyymmdd,
+          'to': Cal(year + 1, 3, 31).yyyymmdd,
+          'holidays': defaultHolidays,
+          "givenLeaves": defaultGivenLeaves,
+          "minLeaves": defaultMinLeaves,
+          "useLeavesHourly": false,
+          "sch": getDefauiltSchedule().toMapList(),
+          "dates": {},
+        },
+      });
     });
 
-    test(
-      'uses default values for leaves, workingHours, and publicHolidays',
-      () {
-        final result = Record.next([]);
-        expect(result.givenLeaves, defaultGivenLeaves);
-        expect(result.minLeaves, defaultMinLeaves);
-        expect(result.workingHours, defaultWorkingHours);
-        expect(result.publicHolidays, defaultPublicHolidays);
-        expect(result.useLeavesHourly, isFalse);
-      },
-    );
-  });
-
-  group('Record.monthList', () {
-    test('returns all months within a single year', () {
-      final r = Record(
-        id: 'r',
-        from: Cal.fromString('20240401'),
-        to: Cal.fromString('20240630'),
-      );
-      expect(r.months, [(2024, 4), (2024, 5), (2024, 6)]);
-    });
-
-    test('spans a year boundary correctly', () {
-      final r = Record(
-        id: 'r',
-        from: Cal.fromString('20241001'),
-        to: Cal.fromString('20250331'),
-      );
-      expect(r.months, [
-        (2024, 10),
-        (2024, 11),
-        (2024, 12),
-        (2025, 1),
-        (2025, 2),
-        (2025, 3),
-      ]);
-    });
-
-    test(
-      'returns a single-element list when from and to are the same month',
-      () {
-        final r = Record(
-          id: 'r',
-          from: Cal.fromString('20240101'),
-          to: Cal.fromString('20240131'),
-        );
-        expect(r.months, [(2024, 1)]);
-      },
-    );
-  });
-
-  // ---------------------------------------------------------------------------
-  group('Record.summary', () {
-    Record makeRecord({int? workingHours}) => Record(
-      id: 'r',
-      from: Cal.fromString('20240401'),
-      to: Cal.fromString('20250331'),
-      stdSeconds: workingHours ?? defaultWorkingHours, // 8h = 28800s
-    );
-
-    test('returns 0 for empty list', () {
-      expect(makeRecord().summary([]), '0');
-    });
-
-    test('counts an "all" entry as one workingHours worth of seconds', () {
-      // 1 × 28800s = 1 day exactly → no remainder
-      expect(makeRecord().summary([WorkTime(0, true)]), '1');
-    });
-
-    test('sums plain seconds and formats remainder as d(h:mm)', () {
-      // 4.5h = 16200s → 0 days, 4:30 remaining
-      expect(makeRecord().summary([WorkTime(4 * 3600 + 30 * 60)]), '0(4:30)');
-    });
-
-    test('mixes all and plain seconds', () {
-      // 28800 + 3600 = 32400s → 1 day + 3600s = 1(1:00)
-      expect(
-        makeRecord().summary([WorkTime(0, true), WorkTime(3600)]),
-        '1(1:00)',
-      );
-    });
-
-    test('minutes are zero-padded to two digits', () {
-      expect(makeRecord().summary([WorkTime(5 * 60)]), '0(0:05)');
-    });
-
-    test('multiple all entries accumulate', () {
-      // 2 × 28800 = 57600s → 2 days, no remainder
-      expect(makeRecord().summary([WorkTime(0, true), WorkTime(0, true)]), '2');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  group('Record.plannedLeaves / usedLeaves / sickLeaves / otherLeaves', () {
-    // Build a record with one DateRecord that has distinct values per field.
-    // plan=8h (all), used=4h, sick=2h, other=1h — workingHours=8h (28800s)
-    final date = Cal.fromString('20240615');
-    final dr = DateRecord(
-      date,
-      false,
-      null,
-      plan: WorkTime(0, true), // all → 1 workingHours = 8h
-      used: WorkTime(4 * 3600), // 4h
-      sick: WorkTime(2 * 3600), // 2h
-      other: WorkTime(3600), // 1h
-    );
-    final record = Record(
-      id: 'r',
-      from: Cal.fromString('20240401'),
-      to: Cal.fromString('20250331'),
-      stdSeconds: defaultWorkingHours, // 8h = 28800s
-      dates: [dr],
-    );
-
-    test('plannedLeaves sums plan field across all dates', () {
-      // all → 28800s → 1 day, no remainder
-      expect(record.plannedLeaves, '1');
-    });
-
-    test('usedLeaves sums used field across all dates', () {
-      // 4h = 14400s → 0d, 4:00 remaining
-      expect(record.usedLeaves, '0(4:00)');
-    });
-
-    test('sickLeaves sums sick field across all dates', () {
-      // 2h = 7200s → 0d, 2:00 remaining
-      expect(record.sickLeaves, '0(2:00)');
-    });
-
-    test('otherLeaves sums other field across all dates', () {
-      // 1h = 3600s → 0d, 1:00 remaining
-      expect(record.otherLeaves, '0(1:00)');
-    });
-
-    test('returns 0 for each field when dates is empty', () {
-      final empty = Record(
-        id: 'r',
-        from: Cal.fromString('20240401'),
-        to: Cal.fromString('20250331'),
-      );
-      expect(empty.plannedLeaves, '0');
-      expect(empty.usedLeaves, '0');
-      expect(empty.sickLeaves, '0');
-      expect(empty.otherLeaves, '0');
-    });
-
-    test('accumulates across multiple dates', () {
-      final dr2 = DateRecord(
-        Cal.fromString('20240616'),
-        false,
-        null,
-        plan: WorkTime(0, true), // another all day
-        used: WorkTime(4 * 3600),
-        sick: WorkTime(0),
-        other: WorkTime(0),
-      );
-      final r2 = Record(
-        id: 'r2',
-        from: Cal.fromString('20240401'),
-        to: Cal.fromString('20250331'),
-        stdSeconds: defaultWorkingHours,
-        dates: [dr, dr2],
-      );
-      // plan: 2 × all → 2 × 28800 = 57600s → 2 days, no remainder
-      expect(r2.plannedLeaves, '2');
-      // used: 4h + 4h = 8h = 28800s → 1 day, no remainder
-      expect(r2.usedLeaves, '1');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  group('Record.isHolidayWeekDay', () {
-    Record makeRecord({List<bool>? publicHolidays}) => Record(
-      id: 'r',
-      from: Cal.fromString('20240101'),
-      to: Cal.fromString('20241231'),
-      publicHolidays: publicHolidays ?? List<bool>.from(defaultPublicHolidays),
-    );
-
-    // 2024-01-07 is a Sunday  (weekday % 7 == 0)
-    // 2024-01-08 is a Monday  (weekday % 7 == 1)
-    // 2024-01-09 is a Tuesday (weekday % 7 == 2)
-    // 2024-01-13 is a Saturday(weekday % 7 == 6)
-
-    test('returns true for Sunday with default holidays', () {
-      expect(makeRecord().isHolidayWeekDay(Cal.fromString('20240107')), isTrue);
-    });
-
-    test('returns false for Monday with default holidays', () {
-      expect(
-        makeRecord().isHolidayWeekDay(Cal.fromString('20240108')),
-        isFalse,
-      );
-    });
-
-    test('returns false for Tuesday with default holidays', () {
-      expect(
-        makeRecord().isHolidayWeekDay(Cal.fromString('20240109')),
-        isFalse,
-      );
-    });
-
-    test('returns true for Saturday with default holidays', () {
-      expect(makeRecord().isHolidayWeekDay(Cal.fromString('20240113')), isTrue);
-    });
-
-    test('returns false for Sunday when Sunday is not a holiday', () {
-      final holidays = List<bool>.from(defaultPublicHolidays)..[0] = false;
-      expect(
-        makeRecord(
-          publicHolidays: holidays,
-        ).isHolidayWeekDay(Cal.fromString('20240107')),
-        isFalse,
-      );
-    });
-
-    test('returns true for Monday when Monday is set as a holiday', () {
-      final holidays = List<bool>.from(defaultPublicHolidays)..[1] = true;
-      expect(
-        makeRecord(
-          publicHolidays: holidays,
-        ).isHolidayWeekDay(Cal.fromString('20240108')),
-        isTrue,
-      );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  group('Record.fromDocument', () {
-    test('parses all top-level fields from Firestore', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r1')
-          .set({
-            'from': '20240401',
-            'to': '20250331',
-            'holidays': [true, false, false, false, false, false, true, true],
-            'givenLeaves': 15,
-            'minLeaves': 7,
-            'useLeavesHourly': true,
-            'workingHours': '09:00',
-          });
-      final doc = await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r1')
-          .get();
-
-      final record = Record.fromDocument(doc);
-
-      expect(record.id, 'r1');
-      expect(record.from.yyyymmdd, '20240401');
-      expect(record.to.yyyymmdd, '20250331');
-      expect(record.givenLeaves, 15);
-      expect(record.minLeaves, 7);
-      expect(record.useLeavesHourly, isTrue);
-      expect(record.workingHours, parseTime('09:00'));
-      expect(record.dates, isEmpty);
-    });
-
-    test('uses defaults when optional fields are absent', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r2')
-          .set({'from': '20240401', 'to': '20250331'});
-      final doc = await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r2')
-          .get();
-
-      final record = Record.fromDocument(doc);
-
-      expect(record.publicHolidays, defaultPublicHolidays);
-      expect(record.givenLeaves, defaultGivenLeaves);
-      expect(record.minLeaves, defaultMinLeaves);
-      expect(record.useLeavesHourly, isFalse);
-      expect(record.workingHours, defaultWorkingHours);
-    });
-
-    test('parses dates map into DateRecord list', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r3')
-          .set({
-            'from': '20240401',
-            'to': '20250331',
-            'dates': {
-              '20240615': {
-                'c': true,
-                'p': '08:00',
-                'u': '04:00',
-                's': '02:00',
-                'o': '01:00',
-                'n': 'memo',
-              },
-            },
-          });
-      final doc = await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r3')
-          .get();
-
-      final record = Record.fromDocument(doc);
-
-      expect(record.dates.length, 1);
-      expect(record.dates[0].date.yyyymmdd, '20240615');
-      expect(record.dates[0].companyHoliday, isTrue);
-      expect(record.dates[0].plan, WorkTime.parse('08:00'));
-      expect(record.dates[0].used, WorkTime.parse('04:00'));
-      expect(record.dates[0].sick, WorkTime.parse('02:00'));
-      expect(record.dates[0].other, WorkTime.parse('01:00'));
-      expect(record.dates[0].note, 'memo');
-    });
-  });
-
-  group('saveDateRecord', () {
-    test('saves DateRecord fields under dates.<yyyymmdd> key', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r1')
-          .set({'from': '20240401', 'to': '20250331'});
-      final dr = DateRecord(
-        Cal.fromString('20240615'),
-        true,
-        'memo',
-        plan: WorkTime.parse('06:00'),
-        used: WorkTime.parse('04:00'),
-        sick: WorkTime.parse('02:00'),
-        other: WorkTime.parse('01:00'),
-      );
-
-      final result = await saveDateRecord(firestore, 'u1', 'r1', dr);
-
-      expect(result.isRight(), isTrue);
-      final doc = await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r1')
-          .get();
-      final dates = doc.data()!['dates'] as Map<String, dynamic>;
-      expect(dates.containsKey('20240615'), isTrue);
-      final entry = dates['20240615'] as Map<String, dynamic>;
-      expect(entry['c'], isTrue);
-      expect(entry['p'], '06:00');
-      expect(entry['u'], '04:00');
-      expect(entry['s'], '02:00');
-      expect(entry['o'], '01:00');
-      expect(entry['n'], 'memo');
-      expect(entry.containsKey('date'), isFalse);
-    });
-
-    test('returns left when record does not exist', () async {
-      final firestore = FakeFirebaseFirestore();
-      final dr = DateRecord(
-        Cal.fromString('20240615'),
-        false,
-        null,
-        plan: WorkTime(0),
-        used: WorkTime(0),
-        sick: WorkTime(0),
-        other: WorkTime(0),
-      );
-
-      final result = await saveDateRecord(firestore, 'u1', 'nonexistent', dr);
-
-      expect(result.isLeft(), isTrue);
-    });
-  });
-
-  group('saveRecord', () {
-    test('adds a new document when record id is empty', () async {
-      final firestore = FakeFirebaseFirestore();
-      final record = Record(
-        id: '',
-        from: Cal.fromString('20240401'),
-        to: Cal.fromString('20250331'),
-      );
-
-      final result = await saveRecord(firestore, 'u1', record);
-
-      expect(result.isRight(), isTrue);
-      final docs = await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .get();
-      expect(docs.docs.length, 1);
-      expect(docs.docs[0].data()['from'], '20240401');
-    });
-
-    test('updates existing document when record id is non-empty', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r1')
-          .set({'from': '20230401', 'to': '20240331'});
+    test('fill return true if it added or updated some data', () async {
+      final today = Cal(2025, 4, 4);
+      final holidays = [Holiday(Cal(2025, 4, 3), 'Name')];
       final record = Record(
         id: 'r1',
-        from: Cal.fromString('20240401'),
-        to: Cal.fromString('20250331'),
-        givenLeaves: 20,
+        from: Cal(2025, 4, 1),
+        to: Cal(2025, 4, 5),
+        holidays: [true, false, false, false, false, false, true, false],
+        givenLeaves: 11,
+        minLeaves: 6,
+        useLeavesHourly: true,
+        sch: ScheduleList.fromMapList([
+          {"time": "17:15", "status": "e"},
+          {"time": "9:00", "status": "w"},
+          {"time": "12:00", "status": "r"},
+          {"time": "12:45", "status": "w"},
+        ]),
+        dates: {},
       );
+      expect(record.fill(today, holidays), true);
+      expect(record.toMap(), {
+        "id": 'r1',
+        "data": {
+          "from": '20250401',
+          "to": '20250405',
+          "holidays": [true, false, false, false, false, false, true, false],
+          "givenLeaves": 11,
+          "minLeaves": 6,
+          "useLeavesHourly": true,
+          "sch": [
+            {"time": "09:00", "status": "w"},
+            {"time": "12:00", "status": "r"},
+            {"time": "12:45", "status": "w"},
+            {"time": "17:15", "status": "e"},
+          ],
+          "dates": {
+            '20250401': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250402': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250403': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250404': {'status': 'w', 'sch': []},
+            '20250405': {'status': 'h', 'sch': []},
+          },
+        },
+      });
+      record.holidays[record.holidays.length - 1] = true;
+      expect(record.fill(today, holidays), true);
+      expect(record.toMap(), {
+        "id": 'r1',
+        "data": {
+          "from": '20250401',
+          "to": '20250405',
+          "holidays": [true, false, false, false, false, false, true, true],
+          "givenLeaves": 11,
+          "minLeaves": 6,
+          "useLeavesHourly": true,
+          "sch": [
+            {"time": "09:00", "status": "w"},
+            {"time": "12:00", "status": "r"},
+            {"time": "12:45", "status": "w"},
+            {"time": "17:15", "status": "e"},
+          ],
+          "dates": {
+            '20250401': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250402': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250403': {
+              'status': 'h',
+              "sch": [
+                {"time": "09:00", "status": "f"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "f"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250404': {'status': 'w', 'sch': []},
+            '20250405': {'status': 'h', 'sch': []},
+          },
+        },
+      });
+      record.holidays[record.holidays.length - 1] = false;
+      expect(record.fill(Cal(2025, 4, 6), holidays), true);
+      expect(record.toMap(), {
+        "id": 'r1',
+        "data": {
+          "from": '20250401',
+          "to": '20250405',
+          "holidays": [true, false, false, false, false, false, true, false],
+          "givenLeaves": 11,
+          "minLeaves": 6,
+          "useLeavesHourly": true,
+          "sch": [
+            {"time": "09:00", "status": "w"},
+            {"time": "12:00", "status": "r"},
+            {"time": "12:45", "status": "w"},
+            {"time": "17:15", "status": "e"},
+          ],
+          "dates": {
+            '20250401': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250402': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250403': {
+              'status': 'w',
+              "sch": [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250404': {
+              'status': 'w',
+              'sch': [
+                {"time": "09:00", "status": "w"},
+                {"time": "12:00", "status": "r"},
+                {"time": "12:45", "status": "w"},
+                {"time": "17:15", "status": "e"},
+              ],
+            },
+            '20250405': {'status': 'h', 'sch': []},
+          },
+        },
+      });
+    });
+  });
 
-      final result = await saveRecord(firestore, 'u1', record);
+  group('recordsStream', () {
+    ProviderContainer makeContainer({
+      required String? uid,
+      required FakeFirebaseFirestore firestore,
+    }) {
+      final container = ProviderContainer(
+        overrides: [
+          firestoreProvider.overrideWithValue(firestore),
+          authUserProvider.overrideWith(
+            (_) => Stream.value(
+              uid == null ? null : MockUser(uid: uid, email: 'u@example.com'),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
 
-      expect(result.isRight(), isTrue);
-      final doc = await firestore
-          .collection('users')
-          .doc('u1')
-          .collection('records')
-          .doc('r1')
-          .get();
-      expect(doc.data()!['from'], '20240401');
-      expect(doc.data()!['givenLeaves'], 20);
+    test('emits null when uid is null', () async {
+      final container = makeContainer(
+        uid: null,
+        firestore: FakeFirebaseFirestore(),
+      );
+      container.listen(recordsProvider, (_, _) {});
+      final records = await container.read(recordsProvider.future);
+      expect(records, isNull);
+    });
+
+    test('emits empty list when user has no records', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore.collection('users').doc('u1').set({'name': 'Alice'});
+      final container = makeContainer(uid: 'u1', firestore: firestore);
+      container.listen(recordsProvider, (_, _) {});
+      final records = await container.read(recordsProvider.future);
+      expect(records, isEmpty);
+    });
+
+    test('emits parsed and sorted records', () async {
+      final firestore = FakeFirebaseFirestore();
+      final userRef = firestore.collection('users').doc('u1');
+      await userRef.collection('records').doc('r2').set({
+        'from': '20241001',
+        'to': '20250331',
+      });
+      await userRef.collection('records').doc('r1').set({
+        'from': '20240401',
+        'to': '20240930',
+      });
+      final container = makeContainer(uid: 'u1', firestore: firestore);
+      container.listen(recordsProvider, (_, _) {});
+      final records = await container.read(recordsProvider.future);
+      expect(records, hasLength(2));
+      expect(
+        records![0].from.yyyymmdd.substring(4, 6),
+        '04',
+      ); // sorted: April before October
+      expect(records[1].from.yyyymmdd.substring(4, 6), '10');
+    });
+  });
+
+  group('recordsProvider sort order', () {
+    test('sorts by month when years are equal', () async {
+      final firestore = FakeFirebaseFirestore();
+      final userRef = firestore.collection('users').doc('u1');
+      // Insert in reverse month order
+      await userRef.collection('records').doc('r2').set({
+        'from': '20241001',
+        'to': '20250331',
+      });
+      await userRef.collection('records').doc('r1').set({
+        'from': '20240401',
+        'to': '20240930',
+      });
+
+      final qs = await userRef.collection('records').get();
+      final records =
+          qs.docs.map((doc) => Record.fromDocument(doc)).toList(growable: true)
+            ..sort((a, b) => a.from.compareTo(b.from));
+
+      expect(
+        records[0].from.yyyymmdd.substring(4, 6),
+        '04',
+      ); // April before October
+      expect(records[1].from.yyyymmdd.substring(4, 6), '10');
     });
   });
 
@@ -830,91 +861,6 @@ void main() {
     });
   });
 
-  group('SelectedRecordIndexNotifier.applyRecordsChange', () {
-    ProviderContainer makeContainer() {
-      final container = ProviderContainer(
-        overrides: [recordsProvider.overrideWith((_) => Stream.value(null))],
-      );
-      addTearDown(container.dispose);
-      return container;
-    }
-
-    Record record(int year) =>
-        Record(id: 'r$year', from: Cal(year, 4, 1), to: Cal(year + 1, 3, 31));
-
-    test('returns null when records is null', () {
-      final notifier = makeContainer().read(
-        selectedRecordIndexProvider.notifier,
-      );
-      expect(notifier.applyRecordsChange(null, 0), isNull);
-    });
-
-    test('returns null when records is empty', () {
-      final notifier = makeContainer().read(
-        selectedRecordIndexProvider.notifier,
-      );
-      expect(notifier.applyRecordsChange([], 0), isNull);
-    });
-
-    test('selects last past record when current is null', () {
-      final notifier = makeContainer().read(
-        selectedRecordIndexProvider.notifier,
-      );
-      // Both records are in the past → last index returned
-      expect(
-        notifier.applyRecordsChange([record(2020), record(2021)], null),
-        1,
-      );
-    });
-
-    test('returns last index when current is negative', () {
-      final notifier = makeContainer().read(
-        selectedRecordIndexProvider.notifier,
-      );
-      expect(notifier.applyRecordsChange([record(2020), record(2021)], -1), 1);
-    });
-
-    test('returns last index when current exceeds bounds', () {
-      final notifier = makeContainer().read(
-        selectedRecordIndexProvider.notifier,
-      );
-      expect(notifier.applyRecordsChange([record(2020)], 5), 0);
-    });
-
-    test('returns current index when it is in bounds', () {
-      final notifier = makeContainer().read(
-        selectedRecordIndexProvider.notifier,
-      );
-      expect(
-        notifier.applyRecordsChange([
-          record(2020),
-          record(2021),
-          record(2022),
-        ], 1),
-        1,
-      );
-    });
-  });
-
-  group('saveRecord error path', () {
-    test(
-      'returns left when Firestore update fails on nonexistent doc',
-      () async {
-        final firestore = FakeFirebaseFirestore();
-        final record = Record(
-          id: 'nonexistent',
-          from: Cal.fromString('20240401'),
-          to: Cal.fromString('20250331'),
-        );
-
-        final result = await saveRecord(firestore, 'u1', record);
-
-        expect(result.isLeft(), isTrue);
-      },
-    );
-  });
-
-  // ---------------------------------------------------------------------------
   group('SelectedRecordIndexNotifier.goPrevious / goNext', () {
     List<Record> makeRecords(int count) => List.generate(
       count,
@@ -1026,7 +972,7 @@ void main() {
       expect(container.read(selectedRecordIndexProvider), isNull);
     });
 
-    test('goNext sets index to 0 when current is null', () async {
+    test('goNext sets index to last when current is null', () async {
       final container = ProviderContainer(
         overrides: [
           recordsProvider.overrideWith((_) => Stream.value(makeRecords(3))),
@@ -1041,7 +987,7 @@ void main() {
 
       container.read(selectedRecordIndexProvider.notifier).goNext();
 
-      expect(container.read(selectedRecordIndexProvider), 0);
+      expect(container.read(selectedRecordIndexProvider), 2);
     });
 
     test('goNext increments index when current < last', () async {
@@ -1065,109 +1011,315 @@ void main() {
     });
   });
 
-  group('recordsProvider sort order', () {
-    test('sorts by month when years are equal', () async {
-      final firestore = FakeFirebaseFirestore();
-      final userRef = firestore.collection('users').doc('u1');
-      // Insert in reverse month order
-      await userRef.collection('records').doc('r2').set({
-        'from': '20241001',
-        'to': '20250331',
-      });
-      await userRef.collection('records').doc('r1').set({
-        'from': '20240401',
-        'to': '20240930',
-      });
-
-      final qs = await userRef.collection('records').get();
-      final records =
-          qs.docs.map((doc) => Record.fromDocument(doc)).toList(growable: true)
-            ..sort((a, b) => a.from.compareTo(b.from));
-
-      expect(
-        records[0].from.yyyymmdd.substring(4, 6),
-        '04',
-      ); // April before October
-      expect(records[1].from.yyyymmdd.substring(4, 6), '10');
-    });
-  });
-
-  group('recordsStream', () {
-    ProviderContainer makeContainer({
-      required String? uid,
-      required FakeFirebaseFirestore firestore,
-    }) {
+  group('SelectedRecordIndexNotifier.applyRecordsChange', () {
+    ProviderContainer makeContainer() {
       final container = ProviderContainer(
-        overrides: [
-          firestoreProvider.overrideWithValue(firestore),
-          authUserProvider.overrideWith(
-            (_) => Stream.value(
-              uid == null ? null : MockUser(uid: uid, email: 'u@example.com'),
-            ),
-          ),
-        ],
+        overrides: [recordsProvider.overrideWith((_) => Stream.value(null))],
       );
       addTearDown(container.dispose);
       return container;
     }
 
-    test('emits null when uid is null', () async {
-      final container = makeContainer(
-        uid: null,
-        firestore: FakeFirebaseFirestore(),
+    Record record(int year) =>
+        Record(id: 'r$year', from: Cal(year, 4, 1), to: Cal(year + 1, 3, 31));
+
+    test('returns null when records is null', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
       );
-      container.listen(recordsProvider, (_, _) {});
-      final records = await container.read(recordsProvider.future);
-      expect(records, isNull);
+      expect(notifier.applyRecordsChange(null, 0), isNull);
     });
 
-    test('emits empty list when user has no records', () async {
-      final firestore = FakeFirebaseFirestore();
-      await firestore.collection('users').doc('u1').set({'name': 'Alice'});
-      final container = makeContainer(uid: 'u1', firestore: firestore);
-      container.listen(recordsProvider, (_, _) {});
-      final records = await container.read(recordsProvider.future);
-      expect(records, isEmpty);
+    test('returns null when records is empty', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(notifier.applyRecordsChange([], 0), isNull);
     });
 
-    test('emits parsed and sorted records', () async {
-      final firestore = FakeFirebaseFirestore();
-      final userRef = firestore.collection('users').doc('u1');
-      await userRef.collection('records').doc('r2').set({
-        'from': '20241001',
-        'to': '20250331',
-      });
-      await userRef.collection('records').doc('r1').set({
-        'from': '20240401',
-        'to': '20240930',
-      });
-      final container = makeContainer(uid: 'u1', firestore: firestore);
-      container.listen(recordsProvider, (_, _) {});
-      final records = await container.read(recordsProvider.future);
-      expect(records, hasLength(2));
+    test('selects last past record when current is null', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      // Both records are in the past → last index returned
       expect(
-        records![0].from.yyyymmdd.substring(4, 6),
-        '04',
-      ); // sorted: April before October
-      expect(records[1].from.yyyymmdd.substring(4, 6), '10');
+        notifier.applyRecordsChange([record(2020), record(2021)], null),
+        1,
+      );
+    });
+
+    test('returns last index when current is negative', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(notifier.applyRecordsChange([record(2020), record(2021)], -1), 1);
+    });
+
+    test('returns last index when current exceeds bounds', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(notifier.applyRecordsChange([record(2020)], 5), 0);
+    });
+
+    test('returns current index when it is in bounds', () {
+      final notifier = makeContainer().read(
+        selectedRecordIndexProvider.notifier,
+      );
+      expect(
+        notifier.applyRecordsChange([
+          record(2020),
+          record(2021),
+          record(2022),
+        ], 1),
+        1,
+      );
     });
   });
 
-  group('parseYmd', () {
-    test('parses a valid yyyymmdd string into a DateTime', () {
-      final cal = Cal.fromString('20240107');
-      expect(cal.year, 2024);
-      expect(cal.month, 1);
-      expect(cal.day, 7);
+  group('EditingRecordNotifier', () {
+    ProviderContainer makeContainer() {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('initial state is null', () {
+      expect(makeContainer().read(editingRecordProvider), isNull);
     });
 
-    test('returns correct weekday', () {
-      // 2024-01-07 is a Sunday (weekday == 7)
-      final cal1 = Cal.fromString('20240107');
-      expect(DateTime(cal1.year, cal1.month, cal1.day).weekday, 7);
-      // 2024-01-08 is a Monday (weekday == 1)
-      final cal2 = Cal.fromString('20240108');
-      expect(DateTime(cal2.year, cal2.month, cal2.day).weekday, 1);
+    test('edit sets the record', () {
+      final container = makeContainer();
+      final record = Record(
+        id: 'r1',
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
+      );
+      container.read(editingRecordProvider.notifier).edit(record);
+      expect(container.read(editingRecordProvider), same(record));
+    });
+
+    test('close resets state to null', () {
+      final container = makeContainer();
+      final record = Record(
+        id: 'r1',
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
+      );
+      container.read(editingRecordProvider.notifier).edit(record);
+      container.read(editingRecordProvider.notifier).close();
+      expect(container.read(editingRecordProvider), isNull);
+    });
+  });
+
+  group('EditingDateNotifier', () {
+    late Record record;
+
+    setUp(() {
+      record = Record(
+        id: 'r1',
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
+      );
+    });
+
+    ProviderContainer makeContainer() {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('initial state is null', () {
+      expect(makeContainer().read(editingDateProvider), isNull);
+    });
+
+    test('edit sets the EditingDate without holiday', () {
+      final container = makeContainer();
+      final editing = EditingDate(
+        record: record,
+        date: Cal.fromString('20240615'),
+      );
+      container.read(editingDateProvider.notifier).edit(editing);
+      final state = container.read(editingDateProvider)!;
+      expect(state.record, same(record));
+      expect(state.date.yyyymmdd, '20240615');
+      expect(state.holiday, isNull);
+    });
+
+    test('edit stores holiday when provided', () {
+      final container = makeContainer();
+      final holiday = Holiday(Cal.fromString('20240615'), 'Test Holiday');
+      container
+          .read(editingDateProvider.notifier)
+          .edit(
+            EditingDate(
+              record: record,
+              date: Cal.fromString('20240615'),
+              holiday: holiday,
+            ),
+          );
+      expect(container.read(editingDateProvider)!.holiday, same(holiday));
+    });
+
+    test('close resets state to null', () {
+      final container = makeContainer();
+      container
+          .read(editingDateProvider.notifier)
+          .edit(EditingDate(record: record, date: Cal.fromString('20240615')));
+      container.read(editingDateProvider.notifier).close();
+      expect(container.read(editingDateProvider), isNull);
+    });
+  });
+
+  group('saveRecord', () {
+    test('adds a new document when record id is empty', () async {
+      final firestore = FakeFirebaseFirestore();
+      final record = Record(
+        id: '',
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
+        sch: ScheduleList.fromMapList([
+          {"time": "8:30", "status": "w"},
+          {"time": "12:00", "status": "r"},
+          {"time": "13:00", "status": "w"},
+          {"time": "17:30", "status": "e"},
+        ]),
+      );
+
+      final result = await saveRecord(firestore, 'u1', record);
+
+      expect(result.isRight(), isTrue);
+      final docs = await firestore
+          .collection('users')
+          .doc('u1')
+          .collection('records')
+          .get();
+      expect(docs.docs.length, 1);
+      expect(docs.docs[0].id, isNotEmpty);
+      expect(docs.docs[0].data(), {
+        ...record.toMap()['data'],
+        'createdAt': anything,
+      });
+    });
+
+    test('updates existing document when record id is non-empty', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore
+          .collection('users')
+          .doc('u1')
+          .collection('records')
+          .doc('r1')
+          .set({
+            'from': '20230401',
+            'to': '20240331',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+      final record = Record(
+        id: 'r1',
+        from: Cal.fromString('20240401'),
+        to: Cal.fromString('20250331'),
+        givenLeaves: 20,
+      );
+
+      final result = await saveRecord(firestore, 'u1', record);
+
+      expect(result.isRight(), isTrue);
+      final docs = await firestore
+          .collection('users')
+          .doc('u1')
+          .collection('records')
+          .get();
+      expect(docs.docs.length, 1);
+      expect(docs.docs[0].id, 'r1');
+      expect(docs.docs[0].data(), {
+        ...record.toMap()['data'],
+        'createdAt': anything,
+        'updatedAt': anything,
+      });
+    });
+  });
+
+  group('saveRecord error path', () {
+    test(
+      'returns left when Firestore update fails on nonexistent doc',
+      () async {
+        final firestore = FakeFirebaseFirestore();
+        final record = Record(
+          id: 'nonexistent',
+          from: Cal.fromString('20240401'),
+          to: Cal.fromString('20250331'),
+        );
+
+        final result = await saveRecord(firestore, 'u1', record);
+
+        expect(result.isLeft(), isTrue);
+      },
+    );
+  });
+
+  group('saveDateRecord', () {
+    test('saves DateRecord fields under dates.<yyyymmdd> key', () async {
+      final firestore = FakeFirebaseFirestore();
+      await firestore
+          .collection('users')
+          .doc('u1')
+          .collection('records')
+          .doc('r1')
+          .set({
+            'from': '20240401',
+            'to': '20250331',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+      final dr = DateRecord(null, [
+        ScheduleItem(9 * 3600, WorkStatus.w),
+        ScheduleItem(18 * 3600, WorkStatus.e),
+      ]);
+
+      final result = await saveDateRecord(
+        firestore,
+        'u1',
+        'r1',
+        Cal.fromString('20240615'),
+        dr,
+      );
+
+      expect(result.isRight(), isTrue);
+      final doc = await firestore
+          .collection('users')
+          .doc('u1')
+          .collection('records')
+          .doc('r1')
+          .get();
+      expect(doc.data(), {
+        'from': '20240401',
+        'to': '20250331',
+        'dates': {
+          '20240615': {
+            'status': null,
+            'sch': [
+              {'time': "09:00", 'status': 'w'},
+              {'time': "18:00", 'status': 'e'},
+            ],
+          },
+        },
+        'createdAt': anything,
+        'updatedAt': anything,
+      });
+    });
+
+    test('returns left when record does not exist', () async {
+      final firestore = FakeFirebaseFirestore();
+      final dr = DateRecord(WorkStatus.w, []);
+
+      final result = await saveDateRecord(
+        firestore,
+        'u1',
+        'nonexistent',
+        Cal.fromString('20240615'),
+        dr,
+      );
+
+      expect(result.isLeft(), isTrue);
     });
   });
 }

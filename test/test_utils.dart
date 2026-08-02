@@ -1,4 +1,4 @@
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/service.dart';
 
 List<Gengo> gengos() => [

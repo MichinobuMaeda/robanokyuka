@@ -3,29 +3,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/service.dart';
 
-class Holiday implements Comparable<Holiday> {
+class Holiday {
+  Holiday(this.date, this.name);
+
   final Cal date;
   final String name;
 
-  Holiday({required this.date, required this.name});
-
-  factory Holiday.fromString(String date, {required String name}) {
-    return Holiday(date: Cal.fromString(date), name: name);
-  }
-
   Holiday copyWith({Cal? date, String? name}) {
-    return Holiday(date: date ?? this.date, name: name ?? this.name);
+    return Holiday(date ?? this.date, name ?? this.name);
   }
-
-  @override
-  int compareTo(Holiday other) => date.compareTo(other.date);
-
-  String get yyyymmdd => date.yyyymmdd;
-  String get yyyy => date.yyyymmdd.substring(0, 4);
-  String get mmdd => date.yyyymmdd.substring(4);
 }
 
 final holidaysProvider = Provider<List<Holiday>>((ref) {
@@ -41,19 +30,19 @@ final holidaysProvider = Provider<List<Holiday>>((ref) {
                     .where((entry) => RegExp(r'^[0-9]{4}$').hasMatch(entry.key))
                     .map((entry) {
                       return Holiday(
-                        date: Cal(
+                        Cal(
                           year,
                           int.parse(entry.key.substring(0, 2)),
                           int.parse(entry.key.substring(2, 4)),
                         ),
-                        name: '${entry.value}',
+                        '${entry.value}',
                       );
                     })
                     .toList();
               })
               .expand((holidays) => holidays)
               .toList()
-    ..sort();
+    ..sort((a, b) => a.date.dateTime.compareTo(b.date.dateTime));
 });
 
 Future<Either<String, Unit>> setHoliday(
@@ -61,8 +50,8 @@ Future<Either<String, Unit>> setHoliday(
   Holiday holiday,
 ) async {
   try {
-    await db.collection('service').doc('y${holiday.yyyy}').set({
-      holiday.mmdd: holiday.name,
+    await db.collection('service').doc('y${holiday.date.yyyy}').set({
+      holiday.date.mmdd: holiday.name,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
     return right(unit);
@@ -77,8 +66,8 @@ Future<Either<String, Unit>> deleteHoliday(
   Holiday holiday,
 ) async {
   try {
-    await db.collection('service').doc('y${holiday.yyyy}').update({
-      holiday.mmdd: FieldValue.delete(),
+    await db.collection('service').doc('y${holiday.date.yyyy}').update({
+      holiday.date.mmdd: FieldValue.delete(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
     return right(unit);
@@ -89,4 +78,4 @@ Future<Either<String, Unit>> deleteHoliday(
 }
 
 List<int> selectHolidayYears(List<Holiday> holidays) =>
-    holidays.map((h) => int.parse(h.yyyy)).toSet().toList()..sort();
+    holidays.map((h) => int.parse(h.date.yyyy)).toSet().toList()..sort();

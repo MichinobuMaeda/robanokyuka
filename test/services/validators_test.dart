@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/nengo.dart';
 import 'package:robanokyuka/models/holidays.dart';
 import 'package:robanokyuka/services/validators.dart';
@@ -127,7 +128,7 @@ void main() {
   });
 
   group('validateHoliday', () {
-    final holidays = [Holiday.fromString('20240101', name: '元日')];
+    final holidays = [Holiday(Cal(2024, 1, 1), '元日')];
 
     test('returns error when date is already registered', () {
       expect(validateHoliday(holidays, 2024, 1, 1), '登録済みの日付です');
@@ -229,7 +230,7 @@ void main() {
     });
 
     test('returns error for hours out of range', () {
-      expect(validateHhmmOptional('24:00'), '時は 0-23 で入力してください');
+      expect(validateHhmmOptional('48:00'), '時は 0-47 で入力してください');
     });
 
     test('returns error for minutes out of range', () {
@@ -244,8 +245,12 @@ void main() {
       expect(validateHhmmOptional('00:00'), isNull);
     });
 
-    test('returns null for "23:59" (boundary)', () {
+    test('returns null for "23:59"', () {
       expect(validateHhmmOptional('23:59'), isNull);
+    });
+
+    test('returns null for "47:59" (boundary)', () {
+      expect(validateHhmmOptional('47:59'), isNull);
     });
   });
 }

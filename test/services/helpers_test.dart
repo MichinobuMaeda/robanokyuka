@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/services/helpers.dart';
 
 void main() {
@@ -141,5 +143,23 @@ void main() {
         expect(isUpdateAvailable('1.0', '1.0'), isFalse);
       },
     );
+  });
+
+  test('generateMonthList returns List of Cal between from and to', () {
+    expect(generateMonthList(Cal(2024, 4, 1), Cal(2025, 3, 31)), [
+      Cal(2024, 4, 1),
+      Cal(2024, 5, 1),
+      Cal(2024, 6, 1),
+      Cal(2024, 7, 1),
+      Cal(2024, 8, 1),
+      Cal(2024, 9, 1),
+      Cal(2024, 10, 1),
+      Cal(2024, 11, 1),
+      Cal(2024, 12, 1),
+      Cal(2025, 1, 1),
+      Cal(2025, 2, 1),
+      Cal(2025, 3, 1),
+    ]);
+    expect(generateMonthList(Cal(2024, 4, 1), Cal(2024, 3, 31)), []);
   });
 }

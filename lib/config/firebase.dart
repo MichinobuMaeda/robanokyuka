@@ -20,6 +20,7 @@ const int emulatorFunctionsPort = 5001;
 
 Future<void> initializeFirebase() async {
   try {
+    debugPrint("Firebase.initializeApp()");
     await Firebase.initializeApp(
       options: FirebaseOptions(
         apiKey: firebaseConfig['apiKey']!,
@@ -32,25 +33,34 @@ Future<void> initializeFirebase() async {
       ),
     );
   } on FirebaseException catch (e) {
-    if (e.code != 'duplicate-app') rethrow;
-  }
+    if (e.code != 'duplicate-app') {
+      debugPrint("initializeFirebase: ${e.toString()}");
+    }
+  } finally {
+    debugPrint("setLanguageCode('ja')");
+    await FirebaseAuth.instance.setLanguageCode("ja");
 
-  await FirebaseAuth.instance.setLanguageCode("ja");
-
-  if (kDebugMode) {
-    try {
-      await FirebaseAuth.instance.useAuthEmulator(
-        emulatorHost,
-        emulatorAuthPort,
-      );
-      FirebaseFirestore.instance.useFirestoreEmulator(
-        emulatorHost,
-        emulatorFirestorePort,
-      );
-      FirebaseFunctions.instanceFor(
-        region: functionsRegion,
-      ).useFunctionsEmulator(emulatorHost, emulatorFunctionsPort);
-    } catch (_) {}
+    debugPrint("kDebugMode: $kDebugMode");
+    if (kDebugMode) {
+      try {
+        await FirebaseAuth.instance.useAuthEmulator(
+          emulatorHost,
+          emulatorAuthPort,
+        );
+        debugPrint("Auth Emulator: $emulatorHost:$emulatorAuthPort");
+        FirebaseFirestore.instance.useFirestoreEmulator(
+          emulatorHost,
+          emulatorFirestorePort,
+        );
+        debugPrint("Firestore Emulator: $emulatorHost:$emulatorFirestorePort");
+        FirebaseFunctions.instanceFor(
+          region: functionsRegion,
+        ).useFunctionsEmulator(emulatorHost, emulatorFunctionsPort);
+        debugPrint("Functions Emulator: $emulatorHost:$emulatorFunctionsPort");
+      } catch (e) {
+        debugPrint("initializeFirebase: ${e.toString()}");
+      }
+    }
   }
 }
 

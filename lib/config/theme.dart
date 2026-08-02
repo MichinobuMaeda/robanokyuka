@@ -6,10 +6,13 @@ const seedColor = Color.fromARGB(255, 0xa0, 0x7d, 0x5b);
 const defaultFont = 'NotoSansJP';
 const navDrawerWidth = 256.0;
 const contentMaxWidth = 1024.0;
+const minScreenWidth = 320;
+const columnWidth = minScreenWidth - 16.0;
 const buttonHeight = 48.0;
 const panelPadding = EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0);
 const bottomSheetPadding = EdgeInsets.all(16.0);
 const panelSpacing = 16.0;
+const itemSpacing = 8.0;
 const defaultInputWidth = 512.0;
 TextStyle? panelTitleStyle(BuildContext context) =>
     Theme.of(context).textTheme.headlineSmall;
@@ -65,7 +68,9 @@ final iconEdit = Icon(Symbols.edit);
 final iconDelete = Icon(Symbols.delete);
 final iconClose = Icon(Symbols.close);
 final iconWorked = Icon(Symbols.work, fill: 0);
+final iconHoliday = Symbols.cottage;
 final iconCompanyHoliday = Icon(Symbols.work_off, fill: 1.0);
+final iconOvertime = Icon(Symbols.cases);
 final iconPaidFull = Icon(Symbols.battery_android_frame_full);
 final iconPaidHalf = Icon(Symbols.battery_android_frame_4);
 final iconPaidEmpty = Icon(Symbols.battery_android_0);
@@ -81,9 +86,11 @@ const weekdayLabels = ['日', '月', '火', '水', '木', '金', '土'];
 
 const calHeaderHeight = 24.0;
 const calCellHeight = 48.0;
-const calGridWidth = 400.0;
+const calGridWidth = 480.0;
 const calGridHeight = calHeaderHeight * 2 + calCellHeight * 6;
 const calGridSpacing = 1.0;
+
+const narrowDeviceWidth = 1024;
 
 Color panelColor(BuildContext context, int month) {
   return switch (month % 4) {

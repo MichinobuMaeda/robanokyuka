@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:robanokyuka/models/cal_date.dart';
+import 'package:robanokyuka/config/theme.dart';
+import 'package:robanokyuka/models/cal.dart';
 import 'package:robanokyuka/models/nengo.dart';
 import 'package:robanokyuka/services/validators.dart';
 
@@ -8,7 +9,7 @@ class DateInput extends StatelessWidget {
   const DateInput({
     super.key,
     required this.labelText,
-    this.helperText = '日付を入力してください',
+    this.helperText = 'YYYY/M/D',
     required this.dateController,
     required this.nengo,
     this.extraValidator,
@@ -43,27 +44,37 @@ class DateInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: dateController,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: labelText,
-        border: const OutlineInputBorder(),
-        helperText: helperText,
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.calendar_today),
-          onPressed: () => _pickDate(context),
+    final mediaSize = MediaQuery.sizeOf(context);
+    final narrow = mediaSize.width < narrowDeviceWidth;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: narrow ? 128 : 160),
+      child: TextFormField(
+        controller: dateController,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: labelText,
+          border: const OutlineInputBorder(),
+          helperText: helperText,
+          suffixIcon: narrow
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () => _pickDate(context),
+                ),
         ),
+        readOnly: narrow,
+        onTap: narrow ? () => _pickDate(context) : null,
+        validator: (value) {
+          final error = validateDate(nengo, value);
+          if (error != null) return error;
+          if (extraValidator != null) {
+            final cal = nengo.parseDate(value ?? '');
+            if (cal != null) return extraValidator!(cal);
+          }
+          return null;
+        },
       ),
-      validator: (value) {
-        final error = validateDate(nengo, value);
-        if (error != null) return error;
-        if (extraValidator != null) {
-          final cal = nengo.parseDate(value ?? '');
-          if (cal != null) return extraValidator!(cal);
-        }
-        return null;
-      },
     );
   }
 }
